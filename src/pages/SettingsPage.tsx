@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronRight, AlertOctagon, Shield, X, Check, Plug, Unplug, Key, ExternalLink, Loader2 } from 'lucide-react';
+import { ArrowLeft, ChevronRight, AlertOctagon, Shield, X, Check, Plug, Unplug, Key, ExternalLink, Loader2, Play, Square } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserOrganization, useIntegrations } from '@/hooks/use-supabase-data';
+import { useUserOrganization, useIntegrations, useModuleEntitlements } from '@/hooks/use-supabase-data';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface EditingState {
@@ -33,6 +33,7 @@ export default function SettingsPage() {
   const { data: membership } = useUserOrganization();
   const orgId = membership?.organization_id;
   const { data: integrations = [], isLoading: integrationsLoading } = useIntegrations(orgId);
+  const { data: entitlements = [], isLoading: entitlementsLoading } = useModuleEntitlements(orgId);
   const { emergencyStop, setEmergencyStop } = useAppState();
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
@@ -43,6 +44,7 @@ export default function SettingsPage() {
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [submittingIntegration, setSubmittingIntegration] = useState(false);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+  const [togglingModule, setTogglingModule] = useState<string | null>(null);
 
   const handleEmergencyStop = () => {
     if (!emergencyStop) {
@@ -155,6 +157,50 @@ export default function SettingsPage() {
     }
   };
 
+  // Module management
+  const MODULES = [
+    { id: 'module_a', name: 'Invoice Recovery', description: 'Automated overdue invoice follow-up' },
+    { id: 'module_b', name: 'Smart Follow-Up Intelligence', description: 'AI-powered timing and channel optimization' },
+    { id: 'module_c', name: 'Cash Visibility', description: 'Real-time cash flow dashboards and forecasts' },
+    { id: 'module_d', name: 'Communication Hub', description: 'Unified inbox across email, SMS, WhatsApp' },
+    { id: 'module_e', name: 'Advanced Automation', description: 'Custom workflow builder and rule engine' },
+    { id: 'module_f', name: 'Payment Optimization', description: 'Payment plans, settlements, and reconciliation' },
+    { id: 'module_g', name: 'AI Cash Advisor', description: 'Conversational AI for financial insights' },
+  ];
+
+  const entitlementByModule = new Map(entitlements.map(e => [e.module_id, e]));
+
+  const handleStartTrial = async (moduleId: string) => {
+    if (!orgId) return;
+    setTogglingModule(moduleId);
+    try {
+      const { error } = await supabase.rpc('start_module_trial', { _org_id: orgId, _module_id: moduleId });
+      if (error) throw error;
+      toast.success('Trial started — 14 days free');
+      queryClient.invalidateQueries({ queryKey: ['module-entitlements'] });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to start trial');
+    } finally {
+      setTogglingModule(null);
+    }
+  };
+
+  const handleDeactivateModule = async (moduleId: string, moduleName: string) => {
+    if (!orgId) return;
+    if (!confirm(`Deactivate ${moduleName}? You can reactivate it later.`)) return;
+    setTogglingModule(moduleId);
+    try {
+      const { error } = await supabase.rpc('deactivate_module', { _org_id: orgId, _module_id: moduleId });
+      if (error) throw error;
+      toast.success(`${moduleName} deactivated`);
+      queryClient.invalidateQueries({ queryKey: ['module-entitlements'] });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to deactivate');
+    } finally {
+      setTogglingModule(null);
+    }
+  };
+
   // Map connected integrations by provider
   const connectedByProvider = new Map(
     integrations
@@ -190,18 +236,6 @@ export default function SettingsPage() {
         { name: 'AI drafting', value: 'Enabled', editable: true },
         { name: 'AI reply classification', value: 'Enabled', editable: true },
         { name: 'Max messages per client/month', value: '8', editable: true },
-      ],
-    },
-    {
-      label: 'Modules',
-      items: [
-        { name: 'Module A: Invoice Recovery', value: 'Active', highlight: true, editable: false },
-        { name: 'Module B: Smart Follow-Up Intelligence', value: 'Trial (12 days left)', editable: false },
-        { name: 'Module C: Cash Visibility', value: 'Trial (12 days left)', editable: false },
-        { name: 'Module D: Communication Hub', value: 'Not active', editable: false },
-        { name: 'Module E: Advanced Automation', value: 'Not active', editable: false },
-        { name: 'Module F: Payment Optimization', value: 'Not active', editable: false },
-        { name: 'Module G: AI Cash Advisor', value: 'Not active', editable: false },
       ],
     },
     {
@@ -314,6 +348,75 @@ export default function SettingsPage() {
           </div>
         </ScrollReveal>
       ))}
+
+      {/* Modules section */}
+      <ScrollReveal delay={0.22}>
+        <div className="glass-card rounded-xl overflow-hidden">
+          <div className="px-4 py-3 bg-muted/30 flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Modules</h3>
+            <span className="text-xs text-muted-foreground">
+              {entitlements.length} active
+            </span>
+          </div>
+          {entitlementsLoading ? (
+            <div className="px-4 py-6 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            MODULES.map(mod => {
+              const ent = entitlementByModule.get(mod.id);
+              const isActive = ent?.status === 'active';
+              const isTrialing = ent?.status === 'trialing';
+              const trialDaysLeft = ent?.trial_ends_at
+                ? Math.max(0, Math.ceil((new Date(ent.trial_ends_at).getTime() - Date.now()) / 86400000))
+                : 0;
+
+              return (
+                <div key={mod.id} className="flex items-center justify-between px-4 py-3 border-t border-border/40">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{mod.name}</p>
+                    <p className="text-xs text-muted-foreground">{mod.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-3">
+                    {isActive ? (
+                      <>
+                        <span className="text-xs text-primary font-medium">● Active</span>
+                        <button
+                          onClick={() => handleDeactivateModule(mod.id, mod.name)}
+                          disabled={togglingModule === mod.id}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs border border-border hover:bg-destructive/10 hover:text-destructive transition-colors active:scale-95 disabled:opacity-50"
+                        >
+                          {togglingModule === mod.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Square className="w-3 h-3" />}
+                        </button>
+                      </>
+                    ) : isTrialing ? (
+                      <>
+                        <span className="text-xs text-amber-600 font-medium">Trial · {trialDaysLeft}d left</span>
+                        <button
+                          onClick={() => handleDeactivateModule(mod.id, mod.name)}
+                          disabled={togglingModule === mod.id}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs border border-border hover:bg-destructive/10 hover:text-destructive transition-colors active:scale-95 disabled:opacity-50"
+                        >
+                          {togglingModule === mod.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Square className="w-3 h-3" />}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => handleStartTrial(mod.id)}
+                        disabled={togglingModule === mod.id}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors active:scale-95 disabled:opacity-50"
+                      >
+                        {togglingModule === mod.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                        Start trial
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </ScrollReveal>
 
       {/* Integrations section */}
       <ScrollReveal delay={0.25}>

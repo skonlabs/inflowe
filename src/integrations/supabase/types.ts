@@ -2810,7 +2810,15 @@ export type Database = {
         }
         Returns: string
       }
+      deactivate_module: {
+        Args: { _module_id: string; _org_id: string }
+        Returns: undefined
+      }
       get_user_org_ids: { Args: { _user_id: string }; Returns: string[] }
+      start_module_trial: {
+        Args: { _module_id: string; _org_id: string; _trial_days?: number }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

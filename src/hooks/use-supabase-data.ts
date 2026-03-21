@@ -181,3 +181,19 @@ export function useIntegrations(orgId: string | undefined) {
     },
   });
 }
+
+export function useModuleEntitlements(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ['module-entitlements', orgId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('module_entitlements')
+        .select('*')
+        .eq('organization_id', orgId!)
+        .in('status', ['active', 'trialing']);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
