@@ -7,7 +7,14 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserOrganization, useIntegrations, useModuleEntitlements } from '@/hooks/use-supabase-data';
+import {
+  useUserOrganization,
+  useIntegrations,
+  useModuleEntitlements,
+  useTeamMembers,
+  useUpdateOrgFields,
+  useInviteMember,
+} from '@/hooks/use-supabase-data';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface EditingState {
@@ -34,12 +41,26 @@ export default function SettingsPage() {
   const orgId = membership?.organization_id;
   const { data: integrations = [], isLoading: integrationsLoading } = useIntegrations(orgId);
   const { data: entitlements = [], isLoading: entitlementsLoading } = useModuleEntitlements(orgId);
+  const { data: teamMembers = [] } = useTeamMembers(orgId);
   const { emergencyStop, setEmergencyStop } = useAppState();
+  const updateOrgFields = useUpdateOrgFields();
+  const inviteMember = useInviteMember();
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
+
+  // Map settings section:item → org field name for DB persistence
+  const ORG_FIELD_MAP: Record<string, string> = {
+    'Organization:Business name': 'display_name',
+    'Organization:Timezone': 'timezone',
+    'Organization:Currency': 'default_currency',
+    'Sender Identity:Sender email': 'sender_email',
+    'Sender Identity:Display name': 'sender_display_name',
+    'Sender Identity:Reply-to address': 'reply_to_address',
+    'Sender Identity:Brand tone': 'brand_tone',
+  };
   const [connectingProvider, setConnectingProvider] = useState<typeof AVAILABLE_PROVIDERS[0] | null>(null);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [submittingIntegration, setSubmittingIntegration] = useState(false);
@@ -62,10 +83,20 @@ export default function SettingsPage() {
     setEditing({ sectionLabel, itemName, value: overrides[`${sectionLabel}:${itemName}`] || currentValue });
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editing) return;
     const key = `${editing.sectionLabel}:${editing.itemName}`;
     setOverrides(prev => ({ ...prev, [key]: editing.value }));
+    // Persist to DB if this field maps to an org column
+    const dbField = ORG_FIELD_MAP[key];
+    if (dbField && orgId) {
+      try {
+        await updateOrgFields.mutateAsync({ orgId, fields: { [dbField]: editing.value } });
+      } catch (err: any) {
+        toast.error(err?.message ?? 'Failed to save setting');
+        return;
+      }
+    }
     toast.success(`${editing.itemName} updated`);
     setEditing(null);
   };
@@ -74,11 +105,16 @@ export default function SettingsPage() {
     return overrides[`${sectionLabel}:${itemName}`] || defaultValue;
   };
 
-  const handleInvite = () => {
-    if (!inviteEmail.trim()) return;
-    toast.success(`Invitation sent to ${inviteEmail}`);
-    setInviteEmail('');
-    setShowInvite(false);
+  const handleInvite = async () => {
+    if (!inviteEmail.trim() || !orgId) return;
+    try {
+      await inviteMember.mutateAsync({ orgId, email: inviteEmail.trim(), role: inviteRole });
+      toast.success(`Invitation sent to ${inviteEmail}`);
+      setInviteEmail('');
+      setShowInvite(false);
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to send invitation');
+    }
   };
 
   const handleExportData = () => {
@@ -583,13 +619,20 @@ export default function SettingsPage() {
       {/* Team section with invite */}
       <ScrollReveal delay={0.3}>
         <div className="glass-card rounded-xl overflow-hidden">
-          <div className="px-4 py-3 bg-muted/30">
+          <div className="px-4 py-3 bg-muted/30 flex items-center justify-between">
             <h3 className="text-sm font-semibold">Team</h3>
+            <span className="text-xs text-muted-foreground">{teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''}</span>
           </div>
-          <div className="px-4 py-3 border-t border-border/40 text-sm">
-            <span>Members</span>
-            <span className="text-xs text-muted-foreground float-right">1 active (Owner)</span>
-          </div>
+          {teamMembers.map(m => {
+            const profile = (m as any).profiles;
+            const name = profile?.full_name || profile?.email || 'Member';
+            return (
+              <div key={m.id} className="px-4 py-3 border-t border-border/40 flex items-center justify-between text-sm">
+                <span>{name}</span>
+                <span className="text-xs text-muted-foreground capitalize">{m.role}</span>
+              </div>
+            );
+          })}
           <button onClick={() => setShowInvite(!showInvite)}
             className="w-full text-left px-4 py-3 border-t border-border/40 text-sm hover:bg-muted/30 transition-colors active:scale-[0.99] text-primary font-medium">
             + Invite team member

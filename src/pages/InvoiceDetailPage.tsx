@@ -1,26 +1,52 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Pause, Play, CheckCircle, AlertTriangle, Clock, FileText, MessageSquare, Flag, CreditCard } from 'lucide-react';
+import { ArrowLeft, Mail, Pause, Play, CheckCircle, AlertTriangle, Clock, FileText, MessageSquare, Flag, CreditCard, DollarSign, Shield } from 'lucide-react';
 import { demoInvoices, formatCurrency, getStateLabel, getStateClass } from '@/lib/demo-data';
 import { ScrollReveal } from '@/components/ScrollReveal';
-import { useAppState } from '@/contexts/AppStateContext';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useUserOrganization, useInvoiceDetail } from '@/hooks/use-supabase-data';
+import {
+  useUserOrganization,
+  useInvoiceDetail,
+  useInvoiceTimeline,
+  useMarkInvoicePaid,
+  useSetInvoiceHold,
+  useSetInvoiceDispute,
+} from '@/hooks/use-supabase-data';
 
-const timelineEvents = [
-  { id: 't1', type: 'message_sent', text: 'Reminder sent via email', date: 'Mar 10, 2024', icon: Mail },
-  { id: 't2', type: 'invoice_state_changed', text: 'Invoice became overdue', date: 'Feb 16, 2024', icon: AlertTriangle },
-  { id: 't3', type: 'invoice_imported', text: 'Invoice imported', date: 'Feb 1, 2024', icon: FileText },
-];
+const TIMELINE_ICON: Record<string, React.ElementType> = {
+  message_sent: Mail,
+  draft_generated: FileText,
+  message_failed: AlertTriangle,
+  reply_received: MessageSquare,
+  payment_recorded: DollarSign,
+  invoice_paid: CheckCircle,
+  invoice_put_on_hold: Pause,
+  invoice_resumed: Play,
+  invoice_disputed: Flag,
+  invoice_dispute_cleared: Shield,
+  invoice_imported: FileText,
+  invoice_state_changed: AlertTriangle,
+};
+
+function getTimelineIcon(eventType: string): React.ElementType {
+  return TIMELINE_ICON[eventType] || Clock;
+}
 
 export default function InvoiceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { invoiceActions, setInvoiceAction, emergencyStop } = useAppState();
   const { data: membership } = useUserOrganization();
   const orgId = membership?.organization_id;
-  const { data: dbInvoice } = useInvoiceDetail(id, orgId);
+  const { data: dbInvoice, isLoading } = useInvoiceDetail(id, orgId);
+  const { data: timelineEvents = [] } = useInvoiceTimeline(id, orgId);
+
+  const markPaid = useMarkInvoicePaid();
+  const setHold = useSetInvoiceHold();
+  const setDispute = useSetInvoiceDispute();
+
+  const [showPaymentPlan, setShowPaymentPlan] = useState(false);
+  const [planInstallments, setPlanInstallments] = useState(3);
 
   // Map Supabase data or fallback to demo
   const demoInvoice = demoInvoices.find(i => i.id === id);
@@ -54,8 +80,13 @@ export default function InvoiceDetailPage() {
     contactEmail: demoInvoice.contactEmail,
   } : null;
 
-  const [showPaymentPlan, setShowPaymentPlan] = useState(false);
-  const [planInstallments, setPlanInstallments] = useState(3);
+  if (isLoading && !demoInvoice) {
+    return (
+      <div className="px-4 py-12 text-center">
+        <p className="text-muted-foreground text-sm">Loading invoice…</p>
+      </div>
+    );
+  }
 
   if (!invoice) {
     return (
@@ -66,27 +97,52 @@ export default function InvoiceDetailPage() {
     );
   }
 
-  const actions = invoiceActions[invoice.id] || {};
-  const isPaid = actions.isPaid || false;
-  const isPaused = actions.isPaused || emergencyStop || false;
-  const isDisputed = actions.isDisputed || false;
-  const currentState = isPaid ? 'paid' : isDisputed ? 'disputed' : invoice.state;
+  // Derive state flags from DB state
+  const isPaid = invoice.state === 'paid';
+  const isPaused = invoice.state === 'on_hold';
+  const isDisputed = invoice.state === 'disputed';
+  const currentState = invoice.state;
 
-  const handleMarkPaid = () => {
-    setInvoiceAction(invoice.id, { isPaid: true });
-    toast.success(`${invoice.invoiceNumber} marked as paid`);
+  const handleMarkPaid = async () => {
+    if (!orgId) return;
+    try {
+      await markPaid.mutateAsync({ invoiceId: invoice.id, orgId, method: 'manual' });
+      toast.success(`${invoice.invoiceNumber} marked as paid`);
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to mark invoice paid');
+    }
   };
 
-  const handleTogglePause = () => {
-    setInvoiceAction(invoice.id, { isPaused: !actions.isPaused });
-    toast(!actions.isPaused ? 'Automation paused for this invoice' : 'Automation resumed for this invoice', {
-      icon: !actions.isPaused ? '⏸️' : '▶️',
-    });
+  const handleTogglePause = async () => {
+    if (!orgId) return;
+    try {
+      await setHold.mutateAsync({ invoiceId: invoice.id, orgId, onHold: !isPaused });
+      toast(isPaused ? 'Automation resumed for this invoice' : 'Automation paused for this invoice', {
+        icon: isPaused ? '▶️' : '⏸️',
+      });
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to update hold status');
+    }
   };
 
-  const handleDispute = () => {
-    setInvoiceAction(invoice.id, { isDisputed: true });
-    toast('Invoice flagged as disputed — automation paused', { icon: '🚩' });
+  const handleDispute = async () => {
+    if (!orgId) return;
+    try {
+      await setDispute.mutateAsync({ invoiceId: invoice.id, orgId, disputeActive: true });
+      toast('Invoice flagged as disputed — automation paused', { icon: '🚩' });
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to flag dispute');
+    }
+  };
+
+  const handleClearDispute = async () => {
+    if (!orgId) return;
+    try {
+      await setDispute.mutateAsync({ invoiceId: invoice.id, orgId, disputeActive: false });
+      toast.success('Dispute cleared');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to clear dispute');
+    }
   };
 
   const handleCreatePlan = () => {
@@ -94,6 +150,8 @@ export default function InvoiceDetailPage() {
     toast.success(`Payment plan created: ${planInstallments} installments of ${formatCurrency(perInstallment)}`);
     setShowPaymentPlan(false);
   };
+
+  const isMutating = markPaid.isPending || setHold.isPending || setDispute.isPending;
 
   return (
     <div className="px-4 py-4 space-y-6">
@@ -111,13 +169,19 @@ export default function InvoiceDetailPage() {
               </button>
             </div>
             <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${getStateClass(currentState)}`}>
-              {isPaid ? 'Paid' : isDisputed ? 'Disputed' : getStateLabel(invoice.state)}
+              {getStateLabel(currentState)}
             </span>
           </div>
 
-          {(isPaused || emergencyStop) && (
+          {isPaused && (
             <div className="mb-4 px-3 py-2 rounded-lg bg-warning/10 border border-warning/20 text-xs text-warning font-medium flex items-center gap-1.5">
-              <Pause className="w-3.5 h-3.5" /> {emergencyStop ? 'All automation halted (emergency stop active)' : 'Automation paused for this invoice'}
+              <Pause className="w-3.5 h-3.5" /> Automation paused for this invoice
+            </div>
+          )}
+
+          {isDisputed && (
+            <div className="mb-4 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive font-medium flex items-center gap-1.5">
+              <Flag className="w-3.5 h-3.5" /> Invoice is under dispute — automation halted
             </div>
           )}
 
@@ -150,7 +214,7 @@ export default function InvoiceDetailPage() {
       </ScrollReveal>
 
       {/* Explainability panel */}
-      {invoice.state === 'overdue' && !isPaid && (
+      {invoice.state === 'overdue' && (
         <ScrollReveal delay={0.1}>
           <div className="glass-card rounded-xl p-5 space-y-3">
             <h2 className="font-semibold text-sm flex items-center gap-2">
@@ -160,7 +224,7 @@ export default function InvoiceDetailPage() {
             <div className="space-y-2 text-sm">
               <p><span className="font-medium">Last action:</span> Reminder sent — no reply received.</p>
               <p><span className="font-medium">Why:</span> Invoice is {invoice.daysOverdue} days overdue. Standard follow-up workflow triggered.</p>
-              <p><span className="font-medium">Next:</span> {isPaused ? 'Automation is paused — no actions scheduled.' : invoice.nextActionAt ? `Follow-up scheduled for ${new Date(invoice.nextActionAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No actions scheduled — needs manual attention.'}</p>
+              <p><span className="font-medium">Next:</span> {invoice.nextActionAt ? `Follow-up scheduled for ${new Date(invoice.nextActionAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No actions scheduled — needs manual attention.'}</p>
             </div>
           </div>
         </ScrollReveal>
@@ -170,19 +234,27 @@ export default function InvoiceDetailPage() {
       <ScrollReveal delay={0.15}>
         <div className="grid grid-cols-2 gap-2">
           {!isPaid && (
-            <button onClick={handleMarkPaid}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform">
+            <button onClick={handleMarkPaid} disabled={isMutating}
+              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-60">
               <CheckCircle className="w-4 h-4" /> Mark paid
             </button>
           )}
-          <button onClick={handleTogglePause}
-            className="flex items-center justify-center gap-2 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform">
-            {isPaused && !emergencyStop ? <><Play className="w-4 h-4" /> Resume</> : <><Pause className="w-4 h-4" /> Pause</>}
-          </button>
+          {!isPaid && (
+            <button onClick={handleTogglePause} disabled={isMutating}
+              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform disabled:opacity-60">
+              {isPaused ? <><Play className="w-4 h-4" /> Resume</> : <><Pause className="w-4 h-4" /> Pause</>}
+            </button>
+          )}
           {!isDisputed && !isPaid && (
-            <button onClick={handleDispute}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform text-destructive">
+            <button onClick={handleDispute} disabled={isMutating}
+              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform text-destructive disabled:opacity-60">
               <Flag className="w-4 h-4" /> Flag dispute
+            </button>
+          )}
+          {isDisputed && (
+            <button onClick={handleClearDispute} disabled={isMutating}
+              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform text-success disabled:opacity-60">
+              <Shield className="w-4 h-4" /> Clear dispute
             </button>
           )}
           {!isPaid && invoice.daysOverdue > 14 && (
@@ -247,25 +319,30 @@ export default function InvoiceDetailPage() {
       <ScrollReveal delay={0.2}>
         <div className="space-y-3">
           <h2 className="font-semibold text-base">Activity</h2>
-          <div className="space-y-0">
-            {timelineEvents.map((event, index) => {
-              const Icon = event.icon;
-              return (
-                <div key={event.id} className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                      <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+          {timelineEvents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
+          ) : (
+            <div className="space-y-0">
+              {timelineEvents.map((event, index) => {
+                const Icon = getTimelineIcon(event.event_type);
+                const dateStr = new Date(event.occurred_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                return (
+                  <div key={event.id} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                        <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                      </div>
+                      {index < timelineEvents.length - 1 && <div className="w-px h-full bg-border min-h-[24px]" />}
                     </div>
-                    {index < timelineEvents.length - 1 && <div className="w-px h-full bg-border min-h-[24px]" />}
+                    <div className="pb-4">
+                      <p className="text-sm capitalize">{event.display_text}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{dateStr}</p>
+                    </div>
                   </div>
-                  <div className="pb-4">
-                    <p className="text-sm">{event.text}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{event.date}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </ScrollReveal>
     </div>

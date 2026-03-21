@@ -10,6 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 interface DisplayApproval {
   id: string;
+  outboundMessageId: string | null;
   clientName: string;
   invoiceNumber: string;
   amount: number;
@@ -31,6 +32,7 @@ export default function ApprovalsPage() {
   const supabaseApprovals: DisplayApproval[] = (dbApprovals && dbApprovals.length > 0)
     ? dbApprovals.map(a => ({
         id: a.id,
+        outboundMessageId: (a as any).outbound_message_id ?? null,
         clientName: (a.clients as any)?.display_name ?? 'Unknown',
         invoiceNumber: (a.invoices as any)?.invoice_number ?? '',
         amount: Number((a.invoices as any)?.amount ?? 0),
@@ -43,6 +45,7 @@ export default function ApprovalsPage() {
       }))
     : demoApprovals.map(a => ({
         id: a.id,
+        outboundMessageId: null,
         clientName: a.clientName,
         invoiceNumber: a.invoiceNumber,
         amount: a.amount,
@@ -61,24 +64,55 @@ export default function ApprovalsPage() {
 
   const pending = supabaseApprovals.filter(a => !localApprovals[a.id] && a.status === 'pending');
 
-  const handleApprove = async (approval: DisplayApproval) => {
-    if (approval.isSupabase) {
-      await supabase.from('approvals').update({ status: 'approved', decision_at: new Date().toISOString(), approver_user_id: (await supabase.auth.getUser()).data.user?.id }).eq('id', approval.id);
-      queryClient.invalidateQueries({ queryKey: ['approvals'] });
+  const persistEditedBody = async (approval: DisplayApproval) => {
+    const edited = editedMessages[approval.id];
+    if (edited && edited !== approval.messagePreview && approval.outboundMessageId) {
+      const { error } = await supabase
+        .from('outbound_messages')
+        .update({ body_text: edited })
+        .eq('id', approval.outboundMessageId);
+      if (error) throw error;
     }
-    setLocalApprovals(prev => ({ ...prev, [approval.id]: 'approved' }));
-    setEditingId(null);
-    toast.success('Message approved and queued for sending');
+  };
+
+  const handleApprove = async (approval: DisplayApproval) => {
+    try {
+      if (approval.isSupabase) {
+        // Persist any edited body first
+        await persistEditedBody(approval);
+        const { data: { user } } = await supabase.auth.getUser();
+        const { error } = await supabase
+          .from('approvals')
+          .update({ status: 'approved', decision_at: new Date().toISOString(), approver_user_id: user?.id })
+          .eq('id', approval.id);
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ['approvals'] });
+      }
+      setLocalApprovals(prev => ({ ...prev, [approval.id]: 'approved' }));
+      setEditingId(null);
+      toast.success('Message approved and queued for sending');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to approve');
+    }
   };
 
   const handleReject = async (approval: DisplayApproval) => {
-    if (approval.isSupabase) {
-      await supabase.from('approvals').update({ status: 'rejected', decision_at: new Date().toISOString(), approver_user_id: (await supabase.auth.getUser()).data.user?.id }).eq('id', approval.id);
-      queryClient.invalidateQueries({ queryKey: ['approvals'] });
+    try {
+      if (approval.isSupabase) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { error } = await supabase
+          .from('approvals')
+          .update({ status: 'rejected', decision_at: new Date().toISOString(), approver_user_id: user?.id })
+          .eq('id', approval.id);
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ['approvals'] });
+      }
+      setLocalApprovals(prev => ({ ...prev, [approval.id]: 'rejected' }));
+      setEditingId(null);
+      toast.info('Message rejected — no message will be sent');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to reject');
     }
-    setLocalApprovals(prev => ({ ...prev, [approval.id]: 'rejected' }));
-    setEditingId(null);
-    toast.info('Message rejected — no message will be sent');
   };
 
   const startEditing = (id: string, currentText: string) => {
@@ -86,9 +120,16 @@ export default function ApprovalsPage() {
     setEditedMessages(prev => ({ ...prev, [id]: prev[id] || currentText }));
   };
 
-  const saveEdit = (id: string) => {
-    setEditingId(null);
-    toast.success('Message updated — review and approve when ready');
+  const saveEdit = async (approval: DisplayApproval) => {
+    try {
+      if (approval.isSupabase) {
+        await persistEditedBody(approval);
+      }
+      setEditingId(null);
+      toast.success('Message updated — review and approve when ready');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to save edit');
+    }
   };
 
   return (
@@ -159,7 +200,7 @@ export default function ApprovalsPage() {
                                 <Edit3 className="w-3 h-3" /> Edit
                               </button>
                             ) : (
-                              <button onClick={() => saveEdit(approval.id)} className="text-xs text-primary font-medium flex items-center gap-1 active:scale-95">
+                              <button onClick={() => saveEdit(approval)} className="text-xs text-primary font-medium flex items-center gap-1 active:scale-95">
                                 <Save className="w-3 h-3" /> Save
                               </button>
                             )}
