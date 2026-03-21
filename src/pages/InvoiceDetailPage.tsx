@@ -1,23 +1,59 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Pause, Play, CheckCircle, AlertTriangle, Clock, FileText, MessageSquare, Flag, CreditCard } from 'lucide-react';
-import { demoInvoices, demoClients, formatCurrency, getStateLabel, getStateClass } from '@/lib/demo-data';
+import { demoInvoices, formatCurrency, getStateLabel, getStateClass } from '@/lib/demo-data';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUserOrganization, useInvoiceDetail } from '@/hooks/use-supabase-data';
 
 const timelineEvents = [
-  { id: 't1', type: 'message_sent', text: 'Reminder sent via email to Sarah Chen', date: 'Mar 10, 2024', icon: Mail },
+  { id: 't1', type: 'message_sent', text: 'Reminder sent via email', date: 'Mar 10, 2024', icon: Mail },
   { id: 't2', type: 'invoice_state_changed', text: 'Invoice became overdue', date: 'Feb 16, 2024', icon: AlertTriangle },
-  { id: 't3', type: 'invoice_imported', text: 'Invoice imported from CSV upload', date: 'Feb 1, 2024', icon: FileText },
+  { id: 't3', type: 'invoice_imported', text: 'Invoice imported', date: 'Feb 1, 2024', icon: FileText },
 ];
 
 export default function InvoiceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { invoiceActions, setInvoiceAction, emergencyStop } = useAppState();
-  const invoice = demoInvoices.find(i => i.id === id);
+  const { data: membership } = useUserOrganization();
+  const orgId = membership?.organization_id;
+  const { data: dbInvoice } = useInvoiceDetail(id, orgId);
+
+  // Map Supabase data or fallback to demo
+  const demoInvoice = demoInvoices.find(i => i.id === id);
+  const invoice = dbInvoice ? {
+    id: dbInvoice.id,
+    invoiceNumber: dbInvoice.invoice_number ?? '',
+    clientId: dbInvoice.client_id,
+    clientName: (dbInvoice.clients as any)?.display_name ?? 'Unknown',
+    amount: Number(dbInvoice.amount),
+    remainingBalance: Number(dbInvoice.remaining_balance),
+    currency: dbInvoice.currency,
+    dueDate: dbInvoice.due_date,
+    state: dbInvoice.state,
+    daysOverdue: dbInvoice.days_overdue ?? 0,
+    nextActionAt: dbInvoice.next_action_planned_at,
+    contactName: (dbInvoice.client_contacts as any)?.[0]?.full_name ?? '',
+    contactEmail: (dbInvoice.client_contacts as any)?.[0]?.email ?? '',
+  } : demoInvoice ? {
+    id: demoInvoice.id,
+    invoiceNumber: demoInvoice.invoiceNumber,
+    clientId: demoInvoice.clientId,
+    clientName: demoInvoice.clientName,
+    amount: demoInvoice.amount,
+    remainingBalance: demoInvoice.remainingBalance,
+    currency: demoInvoice.currency,
+    dueDate: demoInvoice.dueDate,
+    state: demoInvoice.state,
+    daysOverdue: demoInvoice.daysOverdue,
+    nextActionAt: demoInvoice.nextActionAt,
+    contactName: demoInvoice.contactName,
+    contactEmail: demoInvoice.contactEmail,
+  } : null;
+
   const [showPaymentPlan, setShowPaymentPlan] = useState(false);
   const [planInstallments, setPlanInstallments] = useState(3);
 
@@ -104,10 +140,12 @@ export default function InvoiceDetailPage() {
             </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-border">
-            <p className="text-xs text-muted-foreground">Contact</p>
-            <p className="text-sm mt-0.5">{invoice.contactName} · {invoice.contactEmail}</p>
-          </div>
+          {invoice.contactName && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-xs text-muted-foreground">Contact</p>
+              <p className="text-sm mt-0.5">{invoice.contactName}{invoice.contactEmail ? ` · ${invoice.contactEmail}` : ''}</p>
+            </div>
+          )}
         </div>
       </ScrollReveal>
 
@@ -120,9 +158,9 @@ export default function InvoiceDetailPage() {
               What's happening?
             </h2>
             <div className="space-y-2 text-sm">
-              <p><span className="font-medium">Last action:</span> Reminder sent on Mar 10 — no reply received.</p>
-              <p><span className="font-medium">Why:</span> Invoice is {invoice.daysOverdue} days overdue. Standard follow-up workflow triggered a second reminder.</p>
-              <p><span className="font-medium">Next:</span> {isPaused ? 'Automation is paused — no actions scheduled.' : invoice.nextActionAt ? `Firm follow-up scheduled for ${new Date(invoice.nextActionAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No actions scheduled — needs manual attention.'}</p>
+              <p><span className="font-medium">Last action:</span> Reminder sent — no reply received.</p>
+              <p><span className="font-medium">Why:</span> Invoice is {invoice.daysOverdue} days overdue. Standard follow-up workflow triggered.</p>
+              <p><span className="font-medium">Next:</span> {isPaused ? 'Automation is paused — no actions scheduled.' : invoice.nextActionAt ? `Follow-up scheduled for ${new Date(invoice.nextActionAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No actions scheduled — needs manual attention.'}</p>
             </div>
           </div>
         </ScrollReveal>

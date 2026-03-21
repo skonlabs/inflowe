@@ -6,6 +6,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUserOrganization, useClientDetail, useClientInvoices } from '@/hooks/use-supabase-data';
 
 const sensitivityLabels: Record<string, { label: string; className: string }> = {
   standard: { label: 'Standard', className: 'status-paid' },
@@ -18,8 +19,68 @@ export default function ClientDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { clientActions, setClientAction, invoiceActions, emergencyStop } = useAppState();
-  const client = demoClients.find(c => c.id === id);
-  const clientInvoices = demoInvoices.filter(i => i.clientId === id);
+  const { data: membership } = useUserOrganization();
+  const orgId = membership?.organization_id;
+  const { data: dbClient } = useClientDetail(id, orgId);
+  const { data: dbClientInvoices } = useClientInvoices(id, orgId);
+
+  // Use Supabase client or fallback to demo
+  const demoClient = demoClients.find(c => c.id === id);
+  const primaryContact = dbClient?.client_contacts
+    ? ((dbClient.client_contacts as any[]).find((c: any) => c.is_primary) || (dbClient.client_contacts as any[])[0])
+    : null;
+
+  const client = dbClient ? {
+    id: dbClient.id,
+    displayName: dbClient.display_name,
+    sensitivityLevel: dbClient.sensitivity_level as any,
+    preferredChannel: dbClient.preferred_channel,
+    contactName: primaryContact?.full_name ?? '',
+    contactEmail: primaryContact?.email ?? '',
+    outstandingTotal: 0,
+    overdueTotal: 0,
+    invoiceCount: dbClientInvoices?.length ?? 0,
+    riskScore: 0,
+  } : demoClient ? {
+    id: demoClient.id,
+    displayName: demoClient.displayName,
+    sensitivityLevel: demoClient.sensitivityLevel,
+    preferredChannel: demoClient.preferredChannel,
+    contactName: demoClient.contactName,
+    contactEmail: demoClient.contactEmail,
+    outstandingTotal: demoClient.outstandingTotal,
+    overdueTotal: demoClient.overdueTotal,
+    invoiceCount: demoClient.invoiceCount,
+    riskScore: demoClient.riskScore,
+  } : null;
+
+  // Map invoices
+  const clientInvoices = dbClientInvoices && dbClientInvoices.length > 0
+    ? dbClientInvoices.map(inv => ({
+        id: inv.id,
+        invoiceNumber: inv.invoice_number ?? '',
+        amount: Number(inv.amount),
+        remainingBalance: Number(inv.remaining_balance),
+        dueDate: inv.due_date,
+        state: inv.state,
+        daysOverdue: inv.days_overdue ?? 0,
+      }))
+    : demoInvoices.filter(i => i.clientId === id).map(inv => ({
+        id: inv.id,
+        invoiceNumber: inv.invoiceNumber,
+        amount: inv.amount,
+        remainingBalance: inv.remainingBalance,
+        dueDate: inv.dueDate,
+        state: inv.state,
+        daysOverdue: inv.daysOverdue,
+      }));
+
+  // Calculate totals from invoices if using Supabase
+  if (client && dbClientInvoices && dbClientInvoices.length > 0) {
+    client.outstandingTotal = dbClientInvoices.reduce((sum, i) => sum + Number(i.remaining_balance), 0);
+    client.overdueTotal = dbClientInvoices.filter(i => i.state === 'overdue').reduce((sum, i) => sum + Number(i.remaining_balance), 0);
+  }
+
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     displayName: client?.displayName || '',
@@ -39,7 +100,7 @@ export default function ClientDetailPage() {
 
   const actions = clientActions[client.id] || {};
   const isPaused = actions.isPaused || emergencyStop || false;
-  const sensitivity = sensitivityLabels[client.sensitivityLevel];
+  const sensitivity = sensitivityLabels[client.sensitivityLevel] || sensitivityLabels.standard;
 
   const handleTogglePause = () => {
     setClientAction(client.id, { isPaused: !actions.isPaused });
@@ -104,9 +165,6 @@ export default function ClientDetailPage() {
               <div className="h-2 rounded-full bg-muted overflow-hidden">
                 <div className={`h-full rounded-full transition-all ${client.riskScore > 0.7 ? 'bg-destructive' : client.riskScore > 0.4 ? 'bg-warning' : 'bg-success'}`} style={{ width: `${client.riskScore * 100}%` }} />
               </div>
-              {client.riskScore > 0.6 && (
-                <p className="text-xs text-muted-foreground mt-2">This client has a pattern of late payments and low response rates to reminders.</p>
-              )}
             </div>
           )}
         </div>
@@ -126,7 +184,7 @@ export default function ClientDetailPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Sensitivity level</label>
-                <select value={editForm.sensitivityLevel} onChange={e => setEditForm(f => ({ ...f, sensitivityLevel: e.target.value as 'standard' | 'sensitive' | 'vip' | 'high_value' }))}
+                <select value={editForm.sensitivityLevel} onChange={e => setEditForm(f => ({ ...f, sensitivityLevel: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
                   <option value="standard">Standard</option>
                   <option value="sensitive">Sensitive</option>
@@ -136,7 +194,7 @@ export default function ClientDetailPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Preferred channel</label>
-                <select value={editForm.preferredChannel} onChange={e => setEditForm(f => ({ ...f, preferredChannel: e.target.value as 'email' | 'whatsapp' }))}
+                <select value={editForm.preferredChannel} onChange={e => setEditForm(f => ({ ...f, preferredChannel: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
                   <option value="email">Email</option>
                   <option value="whatsapp">WhatsApp</option>
@@ -145,7 +203,7 @@ export default function ClientDetailPage() {
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Notes</label>
                 <textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
-                  placeholder="Add internal notes about this client..."
+                  placeholder="Add internal notes..."
                   className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-primary/30" />
               </div>
               <div className="flex gap-2">
@@ -162,23 +220,27 @@ export default function ClientDetailPage() {
       </AnimatePresence>
 
       {/* Primary contact */}
-      <ScrollReveal delay={0.1}>
-        <div className="glass-card rounded-xl p-5">
-          <h2 className="font-semibold text-sm mb-3">Primary contact</h2>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-              <span className="text-sm font-medium">{client.contactName.split(' ').map(w => w[0]).join('')}</span>
+      {client.contactName && (
+        <ScrollReveal delay={0.1}>
+          <div className="glass-card rounded-xl p-5">
+            <h2 className="font-semibold text-sm mb-3">Primary contact</h2>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                <span className="text-sm font-medium">{client.contactName.split(' ').map(w => w[0]).join('')}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm">{client.contactName}</p>
+                <p className="text-xs text-muted-foreground truncate">{client.contactEmail}</p>
+              </div>
+              {client.contactEmail && (
+                <a href={`mailto:${client.contactEmail}`} className="p-2 rounded-full hover:bg-muted transition-colors active:scale-95">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                </a>
+              )}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm">{client.contactName}</p>
-              <p className="text-xs text-muted-foreground truncate">{client.contactEmail}</p>
-            </div>
-            <a href={`mailto:${client.contactEmail}`} className="p-2 rounded-full hover:bg-muted transition-colors active:scale-95">
-              <Mail className="w-4 h-4 text-muted-foreground" />
-            </a>
           </div>
-        </div>
-      </ScrollReveal>
+        </ScrollReveal>
+      )}
 
       {/* Quick actions */}
       <ScrollReveal delay={0.15}>
@@ -235,9 +297,8 @@ export default function ClientDetailPage() {
         <div className="space-y-3">
           <h2 className="font-semibold text-base">Recent activity</h2>
           {[
-            { text: 'Dispute raised on INV-2024-035', time: '5 days ago', icon: AlertCircle },
-            { text: 'Reminder sent for INV-2024-048', time: '2 weeks ago', icon: Mail },
-            { text: 'Invoice INV-2024-048 became overdue', time: '29 days ago', icon: AlertCircle },
+            { text: `Reminder sent for ${clientInvoices[0]?.invoiceNumber || 'invoice'}`, time: '2 weeks ago', icon: Mail },
+            { text: `Invoice became overdue`, time: '29 days ago', icon: AlertCircle },
           ].map((event, i) => {
             const Icon = event.icon;
             return (
@@ -246,7 +307,7 @@ export default function ClientDetailPage() {
                   <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0">
                     <Icon className="w-3.5 h-3.5 text-muted-foreground" />
                   </div>
-                  {i < 2 && <div className="w-px h-full bg-border min-h-[16px]" />}
+                  {i < 1 && <div className="w-px h-full bg-border min-h-[16px]" />}
                 </div>
                 <div className="pb-3">
                   <p className="text-sm">{event.text}</p>
