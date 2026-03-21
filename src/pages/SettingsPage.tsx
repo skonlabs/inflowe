@@ -238,8 +238,6 @@ export default function SettingsPage() {
         { name: 'Max messages per client/month', value: '8', editable: true },
       ],
     },
-    },
-  ];
     {
       label: 'Billing & Subscription',
       items: [
