@@ -170,9 +170,14 @@ export default function OnboardingPage() {
           ) : (
             <button
               onClick={handleFinish}
-              className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform"
+              disabled={submitting}
+              className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-50"
             >
-              <Play className="w-4 h-4" /> Launch InFlowe
+              {submitting ? (
+                <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <><Play className="w-4 h-4" /> Launch InFlowe</>
+              )}
             </button>
           )}
         </div>
