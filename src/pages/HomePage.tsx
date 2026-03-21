@@ -47,6 +47,12 @@ export default function HomePage() {
     ? (membership.organizations as any).display_name
     : null;
 
+  const handleRecommendationClick = (recommendationId: string) => {
+    if (recommendationId === 'r1') navigate('/clients/c3');
+    else if (recommendationId === 'r2') navigate('/invoices/i8');
+    else navigate('/invoices?filter=due_soon');
+  };
+
   return (
     <div className="px-4 py-6 space-y-6">
       <ScrollReveal>
@@ -150,7 +156,7 @@ export default function HomePage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm leading-relaxed">{r.text}</p>
-                    <button className="text-sm text-primary font-medium mt-2 active:scale-95">{r.action} →</button>
+                    <button onClick={() => handleRecommendationClick(r.id)} className="text-sm text-primary font-medium mt-2 active:scale-95">{r.action} →</button>
                   </div>
                 </div>
               </div>

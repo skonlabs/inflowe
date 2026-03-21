@@ -3,10 +3,10 @@ import { ArrowLeft, Mail, AlertCircle, Ban, Play, Edit3, X, Check } from 'lucide
 import { demoClients, demoInvoices, formatCurrency, getStateLabel, getStateClass } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
 import { useAppState } from '@/contexts/AppStateContext';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useUserOrganization, useClientDetail, useClientInvoices } from '@/hooks/use-supabase-data';
+import { useUserOrganization, useClientDetail, useClientInvoices, useUpdateClient } from '@/hooks/use-supabase-data';
 
 const sensitivityLabels: Record<string, { label: string; className: string }> = {
   standard: { label: 'Standard', className: 'status-paid' },
@@ -23,6 +23,7 @@ export default function ClientDetailPage() {
   const orgId = membership?.organization_id;
   const { data: dbClient } = useClientDetail(id, orgId);
   const { data: dbClientInvoices } = useClientInvoices(id, orgId);
+  const updateClient = useUpdateClient();
 
   // Use Supabase client or fallback to demo
   const demoClient = demoClients.find(c => c.id === id);
@@ -89,6 +90,16 @@ export default function ClientDetailPage() {
     notes: '',
   });
 
+  useEffect(() => {
+    if (!client) return;
+    setEditForm({
+      displayName: client.displayName,
+      sensitivityLevel: client.sensitivityLevel,
+      preferredChannel: client.preferredChannel,
+      notes: dbClient?.notes ?? '',
+    });
+  }, [client, dbClient?.notes]);
+
   if (!client) {
     return (
       <div className="px-4 py-12 text-center">
@@ -99,19 +110,45 @@ export default function ClientDetailPage() {
   }
 
   const actions = clientActions[client.id] || {};
-  const isPaused = actions.isPaused || emergencyStop || false;
+  const isPaused = actions.isPaused || dbClient?.do_not_automate || emergencyStop || false;
   const sensitivity = sensitivityLabels[client.sensitivityLevel] || sensitivityLabels.standard;
 
-  const handleTogglePause = () => {
-    setClientAction(client.id, { isPaused: !actions.isPaused });
-    toast(!actions.isPaused ? `Automation paused for ${client.displayName}` : `Automation resumed for ${client.displayName}`, {
-      icon: !actions.isPaused ? '⏸️' : '▶️',
-    });
+  const handleTogglePause = async () => {
+    if (!orgId) return;
+    const nextPaused = !(dbClient?.do_not_automate || actions.isPaused);
+    try {
+      await updateClient.mutateAsync({
+        clientId: client.id,
+        orgId,
+        fields: { do_not_automate: nextPaused },
+      });
+      setClientAction(client.id, { isPaused: nextPaused });
+      toast(nextPaused ? `Automation paused for ${client.displayName}` : `Automation resumed for ${client.displayName}`, {
+        icon: nextPaused ? '⏸️' : '▶️',
+      });
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to update client automation');
+    }
   };
 
-  const handleSaveEdit = () => {
-    setIsEditing(false);
-    toast.success('Client details updated');
+  const handleSaveEdit = async () => {
+    if (!orgId) return;
+    try {
+      await updateClient.mutateAsync({
+        clientId: client.id,
+        orgId,
+        fields: {
+          display_name: editForm.displayName,
+          sensitivity_level: editForm.sensitivityLevel,
+          preferred_channel: editForm.preferredChannel,
+          notes: editForm.notes || null,
+        },
+      });
+      setIsEditing(false);
+      toast.success('Client details updated');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to update client');
+    }
   };
 
   return (

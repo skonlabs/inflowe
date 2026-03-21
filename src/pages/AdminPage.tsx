@@ -78,13 +78,10 @@ export default function AdminPage() {
     setTogglingFlag(flagId);
     try {
       const newEnabled = !currentEnabled;
-      const { error } = await supabase
-        .from('feature_flags')
-        .update({
-          enabled_by_default: newEnabled,
-          rollout_percentage: newEnabled ? 100 : 0,
-        })
-        .eq('id', flagId);
+      const { error } = await supabase.rpc('update_feature_flag', {
+        _flag_id: flagId,
+        _enabled: newEnabled,
+      });
       if (error) throw error;
       qc.invalidateQueries({ queryKey: ['feature-flags'] });
       toast(newEnabled ? `${flagKey} enabled` : `${flagKey} disabled`, { icon: newEnabled ? '🟢' : '⚪' });

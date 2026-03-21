@@ -67,10 +67,10 @@ export default function ApprovalsPage() {
   const persistEditedBody = async (approval: DisplayApproval) => {
     const edited = editedMessages[approval.id];
     if (edited && edited !== approval.messagePreview && approval.outboundMessageId) {
-      const { error } = await supabase
-        .from('outbound_messages')
-        .update({ body_text: edited })
-        .eq('id', approval.outboundMessageId);
+      const { error } = await supabase.rpc('update_approval_message_body', {
+        _message_id: approval.outboundMessageId,
+        _body_text: edited,
+      });
       if (error) throw error;
     }
   };

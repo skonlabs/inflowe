@@ -45,15 +45,9 @@ export default function ConversationDetailPage() {
     if (!reply.trim() || !orgId || !id) return;
     setSending(true);
     try {
-      // Create a manual draft outbound message for the thread
-      const { error } = await supabase.from('outbound_messages').insert({
-        organization_id: orgId,
-        communication_thread_id: id,
-        channel,
-        body_text: reply,
-        send_status: 'manual_draft',
-        approval_status: 'not_required',
-        collection_stage: 'manual_reply',
+      const { error } = await supabase.rpc('create_manual_thread_reply', {
+        _thread_id: id,
+        _body_text: reply,
       });
       if (error) throw error;
       setReply('');

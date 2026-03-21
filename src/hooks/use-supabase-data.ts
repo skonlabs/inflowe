@@ -571,12 +571,26 @@ export function useTeamMembers(orgId: string | undefined) {
 
 // ─── Mutations ────────────────────────────────────────────────────────────────
 
+function getInvoiceStateForDate(dueDate: string, remainingBalance: number) {
+  if (remainingBalance <= 0) return 'paid';
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate);
+  due.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+
+  if (diffDays < 0) return 'overdue';
+  if (diffDays === 0) return 'due_today';
+  if (diffDays <= 7) return 'due_soon';
+  return 'sent';
+}
+
 export function useRefreshReadModels() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (orgId: string) => {
-      const { error } = await supabase.rpc('refresh_org_read_models', { _org_id: orgId });
-      if (error) throw error;
+      return orgId;
     },
     onSuccess: (_, orgId) => {
       qc.invalidateQueries({ queryKey: ['home-summary', orgId] });
@@ -678,21 +692,15 @@ export function useUpdateOrgFields() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ orgId, fields }: { orgId: string; fields: Record<string, string> }) => {
-      const { error } = await supabase.rpc('update_org_fields', {
-        _org_id: orgId,
-        _display_name: fields.display_name ?? null,
-        _timezone: fields.timezone ?? null,
-        _default_currency: fields.default_currency ?? null,
-        _sender_email: fields.sender_email ?? null,
-        _sender_display_name: fields.sender_display_name ?? null,
-        _reply_to_address: fields.reply_to_address ?? null,
-        _brand_tone: fields.brand_tone ?? null,
-        _custom_tone_instructions: fields.custom_tone_instructions ?? null,
-      });
+      const { error } = await supabase
+        .from('organizations')
+        .update(fields)
+        .eq('id', orgId);
       if (error) throw error;
     },
     onSuccess: (_, { orgId }) => {
       qc.invalidateQueries({ queryKey: ['user-organization'] });
+      qc.invalidateQueries({ queryKey: ['org-settings', orgId] });
     },
   });
 }
@@ -722,18 +730,28 @@ export function useCreateInvoice() {
       orgId: string; clientId: string; invoiceNumber: string; amount: number;
       currency?: string; dueDate?: string; issueDate?: string; notes?: string;
     }) => {
-      const { data, error } = await supabase.rpc('create_invoice_manual', {
-        _org_id: orgId,
-        _client_id: clientId,
-        _invoice_number: invoiceNumber,
-        _amount: amount,
-        _currency: currency ?? 'USD',
-        _due_date: dueDate ?? null,
-        _issue_date: issueDate ?? null,
-        _notes: notes ?? null,
-      });
+      const resolvedIssueDate = issueDate ?? new Date().toISOString().split('T')[0];
+      const resolvedDueDate = dueDate ?? new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('invoices')
+        .insert({
+          organization_id: orgId,
+          client_id: clientId,
+          invoice_number: invoiceNumber,
+          amount,
+          amount_paid: 0,
+          remaining_balance: amount,
+          currency: currency ?? 'USD',
+          due_date: resolvedDueDate,
+          issue_date: resolvedIssueDate,
+          state: getInvoiceStateForDate(resolvedDueDate, amount),
+          collection_priority: 'medium',
+          dispute_reason: notes ?? null,
+        })
+        .select('id')
+        .single();
       if (error) throw error;
-      return data as string;
+      return data.id;
     },
     onSuccess: (_, { orgId }) => {
       qc.invalidateQueries({ queryKey: ['invoice-list', orgId] });
@@ -749,19 +767,35 @@ export function useCreateClient() {
       orgId: string; displayName: string; legalName?: string; sensitivityLevel?: string;
       preferredChannel?: string; contactName?: string; contactEmail?: string; contactPhone?: string; notes?: string;
     }) => {
-      const { data, error } = await supabase.rpc('create_client_manual', {
-        _org_id: orgId,
-        _display_name: displayName,
-        _legal_name: legalName ?? null,
-        _sensitivity_level: sensitivityLevel ?? 'standard',
-        _preferred_channel: preferredChannel ?? 'email',
-        _contact_full_name: contactName ?? null,
-        _contact_email: contactEmail ?? null,
-        _contact_phone: contactPhone ?? null,
-        _notes: notes ?? null,
-      });
+      const { data, error } = await supabase
+        .from('clients')
+        .insert({
+          organization_id: orgId,
+          display_name: displayName,
+          legal_name: legalName ?? null,
+          sensitivity_level: sensitivityLevel ?? 'standard',
+          preferred_channel: preferredChannel ?? 'email',
+          notes: notes ?? null,
+        })
+        .select('id')
+        .single();
       if (error) throw error;
-      return data as string;
+
+      if (contactName || contactEmail || contactPhone) {
+        const { error: contactError } = await supabase
+          .from('client_contacts')
+          .insert({
+            organization_id: orgId,
+            client_id: data.id,
+            full_name: contactName || contactEmail || displayName,
+            email: contactEmail ?? null,
+            phone: contactPhone ?? null,
+            is_primary: true,
+          });
+        if (contactError) throw contactError;
+      }
+
+      return data.id;
     },
     onSuccess: (_, { orgId }) => {
       qc.invalidateQueries({ queryKey: ['client-summaries', orgId] });
@@ -770,21 +804,130 @@ export function useCreateClient() {
   });
 }
 
+export function useUpdateClient() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ clientId, orgId, fields }: {
+      clientId: string;
+      orgId: string;
+      fields: Record<string, string | boolean | null>;
+    }) => {
+      const { error } = await supabase
+        .from('clients')
+        .update(fields)
+        .eq('id', clientId)
+        .eq('organization_id', orgId);
+      if (error) throw error;
+    },
+    onSuccess: (_, { clientId, orgId }) => {
+      qc.invalidateQueries({ queryKey: ['client-detail', clientId] });
+      qc.invalidateQueries({ queryKey: ['client-summaries', orgId] });
+      qc.invalidateQueries({ queryKey: ['home-summary', orgId] });
+    },
+  });
+}
+
 export function useProcessCsvImport() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ orgId, importBatchId, rows }: {
       orgId: string;
       importBatchId: string;
       rows: Array<Record<string, string>>;
     }) => {
-      const { data, error } = await supabase.rpc('process_csv_import', {
-        _org_id: orgId,
-        _import_batch_id: importBatchId,
-        _rows: rows,
+      if (!user) throw new Error('Not authenticated');
+
+      await supabase.from('import_batches').insert({
+        id: importBatchId,
+        organization_id: orgId,
+        created_by_user_id: user.id,
+        import_type: 'csv',
+        status: 'processing',
+        total_rows: rows.length,
+        successful_rows: 0,
+        failed_rows: 0,
+        duplicate_rows: 0,
+        validation_errors: [],
       });
-      if (error) throw error;
-      return data as { successful: number; failed: number; duplicates: number; errors: unknown[] };
+
+      const clientIds = new Map<string, string>();
+      const errors: string[] = [];
+      let successful = 0;
+      let failed = 0;
+
+      for (const row of rows) {
+        try {
+          const clientKey = `${row.client_name || row.client || 'Unknown'}::${row.contact_email || ''}`.toLowerCase();
+          let clientId = clientIds.get(clientKey);
+
+          if (!clientId) {
+            const { data: client, error: clientError } = await supabase
+              .from('clients')
+              .insert({
+                organization_id: orgId,
+                display_name: row.client_name || row.client || 'Unknown Client',
+                preferred_channel: 'email',
+                sensitivity_level: 'standard',
+              })
+              .select('id')
+              .single();
+
+            if (clientError) throw clientError;
+            clientId = client.id;
+            clientIds.set(clientKey, clientId);
+
+            if (row.contact_email || row.contact_name) {
+              const { error: contactError } = await supabase.from('client_contacts').insert({
+                organization_id: orgId,
+                client_id: clientId,
+                full_name: row.contact_name || row.client_name || 'Billing Contact',
+                email: row.contact_email ?? null,
+                is_primary: true,
+              });
+              if (contactError) throw contactError;
+            }
+          }
+
+          const parsedAmount = Number(row.amount ?? 0);
+          const resolvedDueDate = row.due_date || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+          const resolvedIssueDate = row.issue_date || new Date().toISOString().split('T')[0];
+
+          const { error: invoiceError } = await supabase.from('invoices').insert({
+            organization_id: orgId,
+            client_id: clientId,
+            invoice_number: row.invoice_number || `INV-${Math.random().toString().slice(2, 8)}`,
+            amount: parsedAmount,
+            amount_paid: 0,
+            remaining_balance: parsedAmount,
+            currency: row.currency || 'USD',
+            due_date: resolvedDueDate,
+            issue_date: resolvedIssueDate,
+            state: getInvoiceStateForDate(resolvedDueDate, parsedAmount),
+            collection_priority: 'medium',
+            import_batch_id: importBatchId,
+          });
+
+          if (invoiceError) throw invoiceError;
+          successful += 1;
+        } catch (error: any) {
+          failed += 1;
+          errors.push(error?.message ?? 'Unknown import error');
+        }
+      }
+
+      await supabase
+        .from('import_batches')
+        .update({
+          status: failed > 0 ? 'completed_with_errors' : 'completed',
+          successful_rows: successful,
+          failed_rows: failed,
+          duplicate_rows: 0,
+          validation_errors: errors,
+        })
+        .eq('id', importBatchId);
+
+      return { successful, failed, duplicates: 0, errors };
     },
     onSuccess: (_, { orgId }) => {
       qc.invalidateQueries({ queryKey: ['invoice-list', orgId] });
@@ -796,19 +939,29 @@ export function useProcessCsvImport() {
 
 export function useSubmitSupportCase() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ orgId, description, caseType, entityType, entityId }: {
       orgId: string; description: string; caseType?: string; entityType?: string; entityId?: string;
     }) => {
-      const { data, error } = await supabase.rpc('submit_support_case', {
-        _org_id: orgId,
-        _description: description,
-        _case_type: caseType ?? null,
-        _entity_type: entityType ?? null,
-        _entity_id: entityId ?? null,
-      });
+      if (!user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('support_cases')
+        .insert({
+          organization_id: orgId,
+          created_by_user_id: user.id,
+          case_type: caseType ?? null,
+          description,
+          auto_attached_context: {
+            entity_type: entityType ?? null,
+            entity_id: entityId ?? null,
+          },
+        })
+        .select('id')
+        .single();
       if (error) throw error;
-      return data as string;
+      return data.id;
     },
     onSuccess: (_, { orgId }) => {
       qc.invalidateQueries({ queryKey: ['support-cases', orgId] });
