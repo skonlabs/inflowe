@@ -274,6 +274,37 @@ function StepPath({ data, update }: StepProps) {
 }
 
 function StepImport({ data }: StepProps) {
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [parsedRows, setParsedRows] = useState<string[][]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleFile = (file: File) => {
+    setUploadedFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const rows = text.split('\n').filter(r => r.trim()).map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+      setParsedRows(rows);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && (file.name.endsWith('.csv') || file.type === 'text/csv')) handleFile(file);
+  };
+
+  const downloadTemplate = () => {
+    const csv = 'client_name,invoice_number,amount,due_date,contact_email\nAcme Corp,INV-001,5000,2024-04-15,billing@acme.com\n';
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'inflowe-import-template.csv'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -283,16 +314,56 @@ function StepImport({ data }: StepProps) {
         </p>
       </div>
       {data.importPath !== 'demo' ? (
-        <div className="glass-card rounded-xl p-6 text-center space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-            <Upload className="w-8 h-8 text-primary" />
+        <>
+          <div
+            onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv'; input.onchange = (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) handleFile(f); }; input.click(); }}
+            className={`glass-card rounded-xl p-6 text-center space-y-4 cursor-pointer transition-colors ${isDragging ? 'border-2 border-primary bg-accent/30' : ''}`}
+          >
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+              {uploadedFile ? <Check className="w-8 h-8 text-success" /> : <Upload className="w-8 h-8 text-primary" />}
+            </div>
+            {uploadedFile ? (
+              <div>
+                <p className="font-medium">{uploadedFile.name}</p>
+                <p className="text-sm text-muted-foreground mt-1">{parsedRows.length > 1 ? `${parsedRows.length - 1} rows found` : 'Processing...'}</p>
+              </div>
+            ) : (
+              <div>
+                <p className="font-medium">Drag & drop your CSV file</p>
+                <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
+              </div>
+            )}
           </div>
-          <div>
-            <p className="font-medium">Drag & drop your CSV file</p>
-            <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
-          </div>
-          <button className="text-sm text-primary font-medium underline underline-offset-2">Download template</button>
-        </div>
+          {parsedRows.length > 1 && (
+            <div className="glass-card rounded-xl overflow-hidden">
+              <div className="px-4 py-2 bg-muted/30 text-xs font-medium text-muted-foreground">Preview (first 3 rows)</div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border">
+                      {parsedRows[0].slice(0, 5).map((h, i) => (
+                        <th key={i} className="text-left px-3 py-2 font-medium text-muted-foreground">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {parsedRows.slice(1, 4).map((row, i) => (
+                      <tr key={i} className="border-b border-border/40">
+                        {row.slice(0, 5).map((cell, j) => (
+                          <td key={j} className="px-3 py-2">{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          <button onClick={downloadTemplate} className="text-sm text-primary font-medium underline underline-offset-2">Download template</button>
+        </>
       ) : (
         <div className="glass-card rounded-xl p-6 text-center space-y-3">
           <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mx-auto">
