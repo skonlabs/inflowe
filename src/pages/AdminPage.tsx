@@ -1,17 +1,26 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Shield, Users, Database, Activity, Flag, AlertOctagon, Search, ChevronRight } from 'lucide-react';
-import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
+import { ArrowLeft, Shield, Users, Activity, Flag, AlertOctagon, ChevronRight } from 'lucide-react';
+import { ScrollReveal } from '@/components/ScrollReveal';
+import { useState } from 'react';
+import { toast } from 'sonner';
+
+interface IncidentControl {
+  label: string;
+  desc: string;
+  active: boolean;
+  severity: string;
+}
+
+const initialIncidentControls: IncidentControl[] = [
+  { label: 'Global send shutdown', desc: 'Stop ALL outbound sends across all tenants', active: false, severity: 'critical' },
+  { label: 'Email channel shutdown', desc: 'Stop email sends globally', active: false, severity: 'high' },
+  { label: 'WhatsApp channel shutdown', desc: 'Stop WhatsApp sends globally', active: false, severity: 'high' },
+];
 
 const tenants = [
   { id: 'o1', name: 'Demo Agency', status: 'trialing', modules: 3, sendRate: '98%', openCases: 0 },
   { id: 'o2', name: 'Stellar Creative', status: 'active', modules: 5, sendRate: '100%', openCases: 1 },
   { id: 'o3', name: 'Blueprint Studios', status: 'active', modules: 4, sendRate: '95%', openCases: 0 },
-];
-
-const incidentControls = [
-  { label: 'Global send shutdown', desc: 'Stop ALL outbound sends across all tenants', active: false, severity: 'critical' },
-  { label: 'Email channel shutdown', desc: 'Stop email sends globally', active: false, severity: 'high' },
-  { label: 'WhatsApp channel shutdown', desc: 'Stop WhatsApp sends globally', active: false, severity: 'high' },
 ];
 
 const queueStats = [
@@ -23,8 +32,45 @@ const queueStats = [
   { name: 'notifications', depth: 0, workers: 20, failed: 0, dlq: 0 },
 ];
 
+interface FeatureFlag {
+  key: string;
+  desc: string;
+  enabled: boolean;
+  rollout: number;
+}
+
+const initialFlags: FeatureFlag[] = [
+  { key: 'ai_drafting_v2', desc: 'New AI draft generation model', enabled: true, rollout: 100 },
+  { key: 'whatsapp_channel', desc: 'WhatsApp messaging channel', enabled: false, rollout: 0 },
+  { key: 'payment_plans', desc: 'Payment plan creation flow', enabled: true, rollout: 50 },
+];
+
 export default function AdminPage() {
   const navigate = useNavigate();
+  const [controls, setControls] = useState(initialIncidentControls);
+  const [flags, setFlags] = useState(initialFlags);
+
+  const toggleControl = (index: number) => {
+    setControls(prev => prev.map((c, i) => {
+      if (i !== index) return c;
+      const newActive = !c.active;
+      if (newActive) {
+        toast.error(`${c.label} activated — all ${c.label.includes('Email') ? 'email' : c.label.includes('WhatsApp') ? 'WhatsApp' : ''} sends halted`, { duration: 5000 });
+      } else {
+        toast.success(`${c.label} deactivated — sends resumed`);
+      }
+      return { ...c, active: newActive };
+    }));
+  };
+
+  const toggleFlag = (index: number) => {
+    setFlags(prev => prev.map((f, i) => {
+      if (i !== index) return f;
+      const newEnabled = !f.enabled;
+      toast(newEnabled ? `${f.key} enabled` : `${f.key} disabled`, { icon: newEnabled ? '🟢' : '⚪' });
+      return { ...f, enabled: newEnabled, rollout: newEnabled ? 100 : 0 };
+    }));
+  };
 
   return (
     <div className="px-4 py-4 space-y-5">
@@ -47,16 +93,19 @@ export default function AdminPage() {
             <AlertOctagon className="w-4 h-4 text-destructive" />
             <h3 className="text-sm font-semibold">Incident Controls</h3>
           </div>
-          {incidentControls.map(ctrl => (
+          {controls.map((ctrl, i) => (
             <div key={ctrl.label} className="flex items-center justify-between px-4 py-3 border-t border-border/40">
               <div>
                 <p className="text-sm font-medium">{ctrl.label}</p>
                 <p className="text-xs text-muted-foreground">{ctrl.desc}</p>
               </div>
-              <button className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors active:scale-95 ${
-                ctrl.active ? 'bg-destructive text-destructive-foreground' : 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
-              }`}>
-                {ctrl.active ? 'Active' : 'Activate'}
+              <button
+                onClick={() => toggleControl(i)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors active:scale-95 ${
+                  ctrl.active ? 'bg-destructive text-destructive-foreground' : 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
+                }`}
+              >
+                {ctrl.active ? 'Deactivate' : 'Activate'}
               </button>
             </div>
           ))}
@@ -126,11 +175,7 @@ export default function AdminPage() {
             <Flag className="w-4 h-4" />
             <h3 className="text-sm font-semibold">Feature Flags</h3>
           </div>
-          {[
-            { key: 'ai_drafting_v2', desc: 'New AI draft generation model', enabled: true, rollout: 100 },
-            { key: 'whatsapp_channel', desc: 'WhatsApp messaging channel', enabled: false, rollout: 0 },
-            { key: 'payment_plans', desc: 'Payment plan creation flow', enabled: true, rollout: 50 },
-          ].map(flag => (
+          {flags.map((flag, i) => (
             <div key={flag.key} className="flex items-center justify-between px-4 py-3 border-t border-border/40">
               <div>
                 <p className="text-sm font-mono">{flag.key}</p>
@@ -138,7 +183,12 @@ export default function AdminPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">{flag.rollout}%</span>
-                <div className={`w-3 h-3 rounded-full ${flag.enabled ? 'bg-success' : 'bg-muted-foreground/30'}`} />
+                <button
+                  onClick={() => toggleFlag(i)}
+                  className={`w-10 h-6 rounded-full transition-colors relative active:scale-95 ${flag.enabled ? 'bg-success' : 'bg-muted-foreground/30'}`}
+                >
+                  <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${flag.enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
               </div>
             </div>
           ))}

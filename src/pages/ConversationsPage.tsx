@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Search, Filter, MessageSquare, ArrowRight, CheckCircle, AlertTriangle, Clock, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, MessageSquare } from 'lucide-react';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
 
 interface Thread {
@@ -16,7 +17,7 @@ interface Thread {
 
 const demoThreads: Thread[] = [
   { id: 't1', clientName: 'Volta Brand Agency', invoiceNumber: 'INV-2024-035', subject: 'Re: Invoice INV-2024-035 Payment', lastMessage: 'We have some concerns about the charges on this invoice...', classification: 'dispute_related', channel: 'email', latestAt: '2 hours ago', unread: true },
-  { id: 't2', clientName: 'Meridian Creative Co.', invoiceNumber: 'INV-2024-042', subject: 'Re: Payment Reminder', lastMessage: 'Hi, I\'ll be out of office until March 25th. Will process this when I return.', classification: 'needs_user_input', channel: 'email', latestAt: '1 day ago', unread: true },
+  { id: 't2', clientName: 'Meridian Creative Co.', invoiceNumber: 'INV-2024-042', subject: 'Re: Payment Reminder', lastMessage: "Hi, I'll be out of office until March 25th. Will process this when I return.", classification: 'needs_user_input', channel: 'email', latestAt: '1 day ago', unread: true },
   { id: 't3', clientName: 'Northstar Digital', invoiceNumber: 'INV-2024-051', subject: 'Re: Invoice Follow-up', lastMessage: 'Payment has been initiated, should arrive in 2-3 business days.', classification: 'auto_handled', channel: 'email', latestAt: '3 days ago', unread: false },
   { id: 't4', clientName: 'Fern & Bloom Marketing', invoiceNumber: 'INV-2024-038', subject: 'Payment Reminder', lastMessage: 'Reminder sent via email — no reply yet.', classification: 'auto_handled', channel: 'email', latestAt: '1 week ago', unread: false },
   { id: 't5', clientName: 'Bright Pixel Studios', invoiceNumber: 'INV-2024-055', subject: 'Upcoming Invoice Due', lastMessage: 'Gentle reminder about upcoming payment.', classification: 'auto_handled', channel: 'email', latestAt: '2 days ago', unread: false },
@@ -32,6 +33,7 @@ const classificationBadge: Record<string, { label: string; className: string }> 
 const filters = ['All', 'Needs input', 'Disputes', 'Auto-handled'];
 
 export default function ConversationsPage() {
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState('All');
   const [search, setSearch] = useState('');
 
@@ -80,7 +82,10 @@ export default function ConversationsPage() {
           const badge = classificationBadge[thread.classification];
           return (
             <StaggerItem key={thread.id}>
-              <button className="glass-card-hover rounded-xl p-4 w-full text-left active:scale-[0.97] transition-transform">
+              <button
+                onClick={() => navigate(`/conversations/${thread.id}`)}
+                className="glass-card-hover rounded-xl p-4 w-full text-left active:scale-[0.97] transition-transform"
+              >
                 <div className="flex items-start justify-between mb-1">
                   <div className="flex items-center gap-2 min-w-0">
                     {thread.unread && <div className="w-2 h-2 rounded-full bg-primary shrink-0 animate-pulse-dot" />}

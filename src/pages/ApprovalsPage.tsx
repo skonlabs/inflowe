@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, X, Edit3, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Check, X, Edit3, Clock, ChevronDown, ChevronUp, Save } from 'lucide-react';
 import { demoApprovals, formatCurrency } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,17 +8,32 @@ import { toast } from 'sonner';
 export default function ApprovalsPage() {
   const [approvals, setApprovals] = useState(demoApprovals);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
 
   const pending = approvals.filter(a => a.status === 'pending');
 
   const handleApprove = (id: string) => {
-    setApprovals(prev => prev.map(a => a.id === id ? { ...a, status: 'approved' as const } : a));
-    toast.success('Message approved and queued for sending');
+    const edited = editedMessages[id];
+    setApprovals(prev => prev.map(a => a.id === id ? { ...a, status: 'approved' as const, messagePreview: edited || a.messagePreview } : a));
+    setEditingId(null);
+    toast.success(edited ? 'Edited message approved and queued for sending' : 'Message approved and queued for sending');
   };
 
   const handleReject = (id: string) => {
     setApprovals(prev => prev.map(a => a.id === id ? { ...a, status: 'rejected' as const } : a));
+    setEditingId(null);
     toast.info('Message rejected — no message will be sent');
+  };
+
+  const startEditing = (id: string, currentText: string) => {
+    setEditingId(id);
+    setEditedMessages(prev => ({ ...prev, [id]: prev[id] || currentText }));
+  };
+
+  const saveEdit = (id: string) => {
+    setEditingId(null);
+    toast.success('Message updated — review and approve when ready');
   };
 
   return (
@@ -45,6 +60,9 @@ export default function ApprovalsPage() {
       <StaggerContainer className="space-y-3">
         {pending.map(approval => {
           const isExpanded = expandedId === approval.id;
+          const isEditing = editingId === approval.id;
+          const displayText = editedMessages[approval.id] || approval.messagePreview;
+
           return (
             <StaggerItem key={approval.id}>
               <div className="glass-card rounded-xl overflow-hidden">
@@ -78,13 +96,45 @@ export default function ApprovalsPage() {
                       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                     >
                       <div className="px-4 pb-4 space-y-3">
-                        {/* Message preview */}
+                        {/* Message preview / editor */}
                         <div className="bg-muted/50 rounded-lg p-3">
-                          <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                            <Edit3 className="w-3 h-3" /> Message preview
-                          </p>
-                          <p className="text-sm whitespace-pre-line leading-relaxed">{approval.messagePreview}</p>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                              <Edit3 className="w-3 h-3" /> {isEditing ? 'Editing message' : 'Message preview'}
+                            </p>
+                            {!isEditing ? (
+                              <button
+                                onClick={() => startEditing(approval.id, displayText)}
+                                className="text-xs text-primary font-medium flex items-center gap-1 active:scale-95"
+                              >
+                                <Edit3 className="w-3 h-3" /> Edit
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => saveEdit(approval.id)}
+                                className="text-xs text-primary font-medium flex items-center gap-1 active:scale-95"
+                              >
+                                <Save className="w-3 h-3" /> Save
+                              </button>
+                            )}
+                          </div>
+                          {isEditing ? (
+                            <textarea
+                              value={editedMessages[approval.id] || ''}
+                              onChange={e => setEditedMessages(prev => ({ ...prev, [approval.id]: e.target.value }))}
+                              className="w-full text-sm leading-relaxed bg-card border border-border rounded-lg p-3 min-h-[160px] resize-y focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+                            />
+                          ) : (
+                            <p className="text-sm whitespace-pre-line leading-relaxed">{displayText}</p>
+                          )}
                         </div>
+
+                        {editedMessages[approval.id] && editedMessages[approval.id] !== approval.messagePreview && !isEditing && (
+                          <div className="flex items-center gap-1 text-xs text-primary">
+                            <Edit3 className="w-3 h-3" />
+                            <span className="font-medium">Message has been edited</span>
+                          </div>
+                        )}
 
                         {/* What happens next */}
                         <div className="text-xs text-muted-foreground flex items-center gap-1">
