@@ -66,35 +66,19 @@ export default function OnboardingPage() {
     if (!user) return;
     setSubmitting(true);
     try {
-      const { data: org, error: orgError } = await supabase
-        .from('organizations')
-        .insert({
-          legal_name: data.businessName,
-          display_name: data.displayName || data.businessName,
-          country: data.country,
-          default_currency: data.currency,
-          timezone: data.timezone,
-          sender_email: data.senderEmail || null,
-          sender_display_name: data.senderName || null,
-          brand_tone: data.brandTone,
-          is_demo: data.importPath === 'demo',
-        })
-        .select('id')
-        .single();
+      const { data: orgId, error } = await supabase.rpc('create_organization_with_membership', {
+        _legal_name: data.businessName,
+        _display_name: data.displayName || data.businessName,
+        _country: data.country,
+        _default_currency: data.currency,
+        _timezone: data.timezone,
+        _sender_email: data.senderEmail || null,
+        _sender_display_name: data.senderName || null,
+        _brand_tone: data.brandTone,
+        _is_demo: data.importPath === 'demo',
+      });
 
-      if (orgError) throw orgError;
-
-      const { error: memError } = await supabase
-        .from('memberships')
-        .insert({
-          organization_id: org.id,
-          user_id: user.id,
-          role: 'owner',
-          status: 'active',
-          accepted_at: new Date().toISOString(),
-        });
-
-      if (memError) throw memError;
+      if (error) throw error;
 
       // Invalidate cached membership query so ProtectedRoute picks up the new org
       await queryClient.invalidateQueries({ queryKey: ['user-organization'] });
