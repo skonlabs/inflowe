@@ -136,7 +136,7 @@ export default function ClientDetailPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Preferred channel</label>
-                <select value={editForm.preferredChannel} onChange={e => setEditForm(f => ({ ...f, preferredChannel: e.target.value }))}
+                <select value={editForm.preferredChannel} onChange={e => setEditForm(f => ({ ...f, preferredChannel: e.target.value as 'email' | 'whatsapp' }))}
                   className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
                   <option value="email">Email</option>
                   <option value="whatsapp">WhatsApp</option>
