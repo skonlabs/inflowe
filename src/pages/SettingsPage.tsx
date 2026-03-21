@@ -349,6 +349,75 @@ export default function SettingsPage() {
         </ScrollReveal>
       ))}
 
+      {/* Modules section */}
+      <ScrollReveal delay={0.22}>
+        <div className="glass-card rounded-xl overflow-hidden">
+          <div className="px-4 py-3 bg-muted/30 flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Modules</h3>
+            <span className="text-xs text-muted-foreground">
+              {entitlements.length} active
+            </span>
+          </div>
+          {entitlementsLoading ? (
+            <div className="px-4 py-6 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            MODULES.map(mod => {
+              const ent = entitlementByModule.get(mod.id);
+              const isActive = ent?.status === 'active';
+              const isTrialing = ent?.status === 'trialing';
+              const trialDaysLeft = ent?.trial_ends_at
+                ? Math.max(0, Math.ceil((new Date(ent.trial_ends_at).getTime() - Date.now()) / 86400000))
+                : 0;
+
+              return (
+                <div key={mod.id} className="flex items-center justify-between px-4 py-3 border-t border-border/40">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{mod.name}</p>
+                    <p className="text-xs text-muted-foreground">{mod.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-3">
+                    {isActive ? (
+                      <>
+                        <span className="text-xs text-primary font-medium">● Active</span>
+                        <button
+                          onClick={() => handleDeactivateModule(mod.id, mod.name)}
+                          disabled={togglingModule === mod.id}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs border border-border hover:bg-destructive/10 hover:text-destructive transition-colors active:scale-95 disabled:opacity-50"
+                        >
+                          {togglingModule === mod.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Square className="w-3 h-3" />}
+                        </button>
+                      </>
+                    ) : isTrialing ? (
+                      <>
+                        <span className="text-xs text-amber-600 font-medium">Trial · {trialDaysLeft}d left</span>
+                        <button
+                          onClick={() => handleDeactivateModule(mod.id, mod.name)}
+                          disabled={togglingModule === mod.id}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs border border-border hover:bg-destructive/10 hover:text-destructive transition-colors active:scale-95 disabled:opacity-50"
+                        >
+                          {togglingModule === mod.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Square className="w-3 h-3" />}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => handleStartTrial(mod.id)}
+                        disabled={togglingModule === mod.id}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors active:scale-95 disabled:opacity-50"
+                      >
+                        {togglingModule === mod.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                        Start trial
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </ScrollReveal>
+
       {/* Integrations section */}
       <ScrollReveal delay={0.25}>
         <div className="glass-card rounded-xl overflow-hidden">
