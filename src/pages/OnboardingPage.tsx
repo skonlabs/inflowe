@@ -32,7 +32,9 @@ interface OrgData {
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const [data, setData] = useState<OrgData>({
     businessName: '',
     displayName: '',
@@ -51,7 +53,6 @@ export default function OnboardingPage() {
   const canNext = step < steps.length - 1;
   const canBack = step > 0;
 
-  // Validate current step
   const isStepValid = () => {
     if (step === 0) return data.businessName.trim().length > 0;
     if (step === 1) return data.senderEmail.trim().length > 0;
@@ -59,11 +60,50 @@ export default function OnboardingPage() {
     return true;
   };
 
-  const handleFinish = () => {
-    localStorage.setItem('inflowe_onboarded', 'true');
-    localStorage.setItem('inflowe_org_data', JSON.stringify(data));
-    toast.success('InFlowe is ready! Welcome aboard.');
-    navigate('/');
+  const handleFinish = async () => {
+    if (!user) return;
+    setSubmitting(true);
+    try {
+      // 1. Create organization
+      const { data: org, error: orgError } = await supabase
+        .from('organizations')
+        .insert({
+          legal_name: data.businessName,
+          display_name: data.displayName || data.businessName,
+          country: data.country,
+          default_currency: data.currency,
+          timezone: data.timezone,
+          sender_email: data.senderEmail || null,
+          sender_display_name: data.senderName || null,
+          brand_tone: data.brandTone,
+          is_demo: data.importPath === 'demo',
+        })
+        .select('id')
+        .single();
+
+      if (orgError) throw orgError;
+
+      // 2. Create membership (owner)
+      const { error: memError } = await supabase
+        .from('memberships')
+        .insert({
+          organization_id: org.id,
+          user_id: user.id,
+          role: 'owner',
+          status: 'active',
+          accepted_at: new Date().toISOString(),
+        });
+
+      if (memError) throw memError;
+
+      toast.success('InFlowe is ready! Welcome aboard.');
+      navigate('/');
+    } catch (err: any) {
+      console.error('Onboarding error:', err);
+      toast.error(err.message || 'Failed to create organization');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
