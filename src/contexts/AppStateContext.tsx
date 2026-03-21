@@ -9,6 +9,20 @@ import {
 } from '@/hooks/use-supabase-data';
 import { supabase } from '@/integrations/supabase/client';
 
+const NOTIFICATION_TYPES: Notification['type'][] = [
+  'approval_pending',
+  'critical_failure',
+  'integration_disconnected',
+  'sensitive_reply',
+  'weekly_brief',
+];
+
+function normalizeNotificationType(type: string): Notification['type'] {
+  return NOTIFICATION_TYPES.includes(type as Notification['type'])
+    ? (type as Notification['type'])
+    : 'weekly_brief';
+}
+
 interface InvoiceAction {
   isPaid?: boolean;
   isPaused?: boolean;
@@ -58,7 +72,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         id: n.id,
         title: n.title,
         body: n.body,
-        type: n.notification_class,
+        type: normalizeNotificationType(n.notification_class),
         read: n.read_at != null,
         createdAt: (() => {
           const d = new Date(n.created_at);
@@ -67,7 +81,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           if (diff < 86400000) return `${Math.round(diff / 3600000)} hours ago`;
           return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         })(),
-        actionUrl: (n as any).action_url ?? undefined,
+        actionUrl: typeof (n as any).action_url === 'string' ? (n as any).action_url : undefined,
       }))
     : demoNotifications;
 

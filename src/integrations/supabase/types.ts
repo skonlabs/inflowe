@@ -2796,6 +2796,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_manual_thread_reply: {
+        Args: { _body_text: string; _thread_id: string }
+        Returns: string
+      }
       create_organization_with_membership: {
         Args: {
           _brand_tone?: string
@@ -2815,9 +2819,53 @@ export type Database = {
         Returns: undefined
       }
       get_user_org_ids: { Args: { _user_id: string }; Returns: string[] }
+      invite_member_by_email: {
+        Args: { _email: string; _org_id: string; _role?: string }
+        Returns: string
+      }
+      mark_invoice_paid: {
+        Args: {
+          _invoice_id: string
+          _notes?: string
+          _org_id: string
+          _payment_amount?: number
+          _payment_method?: string
+        }
+        Returns: string
+      }
+      set_invoice_dispute: {
+        Args: {
+          _dispute_active: boolean
+          _dispute_reason?: string
+          _invoice_id: string
+          _org_id: string
+        }
+        Returns: undefined
+      }
+      set_invoice_hold: {
+        Args: {
+          _invoice_id: string
+          _on_hold: boolean
+          _org_id: string
+          _reason?: string
+        }
+        Returns: undefined
+      }
       start_module_trial: {
         Args: { _module_id: string; _org_id: string; _trial_days?: number }
         Returns: string
+      }
+      toggle_automation_pause: {
+        Args: { _org_id: string; _paused: boolean; _reason?: string }
+        Returns: undefined
+      }
+      update_approval_message_body: {
+        Args: { _body_text: string; _message_id: string }
+        Returns: undefined
+      }
+      update_feature_flag: {
+        Args: { _enabled: boolean; _flag_id: string }
+        Returns: undefined
       }
     }
     Enums: {
