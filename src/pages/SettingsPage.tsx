@@ -238,18 +238,8 @@ export default function SettingsPage() {
         { name: 'Max messages per client/month', value: '8', editable: true },
       ],
     },
-    {
-      label: 'Modules',
-      items: [
-        { name: 'Module A: Invoice Recovery', value: 'Active', highlight: true, editable: false },
-        { name: 'Module B: Smart Follow-Up Intelligence', value: 'Trial (12 days left)', editable: false },
-        { name: 'Module C: Cash Visibility', value: 'Trial (12 days left)', editable: false },
-        { name: 'Module D: Communication Hub', value: 'Not active', editable: false },
-        { name: 'Module E: Advanced Automation', value: 'Not active', editable: false },
-        { name: 'Module F: Payment Optimization', value: 'Not active', editable: false },
-        { name: 'Module G: AI Cash Advisor', value: 'Not active', editable: false },
-      ],
     },
+  ];
     {
       label: 'Billing & Subscription',
       items: [
