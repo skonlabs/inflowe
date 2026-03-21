@@ -5,21 +5,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/contexts/AuthContext';
-
-const navItems = [
-  { path: '/', icon: Home, label: 'Home' },
-  { path: '/invoices', icon: FileText, label: 'Invoices' },
-  { path: '/approvals', icon: CheckCircle, label: 'Approvals', badge: 3 },
-  { path: '/clients', icon: Users, label: 'Clients' },
-  { path: '/more', icon: MoreHorizontal, label: 'More' },
-];
-
-const moreItems = [
-  { path: '/conversations', icon: MessageSquare, label: 'Conversations', badge: 2 },
-  { path: '/reports', icon: BarChart3, label: 'Reports' },
-  { path: '/support', icon: HelpCircle, label: 'Support' },
-  { path: '/settings', icon: Settings, label: 'Settings' },
-];
+import { useUserOrganization, useApprovals } from '@/hooks/use-supabase-data';
 
 interface AppShellProps {
   children: ReactNode;
@@ -30,9 +16,30 @@ export default function AppShell({ children }: AppShellProps) {
   const navigate = useNavigate();
   const { notifications, markNotificationRead } = useAppState();
   const { user, signOut } = useAuth();
+  const { data: membership } = useUserOrganization();
+  const orgId = membership?.organization_id;
+  const { data: dbApprovals } = useApprovals(orgId);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const pendingApprovals = dbApprovals?.length ?? 0;
+  const isDemo = membership?.organizations ? (membership.organizations as any).is_demo : true;
+
+  const navItems = [
+    { path: '/', icon: Home, label: 'Home' },
+    { path: '/invoices', icon: FileText, label: 'Invoices' },
+    { path: '/approvals', icon: CheckCircle, label: 'Approvals', badge: pendingApprovals > 0 ? pendingApprovals : undefined },
+    { path: '/clients', icon: Users, label: 'Clients' },
+    { path: '/more', icon: MoreHorizontal, label: 'More' },
+  ];
+
+  const moreItems = [
+    { path: '/conversations', icon: MessageSquare, label: 'Conversations' },
+    { path: '/reports', icon: BarChart3, label: 'Reports' },
+    { path: '/support', icon: HelpCircle, label: 'Support' },
+    { path: '/settings', icon: Settings, label: 'Settings' },
+  ];
 
   const isMoreActive = moreItems.some(item => location.pathname.startsWith(item.path));
 
@@ -126,9 +133,6 @@ export default function AppShell({ children }: AppShellProps) {
                   >
                     <Icon className="w-5 h-5" />
                     <span className="text-sm font-medium">{item.label}</span>
-                    {item.badge && (
-                      <span className="ml-auto w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">{item.badge}</span>
-                    )}
                   </button>
                 );
               })}
@@ -137,12 +141,14 @@ export default function AppShell({ children }: AppShellProps) {
         )}
       </AnimatePresence>
 
-      {/* Demo banner */}
-      <div className="bg-primary/10 border-b border-primary/20 px-4 py-2">
-        <p className="text-xs text-center text-primary font-medium">
-          🎯 Demo Mode — Explore InFlowe with sample data. No real messages will be sent.
-        </p>
-      </div>
+      {/* Demo banner — only show for demo orgs */}
+      {isDemo && (
+        <div className="bg-primary/10 border-b border-primary/20 px-4 py-2">
+          <p className="text-xs text-center text-primary font-medium">
+            🎯 Demo Mode — Explore InFlowe with sample data. No real messages will be sent.
+          </p>
+        </div>
+      )}
 
       {/* Main content */}
       <main className="pb-safe max-w-screen-xl mx-auto">

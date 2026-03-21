@@ -5,6 +5,7 @@ import { ArrowRight, ArrowLeft, Check, Upload, Database, Mail, Play, Building2, 
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 const steps = [
   { title: 'Create your org', icon: Building2 },
@@ -33,6 +34,7 @@ interface OrgData {
 export default function OnboardingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [data, setData] = useState<OrgData>({
@@ -64,7 +66,6 @@ export default function OnboardingPage() {
     if (!user) return;
     setSubmitting(true);
     try {
-      // 1. Create organization
       const { data: org, error: orgError } = await supabase
         .from('organizations')
         .insert({
@@ -83,7 +84,6 @@ export default function OnboardingPage() {
 
       if (orgError) throw orgError;
 
-      // 2. Create membership (owner)
       const { error: memError } = await supabase
         .from('memberships')
         .insert({
@@ -95,6 +95,9 @@ export default function OnboardingPage() {
         });
 
       if (memError) throw memError;
+
+      // Invalidate cached membership query so ProtectedRoute picks up the new org
+      await queryClient.invalidateQueries({ queryKey: ['user-organization'] });
 
       toast.success('InFlowe is ready! Welcome aboard.');
       navigate('/');

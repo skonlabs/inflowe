@@ -9,8 +9,8 @@ export default function HomePage() {
   const { data: membership } = useUserOrganization();
   const orgId = membership?.organization_id;
   const { data: dbSummary } = useHomeSummary(orgId);
+  const { data: dbApprovals } = useApprovals(orgId);
 
-  // Use Supabase data if available, fallback to demo
   const s = dbSummary ? {
     overdueTotal: Number(dbSummary.overdue_total ?? 0),
     overdueCount: dbSummary.overdue_count ?? 0,
@@ -21,6 +21,27 @@ export default function HomePage() {
     recoveredThisWeek: 0,
     totalOutstanding: Number(dbSummary.overdue_total ?? 0) + Number(dbSummary.due_soon_total ?? 0),
   } : demoHomeSummary;
+
+  // Use Supabase approvals or fallback to demo
+  const approvals = (dbApprovals && dbApprovals.length > 0)
+    ? dbApprovals.slice(0, 2).map(a => ({
+        id: a.id,
+        clientName: (a.clients as any)?.display_name ?? 'Unknown',
+        invoiceNumber: (a.invoices as any)?.invoice_number ?? '',
+        amount: Number((a.invoices as any)?.amount ?? 0),
+        daysOverdue: (a.invoices as any)?.days_overdue ?? 0,
+        stage: a.approval_type,
+        rationale: a.rationale_shown,
+      }))
+    : demoApprovals.slice(0, 2).map(a => ({
+        id: a.id,
+        clientName: a.clientName,
+        invoiceNumber: a.invoiceNumber,
+        amount: a.amount,
+        daysOverdue: a.daysOverdue,
+        stage: a.stage,
+        rationale: a.rationale,
+      }));
 
   const orgName = membership?.organizations
     ? (membership.organizations as any).display_name
@@ -92,7 +113,11 @@ export default function HomePage() {
               View all <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
-          {demoApprovals.slice(0, 2).map(a => (
+          {approvals.length === 0 ? (
+            <div className="glass-card rounded-xl p-4 text-center">
+              <p className="text-sm text-muted-foreground">No pending approvals 🎉</p>
+            </div>
+          ) : approvals.map(a => (
             <button
               key={a.id}
               onClick={() => navigate('/approvals')}
