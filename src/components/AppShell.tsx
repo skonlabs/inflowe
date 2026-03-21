@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, FileText, Users, CheckCircle, Bell, Settings, MessageSquare, BarChart3, HelpCircle, MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { demoNotifications } from '@/lib/demo-data';
+import { useAppState } from '@/contexts/AppStateContext';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Home' },
@@ -27,9 +27,10 @@ interface AppShellProps {
 export default function AppShell({ children }: AppShellProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { notifications, markNotificationRead } = useAppState();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMore, setShowMore] = useState(false);
-  const unreadCount = demoNotifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const isMoreActive = moreItems.some(item => location.pathname.startsWith(item.path));
 
@@ -71,16 +72,20 @@ export default function AppShell({ children }: AppShellProps) {
               className="fixed top-14 right-2 left-2 sm:left-auto sm:w-96 z-50 bg-card rounded-xl border border-border shadow-xl max-h-[70vh] overflow-y-auto"
             >
               <div className="p-4 border-b border-border"><h3 className="font-semibold">Notifications</h3></div>
-              {demoNotifications.map(n => (
-                <button key={n.id}
-                  className={`w-full text-left p-4 border-b border-border/40 hover:bg-muted/50 transition-colors ${!n.read ? 'bg-accent/30' : ''}`}
-                  onClick={() => { setShowNotifications(false); if (n.actionUrl) navigate(n.actionUrl); }}
-                >
-                  <p className="text-sm font-medium">{n.title}</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">{n.body}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{n.createdAt}</p>
-                </button>
-              ))}
+              {notifications.length === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">No notifications</div>
+              ) : (
+                notifications.map(n => (
+                  <button key={n.id}
+                    className={`w-full text-left p-4 border-b border-border/40 hover:bg-muted/50 transition-colors ${!n.read ? 'bg-accent/30' : ''}`}
+                    onClick={() => { markNotificationRead(n.id); setShowNotifications(false); if (n.actionUrl) navigate(n.actionUrl); }}
+                  >
+                    <p className="text-sm font-medium">{n.title}</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">{n.body}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{n.createdAt}</p>
+                  </button>
+                ))
+              )}
             </motion.div>
           </>
         )}

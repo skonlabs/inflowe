@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, AlertCircle, Ban, Play, Edit3, X, Check } from 'lucide-react';
 import { demoClients, demoInvoices, formatCurrency, getStateLabel, getStateClass } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
+import { useAppState } from '@/contexts/AppStateContext';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,9 +17,9 @@ const sensitivityLabels: Record<string, { label: string; className: string }> = 
 export default function ClientDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { clientActions, setClientAction, invoiceActions, emergencyStop } = useAppState();
   const client = demoClients.find(c => c.id === id);
   const clientInvoices = demoInvoices.filter(i => i.clientId === id);
-  const [isPaused, setIsPaused] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     displayName: client?.displayName || '',
@@ -36,12 +37,14 @@ export default function ClientDetailPage() {
     );
   }
 
+  const actions = clientActions[client.id] || {};
+  const isPaused = actions.isPaused || emergencyStop || false;
   const sensitivity = sensitivityLabels[client.sensitivityLevel];
 
   const handleTogglePause = () => {
-    setIsPaused(!isPaused);
-    toast(isPaused ? `Automation resumed for ${client.displayName}` : `Automation paused for ${client.displayName}`, {
-      icon: isPaused ? '▶️' : '⏸️',
+    setClientAction(client.id, { isPaused: !actions.isPaused });
+    toast(!actions.isPaused ? `Automation paused for ${client.displayName}` : `Automation resumed for ${client.displayName}`, {
+      icon: !actions.isPaused ? '⏸️' : '▶️',
     });
   };
 
@@ -56,7 +59,6 @@ export default function ClientDetailPage() {
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
 
-      {/* Client header */}
       <ScrollReveal>
         <div className="glass-card rounded-xl p-5">
           <div className="flex items-start gap-3">
@@ -74,11 +76,10 @@ export default function ClientDetailPage() {
 
           {isPaused && (
             <div className="mt-3 px-3 py-2 rounded-lg bg-warning/10 border border-warning/20 text-xs text-warning font-medium flex items-center gap-1.5">
-              <Ban className="w-3.5 h-3.5" /> Automation paused for this client
+              <Ban className="w-3.5 h-3.5" /> {emergencyStop ? 'All automation halted (emergency stop)' : 'Automation paused for this client'}
             </div>
           )}
 
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border">
             <div>
               <p className="text-xs text-muted-foreground">Outstanding</p>
@@ -94,7 +95,6 @@ export default function ClientDetailPage() {
             </div>
           </div>
 
-          {/* Risk */}
           {client.riskScore > 0.3 && (
             <div className="mt-4 pt-4 border-t border-border">
               <div className="flex items-center justify-between mb-1">
@@ -126,7 +126,7 @@ export default function ClientDetailPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Sensitivity level</label>
-                <select value={editForm.sensitivityLevel} onChange={e => setEditForm(f => ({ ...f, sensitivityLevel: e.target.value as 'standard' | 'sensitive' | 'vip' | 'high_value' }))}
+                <select value={editForm.sensitivityLevel} onChange={e => setEditForm(f => ({ ...f, sensitivityLevel: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
                   <option value="standard">Standard</option>
                   <option value="sensitive">Sensitive</option>
@@ -136,7 +136,7 @@ export default function ClientDetailPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Preferred channel</label>
-                <select value={editForm.preferredChannel} onChange={e => setEditForm(f => ({ ...f, preferredChannel: e.target.value as 'email' | 'whatsapp' }))}
+                <select value={editForm.preferredChannel} onChange={e => setEditForm(f => ({ ...f, preferredChannel: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
                   <option value="email">Email</option>
                   <option value="whatsapp">WhatsApp</option>
@@ -185,7 +185,7 @@ export default function ClientDetailPage() {
         <div className="grid grid-cols-2 gap-2">
           <button onClick={handleTogglePause}
             className="flex items-center justify-center gap-2 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform">
-            {isPaused ? <><Play className="w-4 h-4" /> Resume</> : <><Ban className="w-4 h-4" /> Pause</>}
+            {isPaused && !emergencyStop ? <><Play className="w-4 h-4" /> Resume</> : <><Ban className="w-4 h-4" /> Pause</>}
           </button>
           <button onClick={() => setIsEditing(!isEditing)}
             className="flex items-center justify-center gap-2 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform">
@@ -202,25 +202,29 @@ export default function ClientDetailPage() {
             <p className="text-sm text-muted-foreground">No invoices for this client.</p>
           ) : (
             <StaggerContainer className="space-y-2">
-              {clientInvoices.map(inv => (
-                <StaggerItem key={inv.id}>
-                  <button onClick={() => navigate(`/invoices/${inv.id}`)}
-                    className="glass-card-hover rounded-xl p-4 w-full text-left active:scale-[0.97] transition-transform">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-sm">{inv.invoiceNumber}</p>
-                        <p className="text-xs text-muted-foreground">Due {new Date(inv.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+              {clientInvoices.map(inv => {
+                const invActions = invoiceActions[inv.id] || {};
+                const state = invActions.isPaid ? 'paid' : invActions.isDisputed ? 'disputed' : inv.state;
+                return (
+                  <StaggerItem key={inv.id}>
+                    <button onClick={() => navigate(`/invoices/${inv.id}`)}
+                      className="glass-card-hover rounded-xl p-4 w-full text-left active:scale-[0.97] transition-transform">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-sm">{inv.invoiceNumber}</p>
+                          <p className="text-xs text-muted-foreground">Due {new Date(inv.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-sm text-tabular">{formatCurrency(invActions.isPaid ? 0 : inv.remainingBalance)}</p>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStateClass(state)}`}>
+                            {getStateLabel(state)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-sm text-tabular">{formatCurrency(inv.remainingBalance)}</p>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStateClass(inv.state)}`}>
-                          {getStateLabel(inv.state)}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                </StaggerItem>
-              ))}
+                    </button>
+                  </StaggerItem>
+                );
+              })}
             </StaggerContainer>
           )}
         </div>
