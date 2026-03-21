@@ -157,6 +157,50 @@ export default function SettingsPage() {
     }
   };
 
+  // Module management
+  const MODULES = [
+    { id: 'module_a', name: 'Invoice Recovery', description: 'Automated overdue invoice follow-up' },
+    { id: 'module_b', name: 'Smart Follow-Up Intelligence', description: 'AI-powered timing and channel optimization' },
+    { id: 'module_c', name: 'Cash Visibility', description: 'Real-time cash flow dashboards and forecasts' },
+    { id: 'module_d', name: 'Communication Hub', description: 'Unified inbox across email, SMS, WhatsApp' },
+    { id: 'module_e', name: 'Advanced Automation', description: 'Custom workflow builder and rule engine' },
+    { id: 'module_f', name: 'Payment Optimization', description: 'Payment plans, settlements, and reconciliation' },
+    { id: 'module_g', name: 'AI Cash Advisor', description: 'Conversational AI for financial insights' },
+  ];
+
+  const entitlementByModule = new Map(entitlements.map(e => [e.module_id, e]));
+
+  const handleStartTrial = async (moduleId: string) => {
+    if (!orgId) return;
+    setTogglingModule(moduleId);
+    try {
+      const { error } = await supabase.rpc('start_module_trial', { _org_id: orgId, _module_id: moduleId });
+      if (error) throw error;
+      toast.success('Trial started — 14 days free');
+      queryClient.invalidateQueries({ queryKey: ['module-entitlements'] });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to start trial');
+    } finally {
+      setTogglingModule(null);
+    }
+  };
+
+  const handleDeactivateModule = async (moduleId: string, moduleName: string) => {
+    if (!orgId) return;
+    if (!confirm(`Deactivate ${moduleName}? You can reactivate it later.`)) return;
+    setTogglingModule(moduleId);
+    try {
+      const { error } = await supabase.rpc('deactivate_module', { _org_id: orgId, _module_id: moduleId });
+      if (error) throw error;
+      toast.success(`${moduleName} deactivated`);
+      queryClient.invalidateQueries({ queryKey: ['module-entitlements'] });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to deactivate');
+    } finally {
+      setTogglingModule(null);
+    }
+  };
+
   // Map connected integrations by provider
   const connectedByProvider = new Map(
     integrations
