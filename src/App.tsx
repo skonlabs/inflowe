@@ -7,7 +7,12 @@ import HomePage from "@/pages/HomePage";
 import InvoicesPage from "@/pages/InvoicesPage";
 import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
 import ClientsPage from "@/pages/ClientsPage";
+import ClientDetailPage from "@/pages/ClientDetailPage";
 import ApprovalsPage from "@/pages/ApprovalsPage";
+import ConversationsPage from "@/pages/ConversationsPage";
+import ReportsPage from "@/pages/ReportsPage";
+import SupportPage from "@/pages/SupportPage";
+import AdminPage from "@/pages/AdminPage";
 import OnboardingPage from "@/pages/OnboardingPage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "./pages/NotFound.tsx";
@@ -25,7 +30,12 @@ const App = () => (
           <Route path="/invoices" element={<AppShell><InvoicesPage /></AppShell>} />
           <Route path="/invoices/:id" element={<AppShell><InvoiceDetailPage /></AppShell>} />
           <Route path="/clients" element={<AppShell><ClientsPage /></AppShell>} />
+          <Route path="/clients/:id" element={<AppShell><ClientDetailPage /></AppShell>} />
           <Route path="/approvals" element={<AppShell><ApprovalsPage /></AppShell>} />
+          <Route path="/conversations" element={<AppShell><ConversationsPage /></AppShell>} />
+          <Route path="/reports" element={<AppShell><ReportsPage /></AppShell>} />
+          <Route path="/support" element={<AppShell><SupportPage /></AppShell>} />
+          <Route path="/admin" element={<AppShell><AdminPage /></AppShell>} />
           <Route path="/settings" element={<AppShell><SettingsPage /></AppShell>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
