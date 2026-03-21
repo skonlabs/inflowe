@@ -59,6 +59,18 @@ export default function AppShell({ children }: AppShellProps) {
                 </span>
               )}
             </button>
+            <button
+              onClick={signOut}
+              className="p-2 rounded-full hover:bg-muted transition-colors active:scale-95"
+              title="Sign out"
+            >
+              <LogOut className="w-5 h-5 text-muted-foreground" />
+            </button>
+            {user && (
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                {(user.user_metadata?.full_name || user.email || '?')[0].toUpperCase()}
+              </div>
+            )}
           </div>
         </div>
       </header>
