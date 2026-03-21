@@ -2796,6 +2796,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_organization_with_membership: {
+        Args: {
+          _brand_tone?: string
+          _country: string
+          _default_currency: string
+          _display_name: string
+          _is_demo?: boolean
+          _legal_name: string
+          _sender_display_name?: string
+          _sender_email?: string
+          _timezone: string
+        }
+        Returns: string
+      }
       get_user_org_ids: { Args: { _user_id: string }; Returns: string[] }
     }
     Enums: {
