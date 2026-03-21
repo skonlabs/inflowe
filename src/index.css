@@ -65,6 +65,60 @@
     --sidebar-border: 40 15% 89%;
     --sidebar-ring: 168 55% 38%;
   }
+
+  .dark {
+    --background: 220 18% 10%;
+    --foreground: 40 15% 92%;
+
+    --card: 220 16% 13%;
+    --card-foreground: 40 15% 92%;
+
+    --popover: 220 16% 13%;
+    --popover-foreground: 40 15% 92%;
+
+    --primary: 168 50% 44%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 18%;
+    --secondary-foreground: 40 15% 92%;
+
+    --muted: 220 14% 18%;
+    --muted-foreground: 220 10% 56%;
+
+    --accent: 168 30% 16%;
+    --accent-foreground: 168 50% 60%;
+
+    --destructive: 4 68% 52%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 14% 20%;
+    --input: 220 14% 20%;
+    --ring: 168 50% 44%;
+
+    --success: 152 50% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 85% 48%;
+    --warning-foreground: 38 85% 14%;
+    --info: 210 55% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --overdue: 4 68% 52%;
+    --due-soon: 38 85% 48%;
+    --paid: 152 50% 38%;
+    --pending: 210 55% 48%;
+
+    --surface-raised: 220 16% 15%;
+    --surface-sunken: 220 18% 8%;
+
+    --sidebar-background: 220 18% 10%;
+    --sidebar-foreground: 40 15% 92%;
+    --sidebar-primary: 168 50% 44%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 168 30% 16%;
+    --sidebar-accent-foreground: 168 50% 60%;
+    --sidebar-border: 220 14% 20%;
+    --sidebar-ring: 168 50% 44%;
+  }
 }
 
 @layer base {
