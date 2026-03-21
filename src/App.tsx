@@ -10,6 +10,7 @@ import ClientsPage from "@/pages/ClientsPage";
 import ClientDetailPage from "@/pages/ClientDetailPage";
 import ApprovalsPage from "@/pages/ApprovalsPage";
 import ConversationsPage from "@/pages/ConversationsPage";
+import ConversationDetailPage from "@/pages/ConversationDetailPage";
 import ReportsPage from "@/pages/ReportsPage";
 import SupportPage from "@/pages/SupportPage";
 import AdminPage from "@/pages/AdminPage";
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/clients/:id" element={<AppShell><ClientDetailPage /></AppShell>} />
           <Route path="/approvals" element={<AppShell><ApprovalsPage /></AppShell>} />
           <Route path="/conversations" element={<AppShell><ConversationsPage /></AppShell>} />
+          <Route path="/conversations/:id" element={<AppShell><ConversationDetailPage /></AppShell>} />
           <Route path="/reports" element={<AppShell><ReportsPage /></AppShell>} />
           <Route path="/support" element={<AppShell><SupportPage /></AppShell>} />
           <Route path="/admin" element={<AppShell><AdminPage /></AppShell>} />

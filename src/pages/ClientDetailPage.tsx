@@ -1,7 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Phone, AlertCircle, Shield, Ban, ChevronRight, Edit3, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Mail, AlertCircle, Ban, Play, Edit3, X, Check } from 'lucide-react';
 import { demoClients, demoInvoices, formatCurrency, getStateLabel, getStateClass } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const sensitivityLabels: Record<string, { label: string; className: string }> = {
   standard: { label: 'Standard', className: 'status-paid' },
@@ -15,6 +18,14 @@ export default function ClientDetailPage() {
   const navigate = useNavigate();
   const client = demoClients.find(c => c.id === id);
   const clientInvoices = demoInvoices.filter(i => i.clientId === id);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    displayName: client?.displayName || '',
+    sensitivityLevel: client?.sensitivityLevel || 'standard',
+    preferredChannel: client?.preferredChannel || 'email',
+    notes: '',
+  });
 
   if (!client) {
     return (
@@ -26,6 +37,18 @@ export default function ClientDetailPage() {
   }
 
   const sensitivity = sensitivityLabels[client.sensitivityLevel];
+
+  const handleTogglePause = () => {
+    setIsPaused(!isPaused);
+    toast(isPaused ? `Automation resumed for ${client.displayName}` : `Automation paused for ${client.displayName}`, {
+      icon: isPaused ? '▶️' : '⏸️',
+    });
+  };
+
+  const handleSaveEdit = () => {
+    setIsEditing(false);
+    toast.success('Client details updated');
+  };
 
   return (
     <div className="px-4 py-4 space-y-5">
@@ -48,6 +71,12 @@ export default function ClientDetailPage() {
               </div>
             </div>
           </div>
+
+          {isPaused && (
+            <div className="mt-3 px-3 py-2 rounded-lg bg-warning/10 border border-warning/20 text-xs text-warning font-medium flex items-center gap-1.5">
+              <Ban className="w-3.5 h-3.5" /> Automation paused for this client
+            </div>
+          )}
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border">
@@ -83,6 +112,55 @@ export default function ClientDetailPage() {
         </div>
       </ScrollReveal>
 
+      {/* Edit form */}
+      <AnimatePresence>
+        {isEditing && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}>
+            <div className="glass-card rounded-xl p-5 space-y-4">
+              <h2 className="font-semibold text-sm">Edit client</h2>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Display name</label>
+                <input value={editForm.displayName} onChange={e => setEditForm(f => ({ ...f, displayName: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Sensitivity level</label>
+                <select value={editForm.sensitivityLevel} onChange={e => setEditForm(f => ({ ...f, sensitivityLevel: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+                  <option value="standard">Standard</option>
+                  <option value="sensitive">Sensitive</option>
+                  <option value="vip">VIP</option>
+                  <option value="high_value">High Value</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Preferred channel</label>
+                <select value={editForm.preferredChannel} onChange={e => setEditForm(f => ({ ...f, preferredChannel: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+                  <option value="email">Email</option>
+                  <option value="whatsapp">WhatsApp</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Notes</label>
+                <textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
+                  placeholder="Add internal notes about this client..."
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handleSaveEdit} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform">
+                  <Check className="w-4 h-4" /> Save
+                </button>
+                <button onClick={() => setIsEditing(false)} className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform">
+                  <X className="w-4 h-4" /> Cancel
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Primary contact */}
       <ScrollReveal delay={0.1}>
         <div className="glass-card rounded-xl p-5">
@@ -95,9 +173,9 @@ export default function ClientDetailPage() {
               <p className="font-medium text-sm">{client.contactName}</p>
               <p className="text-xs text-muted-foreground truncate">{client.contactEmail}</p>
             </div>
-            <button className="p-2 rounded-full hover:bg-muted transition-colors active:scale-95">
+            <a href={`mailto:${client.contactEmail}`} className="p-2 rounded-full hover:bg-muted transition-colors active:scale-95">
               <Mail className="w-4 h-4 text-muted-foreground" />
-            </button>
+            </a>
           </div>
         </div>
       </ScrollReveal>
@@ -105,11 +183,13 @@ export default function ClientDetailPage() {
       {/* Quick actions */}
       <ScrollReveal delay={0.15}>
         <div className="grid grid-cols-2 gap-2">
-          <button className="flex items-center justify-center gap-2 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform">
-            <Ban className="w-4 h-4" /> Pause automation
+          <button onClick={handleTogglePause}
+            className="flex items-center justify-center gap-2 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform">
+            {isPaused ? <><Play className="w-4 h-4" /> Resume</> : <><Ban className="w-4 h-4" /> Pause</>}
           </button>
-          <button className="flex items-center justify-center gap-2 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform">
-            <Edit3 className="w-4 h-4" /> Edit client
+          <button onClick={() => setIsEditing(!isEditing)}
+            className="flex items-center justify-center gap-2 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform">
+            <Edit3 className="w-4 h-4" /> {isEditing ? 'Cancel' : 'Edit client'}
           </button>
         </div>
       </ScrollReveal>
