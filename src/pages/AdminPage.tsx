@@ -1,8 +1,10 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Shield, Users, Activity, Flag, AlertOctagon, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Shield, Users, Activity, Flag, AlertOctagon, ChevronRight, Loader2 } from 'lucide-react';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface IncidentControl {
   label: string;
@@ -17,12 +19,6 @@ const initialIncidentControls: IncidentControl[] = [
   { label: 'WhatsApp channel shutdown', desc: 'Stop WhatsApp sends globally', active: false, severity: 'high' },
 ];
 
-const tenants = [
-  { id: 'o1', name: 'Demo Agency', status: 'trialing', modules: 3, sendRate: '98%', openCases: 0 },
-  { id: 'o2', name: 'Stellar Creative', status: 'active', modules: 5, sendRate: '100%', openCases: 1 },
-  { id: 'o3', name: 'Blueprint Studios', status: 'active', modules: 4, sendRate: '95%', openCases: 0 },
-];
-
 const queueStats = [
   { name: 'imports', depth: 0, workers: 5, failed: 0, dlq: 0 },
   { name: 'workflow-eval', depth: 3, workers: 20, failed: 0, dlq: 0 },
@@ -32,30 +28,45 @@ const queueStats = [
   { name: 'notifications', depth: 0, workers: 20, failed: 0, dlq: 0 },
 ];
 
-interface FeatureFlag {
-  key: string;
-  desc: string;
-  enabled: boolean;
-  rollout: number;
-}
-
-const initialFlags: FeatureFlag[] = [
-  { key: 'ai_drafting_v2', desc: 'New AI draft generation model', enabled: true, rollout: 100 },
-  { key: 'whatsapp_channel', desc: 'WhatsApp messaging channel', enabled: false, rollout: 0 },
-  { key: 'payment_plans', desc: 'Payment plan creation flow', enabled: true, rollout: 50 },
-];
-
 export default function AdminPage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [controls, setControls] = useState(initialIncidentControls);
-  const [flags, setFlags] = useState(initialFlags);
+  const [togglingFlag, setTogglingFlag] = useState<string | null>(null);
+
+  // Load feature flags from DB
+  const { data: dbFlags = [], isLoading: flagsLoading } = useQuery({
+    queryKey: ['feature-flags'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('feature_flags')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Load tenants (organizations) from DB
+  const { data: organizations = [], isLoading: orgsLoading } = useQuery({
+    queryKey: ['admin-organizations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('id, display_name, subscription_state, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const toggleControl = (index: number) => {
     setControls(prev => prev.map((c, i) => {
       if (i !== index) return c;
       const newActive = !c.active;
       if (newActive) {
-        toast.error(`${c.label} activated — all ${c.label.includes('Email') ? 'email' : c.label.includes('WhatsApp') ? 'WhatsApp' : ''} sends halted`, { duration: 5000 });
+        toast.error(`${c.label} activated`, { duration: 5000 });
       } else {
         toast.success(`${c.label} deactivated — sends resumed`);
       }
@@ -63,13 +74,25 @@ export default function AdminPage() {
     }));
   };
 
-  const toggleFlag = (index: number) => {
-    setFlags(prev => prev.map((f, i) => {
-      if (i !== index) return f;
-      const newEnabled = !f.enabled;
-      toast(newEnabled ? `${f.key} enabled` : `${f.key} disabled`, { icon: newEnabled ? '🟢' : '⚪' });
-      return { ...f, enabled: newEnabled, rollout: newEnabled ? 100 : 0 };
-    }));
+  const toggleFlag = async (flagId: string, flagKey: string, currentEnabled: boolean) => {
+    setTogglingFlag(flagId);
+    try {
+      const newEnabled = !currentEnabled;
+      const { error } = await supabase
+        .from('feature_flags')
+        .update({
+          enabled_by_default: newEnabled,
+          rollout_percentage: newEnabled ? 100 : 0,
+        })
+        .eq('id', flagId);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ['feature-flags'] });
+      toast(newEnabled ? `${flagKey} enabled` : `${flagKey} disabled`, { icon: newEnabled ? '🟢' : '⚪' });
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to update flag');
+    } finally {
+      setTogglingFlag(null);
+    }
   };
 
   return (
@@ -120,17 +143,27 @@ export default function AdminPage() {
               <Users className="w-4 h-4" />
               <h3 className="text-sm font-semibold">Tenants</h3>
             </div>
-            <span className="text-xs text-muted-foreground">{tenants.length} total</span>
+            <span className="text-xs text-muted-foreground">
+              {orgsLoading ? '…' : `${organizations.length} total`}
+            </span>
           </div>
-          {tenants.map(t => (
-            <button key={t.id} className="w-full text-left px-4 py-3 border-t border-border/40 hover:bg-muted/30 transition-colors active:scale-[0.99] flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">{t.name}</p>
-                <p className="text-xs text-muted-foreground">{t.status} · {t.modules} modules · Send: {t.sendRate}</p>
+          {orgsLoading ? (
+            <div className="px-4 py-6 flex justify-center">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : organizations.length === 0 ? (
+            <div className="px-4 py-4 text-sm text-muted-foreground">No organizations found</div>
+          ) : (
+            organizations.map(org => (
+              <div key={org.id} className="flex items-center justify-between px-4 py-3 border-t border-border/40">
+                <div>
+                  <p className="text-sm font-medium">{org.display_name}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{org.subscription_state || 'trialing'} · {new Date(org.created_at).toLocaleDateString()}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </button>
-          ))}
+            ))
+          )}
         </div>
       </ScrollReveal>
 
@@ -165,6 +198,7 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
+          <p className="px-4 py-2 text-xs text-muted-foreground">Queue stats are static in this environment (BullMQ not connected).</p>
         </div>
       </ScrollReveal>
 
@@ -175,23 +209,35 @@ export default function AdminPage() {
             <Flag className="w-4 h-4" />
             <h3 className="text-sm font-semibold">Feature Flags</h3>
           </div>
-          {flags.map((flag, i) => (
-            <div key={flag.key} className="flex items-center justify-between px-4 py-3 border-t border-border/40">
-              <div>
-                <p className="text-sm font-mono">{flag.key}</p>
-                <p className="text-xs text-muted-foreground">{flag.desc}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">{flag.rollout}%</span>
-                <button
-                  onClick={() => toggleFlag(i)}
-                  className={`w-10 h-6 rounded-full transition-colors relative active:scale-95 ${flag.enabled ? 'bg-success' : 'bg-muted-foreground/30'}`}
-                >
-                  <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${flag.enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                </button>
-              </div>
+          {flagsLoading ? (
+            <div className="px-4 py-6 flex justify-center">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
-          ))}
+          ) : dbFlags.length === 0 ? (
+            <div className="px-4 py-4 text-sm text-muted-foreground">No feature flags configured.</div>
+          ) : (
+            dbFlags.map(flag => (
+              <div key={flag.id} className="flex items-center justify-between px-4 py-3 border-t border-border/40">
+                <div>
+                  <p className="text-sm font-mono">{flag.flag_key}</p>
+                  <p className="text-xs text-muted-foreground">{flag.description}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">{flag.rollout_percentage}%</span>
+                  {togglingFlag === flag.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  ) : (
+                    <button
+                      onClick={() => toggleFlag(flag.id, flag.flag_key, flag.enabled_by_default)}
+                      className={`w-10 h-6 rounded-full transition-colors relative active:scale-95 ${flag.enabled_by_default ? 'bg-success' : 'bg-muted-foreground/30'}`}
+                    >
+                      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${flag.enabled_by_default ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </ScrollReveal>
     </div>

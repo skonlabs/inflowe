@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { HelpCircle, MessageCircle, Send, ChevronRight, FileText, AlertCircle, ExternalLink } from 'lucide-react';
+import { HelpCircle, Send, ChevronRight, FileText, AlertCircle } from 'lucide-react';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+import { useUserOrganization, useSubmitSupportCase } from '@/hooks/use-supabase-data';
+import { useAppState } from '@/contexts/AppStateContext';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -17,9 +20,16 @@ const suggestedQuestions = [
 ];
 
 export default function SupportPage() {
+  const { data: membership } = useUserOrganization();
+  const orgId = membership?.organization_id;
+  const submitCase = useSubmitSupportCase();
+  const { setEmergencyStop, emergencyStop } = useAppState();
   const [question, setQuestion] = useState('');
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [showCaseForm, setShowCaseForm] = useState(false);
+  const [caseDescription, setCaseDescription] = useState('');
+  const [submittingCase, setSubmittingCase] = useState(false);
 
   const handleAsk = (q?: string) => {
     const text = q || question;
@@ -130,13 +140,76 @@ export default function SupportPage() {
       <ScrollReveal delay={0.2}>
         <div className="glass-card rounded-xl overflow-hidden">
           <div className="px-4 py-3 bg-muted/30"><h3 className="text-sm font-semibold">Need more help?</h3></div>
-          <button className="w-full flex items-center gap-3 px-4 py-3 border-t border-border/40 text-sm hover:bg-muted/30 transition-colors active:scale-[0.99]">
+          <button
+            onClick={() => setShowCaseForm(v => !v)}
+            className="w-full flex items-center gap-3 px-4 py-3 border-t border-border/40 text-sm hover:bg-muted/30 transition-colors active:scale-[0.99]">
             <FileText className="w-4 h-4 text-muted-foreground" />
             <span>Submit a support case</span>
           </button>
-          <button className="w-full flex items-center gap-3 px-4 py-3 border-t border-border/40 text-sm hover:bg-muted/30 transition-colors active:scale-[0.99]">
+
+          <AnimatePresence>
+            {showCaseForm && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                <div className="px-4 py-4 border-t border-border/40 space-y-3">
+                  <p className="text-xs text-muted-foreground">Describe the issue and our team will respond within 24 hours.</p>
+                  <textarea
+                    value={caseDescription}
+                    onChange={e => setCaseDescription(e.target.value)}
+                    placeholder="Describe what happened and what you expected..."
+                    rows={3}
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      disabled={!caseDescription.trim() || submittingCase || !orgId}
+                      onClick={async () => {
+                        if (!caseDescription.trim() || !orgId) return;
+                        setSubmittingCase(true);
+                        try {
+                          await submitCase.mutateAsync({ orgId, description: caseDescription, caseType: 'general' });
+                          toast.success('Support case submitted — we\'ll be in touch within 24 hours');
+                          setCaseDescription('');
+                          setShowCaseForm(false);
+                        } catch (err: any) {
+                          toast.error(err?.message ?? 'Failed to submit case');
+                        } finally {
+                          setSubmittingCase(false);
+                        }
+                      }}
+                      className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                    >
+                      {submittingCase ? 'Submitting…' : 'Submit case'}
+                    </button>
+                    <button
+                      onClick={() => setShowCaseForm(false)}
+                      className="px-4 py-2.5 rounded-lg bg-card border border-border text-sm active:scale-95"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <button
+            onClick={() => {
+              if (!emergencyStop) {
+                if (confirm('⚠️ EMERGENCY STOP\n\nThis will immediately halt ALL automation.\n\nAre you sure?')) {
+                  setEmergencyStop(true);
+                  toast.error('Emergency stop activated — all automation halted');
+                }
+              } else {
+                setEmergencyStop(false);
+                toast.success('Automation resumed');
+              }
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 border-t border-border/40 text-sm hover:bg-muted/30 transition-colors active:scale-[0.99]">
             <AlertCircle className="w-4 h-4 text-destructive" />
-            <span className="text-destructive font-medium">Emergency stop — halt all automation</span>
+            <span className="text-destructive font-medium">{emergencyStop ? 'Resume automation' : 'Emergency stop — halt all automation'}</span>
           </button>
         </div>
       </ScrollReveal>

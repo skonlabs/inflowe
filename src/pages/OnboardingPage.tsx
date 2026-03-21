@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
+import { useProcessCsvImport } from '@/hooks/use-supabase-data';
 
 const steps = [
   { title: 'Create your org', icon: Building2 },
@@ -35,8 +36,10 @@ export default function OnboardingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const processCsvImport = useProcessCsvImport();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [csvRows, setCsvRows] = useState<Array<Record<string, string>>>([]);
   const [data, setData] = useState<OrgData>({
     businessName: '',
     displayName: '',
@@ -79,6 +82,17 @@ export default function OnboardingPage() {
       });
 
       if (error) throw error;
+
+      // If CSV path was chosen and we have rows, import them
+      if (data.importPath === 'csv' && csvRows.length > 0 && orgId) {
+        try {
+          const batchId = crypto.randomUUID();
+          await processCsvImport.mutateAsync({ orgId, importBatchId: batchId, rows: csvRows });
+        } catch (importErr: any) {
+          // Non-fatal — org is created, import can be retried
+          toast.warning(`Org created but CSV import failed: ${importErr?.message ?? 'unknown error'}`);
+        }
+      }
 
       // Invalidate cached membership query so ProtectedRoute picks up the new org
       await queryClient.invalidateQueries({ queryKey: ['user-organization'] });
@@ -126,7 +140,7 @@ export default function OnboardingPage() {
             {step === 0 && <StepOrganization data={data} update={update} />}
             {step === 1 && <StepTone data={data} update={update} />}
             {step === 2 && <StepPath data={data} update={update} />}
-            {step === 3 && <StepImport data={data} />}
+            {step === 3 && <StepImport data={data} onDataParsed={setCsvRows} />}
             {step === 4 && <StepReview data={data} />}
             {step === 5 && <StepTrust data={data} update={update} />}
             {step === 6 && <StepPreview />}
@@ -307,7 +321,7 @@ function StepPath({ data, update }: StepProps) {
   );
 }
 
-function StepImport({ data }: StepProps) {
+function StepImport({ data, onDataParsed }: StepProps & { onDataParsed?: (rows: Array<Record<string, string>>) => void }) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [parsedRows, setParsedRows] = useState<string[][]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -319,6 +333,16 @@ function StepImport({ data }: StepProps) {
       const text = e.target?.result as string;
       const rows = text.split('\n').filter(r => r.trim()).map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
       setParsedRows(rows);
+      // Convert to array of objects keyed by header row
+      if (rows.length > 1) {
+        const headers = rows[0];
+        const dataRows = rows.slice(1).map(row => {
+          const obj: Record<string, string> = {};
+          headers.forEach((h, i) => { obj[h] = row[i] ?? ''; });
+          return obj;
+        });
+        onDataParsed?.(dataRows);
+      }
     };
     reader.readAsText(file);
   };
