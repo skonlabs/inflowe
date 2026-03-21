@@ -1,0 +1,108 @@
+import { useState } from 'react';
+import { Search, Filter, MessageSquare, ArrowRight, CheckCircle, AlertTriangle, Clock, User } from 'lucide-react';
+import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
+
+interface Thread {
+  id: string;
+  clientName: string;
+  invoiceNumber: string;
+  subject: string;
+  lastMessage: string;
+  classification: 'auto_handled' | 'needs_user_input' | 'risky' | 'dispute_related';
+  channel: 'email' | 'whatsapp';
+  latestAt: string;
+  unread: boolean;
+}
+
+const demoThreads: Thread[] = [
+  { id: 't1', clientName: 'Volta Brand Agency', invoiceNumber: 'INV-2024-035', subject: 'Re: Invoice INV-2024-035 Payment', lastMessage: 'We have some concerns about the charges on this invoice...', classification: 'dispute_related', channel: 'email', latestAt: '2 hours ago', unread: true },
+  { id: 't2', clientName: 'Meridian Creative Co.', invoiceNumber: 'INV-2024-042', subject: 'Re: Payment Reminder', lastMessage: 'Hi, I\'ll be out of office until March 25th. Will process this when I return.', classification: 'needs_user_input', channel: 'email', latestAt: '1 day ago', unread: true },
+  { id: 't3', clientName: 'Northstar Digital', invoiceNumber: 'INV-2024-051', subject: 'Re: Invoice Follow-up', lastMessage: 'Payment has been initiated, should arrive in 2-3 business days.', classification: 'auto_handled', channel: 'email', latestAt: '3 days ago', unread: false },
+  { id: 't4', clientName: 'Fern & Bloom Marketing', invoiceNumber: 'INV-2024-038', subject: 'Payment Reminder', lastMessage: 'Reminder sent via email — no reply yet.', classification: 'auto_handled', channel: 'email', latestAt: '1 week ago', unread: false },
+  { id: 't5', clientName: 'Bright Pixel Studios', invoiceNumber: 'INV-2024-055', subject: 'Upcoming Invoice Due', lastMessage: 'Gentle reminder about upcoming payment.', classification: 'auto_handled', channel: 'email', latestAt: '2 days ago', unread: false },
+];
+
+const classificationBadge: Record<string, { label: string; className: string }> = {
+  auto_handled: { label: 'Auto-handled', className: 'status-paid' },
+  needs_user_input: { label: 'Needs your input', className: 'status-due-soon' },
+  risky: { label: 'Sensitive', className: 'status-overdue' },
+  dispute_related: { label: 'Dispute', className: 'status-overdue' },
+};
+
+const filters = ['All', 'Needs input', 'Disputes', 'Auto-handled'];
+
+export default function ConversationsPage() {
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [search, setSearch] = useState('');
+
+  const filtered = demoThreads.filter(t => {
+    if (search && !t.clientName.toLowerCase().includes(search.toLowerCase()) && !t.subject.toLowerCase().includes(search.toLowerCase())) return false;
+    if (activeFilter === 'Needs input' && t.classification !== 'needs_user_input') return false;
+    if (activeFilter === 'Disputes' && t.classification !== 'dispute_related') return false;
+    if (activeFilter === 'Auto-handled' && t.classification !== 'auto_handled') return false;
+    return true;
+  });
+
+  const needsAttention = demoThreads.filter(t => t.classification === 'needs_user_input' || t.classification === 'dispute_related').length;
+
+  return (
+    <div className="px-4 py-6 space-y-4">
+      <ScrollReveal>
+        <h1 className="text-xl font-bold" style={{ lineHeight: '1.1' }}>Conversations</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {needsAttention > 0 ? `${needsAttention} needing your attention` : 'All caught up!'}
+        </p>
+      </ScrollReveal>
+
+      <ScrollReveal delay={0.05}>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text" placeholder="Search conversations..."
+            value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+          />
+        </div>
+      </ScrollReveal>
+
+      <ScrollReveal delay={0.1}>
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+          {filters.map(f => (
+            <button key={f} onClick={() => setActiveFilter(f)}
+              className={`px-3.5 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors active:scale-95 ${activeFilter === f ? 'bg-primary text-primary-foreground' : 'bg-card border border-border text-muted-foreground hover:text-foreground'}`}
+            >{f}</button>
+          ))}
+        </div>
+      </ScrollReveal>
+
+      <StaggerContainer className="space-y-2">
+        {filtered.map(thread => {
+          const badge = classificationBadge[thread.classification];
+          return (
+            <StaggerItem key={thread.id}>
+              <button className="glass-card-hover rounded-xl p-4 w-full text-left active:scale-[0.97] transition-transform">
+                <div className="flex items-start justify-between mb-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {thread.unread && <div className="w-2 h-2 rounded-full bg-primary shrink-0 animate-pulse-dot" />}
+                    <span className="font-medium text-sm truncate">{thread.clientName}</span>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ml-2 ${badge.className}`}>{badge.label}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{thread.invoiceNumber} · {thread.channel}</p>
+                <p className="text-sm mt-2 line-clamp-2 text-muted-foreground">{thread.lastMessage}</p>
+                <p className="text-[11px] text-muted-foreground mt-2">{thread.latestAt}</p>
+              </button>
+            </StaggerItem>
+          );
+        })}
+      </StaggerContainer>
+
+      {filtered.length === 0 && (
+        <div className="text-center py-12">
+          <MessageSquare className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+          <p className="text-muted-foreground text-sm">No conversations match your filters</p>
+        </div>
+      )}
+    </div>
+  );
+}
