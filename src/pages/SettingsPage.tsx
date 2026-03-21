@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronRight, AlertOctagon, Shield, X, Check, Plug, Unplug, Key, ExternalLink, Loader2 } from 'lucide-react';
+import { ArrowLeft, ChevronRight, AlertOctagon, Shield, X, Check, Plug, Unplug, Key, ExternalLink, Loader2, Play, Square } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { useAppState } from '@/contexts/AppStateContext';
