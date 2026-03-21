@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, Check, Upload, Database, Mail, Play, Building2, Palette, FileSpreadsheet, Eye, Shield, Sparkles, Edit3 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const steps = [
   { title: 'Create your org', icon: Building2 },
@@ -14,15 +15,52 @@ const steps = [
   { title: 'Go live', icon: Play },
 ];
 
+interface OrgData {
+  businessName: string;
+  displayName: string;
+  country: string;
+  currency: string;
+  timezone: string;
+  senderEmail: string;
+  senderName: string;
+  brandTone: string;
+  importPath: string;
+  trustMode: string;
+}
+
 export default function OnboardingPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
+  const [data, setData] = useState<OrgData>({
+    businessName: '',
+    displayName: '',
+    country: 'US',
+    currency: 'USD',
+    timezone: 'America/New_York',
+    senderEmail: '',
+    senderName: '',
+    brandTone: 'professional',
+    importPath: '',
+    trustMode: 'approval',
+  });
+
+  const update = (field: keyof OrgData, value: string) => setData(d => ({ ...d, [field]: value }));
 
   const canNext = step < steps.length - 1;
   const canBack = step > 0;
 
+  // Validate current step
+  const isStepValid = () => {
+    if (step === 0) return data.businessName.trim().length > 0;
+    if (step === 1) return data.senderEmail.trim().length > 0;
+    if (step === 2) return data.importPath.length > 0;
+    return true;
+  };
+
   const handleFinish = () => {
     localStorage.setItem('inflowe_onboarded', 'true');
+    localStorage.setItem('inflowe_org_data', JSON.stringify(data));
+    toast.success('InFlowe is ready! Welcome aboard.');
     navigate('/');
   };
 
@@ -56,14 +94,14 @@ export default function OnboardingPage() {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
-            {step === 0 && <StepOrganization />}
-            {step === 1 && <StepTone />}
-            {step === 2 && <StepPath />}
-            {step === 3 && <StepImport />}
-            {step === 4 && <StepReview />}
-            {step === 5 && <StepTrust />}
+            {step === 0 && <StepOrganization data={data} update={update} />}
+            {step === 1 && <StepTone data={data} update={update} />}
+            {step === 2 && <StepPath data={data} update={update} />}
+            {step === 3 && <StepImport data={data} />}
+            {step === 4 && <StepReview data={data} />}
+            {step === 5 && <StepTrust data={data} update={update} />}
             {step === 6 && <StepPreview />}
-            {step === 7 && <StepActivate />}
+            {step === 7 && <StepActivate data={data} />}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -82,7 +120,8 @@ export default function OnboardingPage() {
           {canNext ? (
             <button
               onClick={() => setStep(s => s + 1)}
-              className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform"
+              disabled={!isStepValid()}
+              className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-40 disabled:pointer-events-none"
             >
               Continue <ArrowRight className="w-4 h-4" />
             </button>
@@ -100,7 +139,12 @@ export default function OnboardingPage() {
   );
 }
 
-function StepOrganization() {
+interface StepProps {
+  data: OrgData;
+  update?: (field: keyof OrgData, value: string) => void;
+}
+
+function StepOrganization({ data, update }: StepProps) {
   return (
     <div className="space-y-6">
       <div>
@@ -108,20 +152,49 @@ function StepOrganization() {
         <p className="text-muted-foreground text-sm mt-2">This takes about 2 minutes. You can always change these later.</p>
       </div>
       <div className="space-y-4">
-        <Field label="Business name" placeholder="e.g. Acme Creative Agency" />
-        <Field label="Display name" placeholder="How clients see you" helper="This appears in emails sent on your behalf" />
+        <Field label="Business name" placeholder="e.g. Acme Creative Agency" value={data.businessName} onChange={v => update?.('businessName', v)} required />
+        <Field label="Display name" placeholder="How clients see you" value={data.displayName} onChange={v => update?.('displayName', v)} helper="This appears in emails sent on your behalf" />
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Country" placeholder="United States" />
-          <Field label="Currency" placeholder="USD" />
+          <div>
+            <label className="text-sm font-medium block mb-1.5">Country</label>
+            <select value={data.country} onChange={e => update?.('country', e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow">
+              <option value="US">United States</option>
+              <option value="GB">United Kingdom</option>
+              <option value="CA">Canada</option>
+              <option value="AU">Australia</option>
+              <option value="DE">Germany</option>
+              <option value="FR">France</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1.5">Currency</label>
+            <select value={data.currency} onChange={e => update?.('currency', e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow">
+              <option value="USD">USD</option>
+              <option value="GBP">GBP</option>
+              <option value="EUR">EUR</option>
+              <option value="CAD">CAD</option>
+              <option value="AUD">AUD</option>
+            </select>
+          </div>
         </div>
-        <Field label="Timezone" placeholder="America/New_York" />
+        <div>
+          <label className="text-sm font-medium block mb-1.5">Timezone</label>
+          <select value={data.timezone} onChange={e => update?.('timezone', e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow">
+            <option value="America/New_York">Eastern (ET)</option>
+            <option value="America/Chicago">Central (CT)</option>
+            <option value="America/Denver">Mountain (MT)</option>
+            <option value="America/Los_Angeles">Pacific (PT)</option>
+            <option value="Europe/London">London (GMT)</option>
+            <option value="Europe/Berlin">Berlin (CET)</option>
+            <option value="Australia/Sydney">Sydney (AEST)</option>
+          </select>
+        </div>
       </div>
     </div>
   );
 }
 
-function StepTone() {
-  const [tone, setTone] = useState('professional');
+function StepTone({ data, update }: StepProps) {
   const tones = [
     { id: 'professional', label: 'Professional', desc: 'Polished and business-like' },
     { id: 'friendly', label: 'Friendly', desc: 'Warm and approachable' },
@@ -135,16 +208,16 @@ function StepTone() {
         <p className="text-muted-foreground text-sm mt-2">Choose the tone for follow-up messages sent to your clients.</p>
       </div>
       <div className="space-y-4">
-        <Field label="Sender email" placeholder="billing@youragency.com" />
-        <Field label="Sender name" placeholder="Your Agency Name" />
+        <Field label="Sender email" placeholder="billing@youragency.com" value={data.senderEmail} onChange={v => update?.('senderEmail', v)} required />
+        <Field label="Sender name" placeholder="Your Agency Name" value={data.senderName} onChange={v => update?.('senderName', v)} />
         <div className="space-y-2">
           <label className="text-sm font-medium">Brand tone</label>
           {tones.map(t => (
             <button
               key={t.id}
-              onClick={() => setTone(t.id)}
+              onClick={() => update?.('brandTone', t.id)}
               className={`w-full p-4 rounded-xl border text-left transition-all active:scale-[0.98] ${
-                tone === t.id ? 'border-primary bg-accent ring-2 ring-primary/20' : 'border-border bg-card'
+                data.brandTone === t.id ? 'border-primary bg-accent ring-2 ring-primary/20' : 'border-border bg-card'
               }`}
             >
               <p className="font-medium text-sm">{t.label}</p>
@@ -157,11 +230,10 @@ function StepTone() {
   );
 }
 
-function StepPath() {
-  const [path, setPath] = useState('');
+function StepPath({ data, update }: StepProps) {
   const paths = [
     { id: 'csv', icon: FileSpreadsheet, label: 'Upload a spreadsheet', desc: 'Fastest setup. Works immediately.', rec: 'Best if you track invoices in Excel or Google Sheets' },
-    { id: 'mailbox', icon: Mail, label: 'Connect your email', desc: 'Great if you\'re in Gmail or Outlook.', rec: 'We\'ll scan for invoice-related conversations' },
+    { id: 'mailbox', icon: Mail, label: 'Connect your email', desc: "Great if you're in Gmail or Outlook.", rec: "We'll scan for invoice-related conversations" },
     { id: 'accounting', icon: Database, label: 'Connect accounting software', desc: 'Best if you use QuickBooks or Xero.', rec: 'Auto-imports all your invoices and payments' },
     { id: 'demo', icon: Play, label: 'Explore with demo data', desc: 'Try before connecting anything.', rec: 'See how InFlowe works with sample data' },
   ];
@@ -178,9 +250,9 @@ function StepPath() {
           return (
             <button
               key={p.id}
-              onClick={() => setPath(p.id)}
+              onClick={() => update?.('importPath', p.id)}
               className={`w-full p-4 rounded-xl border text-left transition-all active:scale-[0.98] ${
-                path === p.id ? 'border-primary bg-accent ring-2 ring-primary/20' : 'border-border bg-card'
+                data.importPath === p.id ? 'border-primary bg-accent ring-2 ring-primary/20' : 'border-border bg-card'
               }`}
             >
               <div className="flex items-start gap-3">
@@ -201,68 +273,95 @@ function StepPath() {
   );
 }
 
-function StepImport() {
+function StepImport({ data }: StepProps) {
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold" style={{ lineHeight: '1.1' }}>Import your invoices</h2>
-        <p className="text-muted-foreground text-sm mt-2">We'll set up demo data so you can explore right away.</p>
+        <p className="text-muted-foreground text-sm mt-2">
+          {data.importPath === 'demo' ? "We'll set up demo data so you can explore right away." : 'Upload your invoice data to get started.'}
+        </p>
       </div>
-      <div className="glass-card rounded-xl p-6 text-center space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-          <Upload className="w-8 h-8 text-primary" />
+      {data.importPath !== 'demo' ? (
+        <div className="glass-card rounded-xl p-6 text-center space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+            <Upload className="w-8 h-8 text-primary" />
+          </div>
+          <div>
+            <p className="font-medium">Drag & drop your CSV file</p>
+            <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
+          </div>
+          <button className="text-sm text-primary font-medium underline underline-offset-2">Download template</button>
         </div>
-        <div>
-          <p className="font-medium">Drag & drop your CSV file</p>
-          <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
+      ) : (
+        <div className="glass-card rounded-xl p-6 text-center space-y-3">
+          <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mx-auto">
+            <Check className="w-8 h-8 text-success" />
+          </div>
+          <p className="font-medium">Demo data loaded</p>
+          <p className="text-sm text-muted-foreground">12 invoices across 7 clients are ready to explore.</p>
         </div>
-        <button className="text-sm text-primary font-medium underline underline-offset-2">Download template</button>
-      </div>
+      )}
       <div className="bg-accent/50 rounded-xl p-4">
-        <p className="text-sm text-accent-foreground">💡 <strong>Tip:</strong> For this demo, we'll load sample data. In the real app, you'd upload your invoice spreadsheet here.</p>
+        <p className="text-sm text-accent-foreground">💡 <strong>Tip:</strong> {data.importPath === 'demo' ? 'Demo data lets you explore all features safely. No real messages will be sent.' : 'Your CSV should include columns for client name, invoice number, amount, due date, and contact email.'}</p>
       </div>
     </div>
   );
 }
 
-function StepReview() {
+function StepReview({ data }: StepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold" style={{ lineHeight: '1.1' }}>Review your data</h2>
-        <p className="text-muted-foreground text-sm mt-2">Here's a summary of what we found.</p>
+        <h2 className="text-2xl font-bold" style={{ lineHeight: '1.1' }}>Review your setup</h2>
+        <p className="text-muted-foreground text-sm mt-2">Here's a summary of what we've configured.</p>
       </div>
       <div className="glass-card rounded-xl p-5 space-y-3">
         <div className="flex justify-between items-center py-2 border-b border-border">
-          <span className="text-sm">Invoices imported</span>
-          <span className="font-semibold text-sm text-tabular">12</span>
+          <span className="text-sm">Business</span>
+          <span className="font-semibold text-sm">{data.businessName || 'Not set'}</span>
         </div>
         <div className="flex justify-between items-center py-2 border-b border-border">
-          <span className="text-sm">Clients identified</span>
-          <span className="font-semibold text-sm text-tabular">7</span>
+          <span className="text-sm">Sender</span>
+          <span className="font-semibold text-sm">{data.senderEmail || 'Not set'}</span>
         </div>
         <div className="flex justify-between items-center py-2 border-b border-border">
-          <span className="text-sm text-destructive">Overdue invoices</span>
-          <span className="font-semibold text-sm text-tabular text-destructive">5</span>
+          <span className="text-sm">Tone</span>
+          <span className="font-semibold text-sm capitalize">{data.brandTone}</span>
         </div>
-        <div className="flex justify-between items-center py-2">
-          <span className="text-sm status-due-soon px-2 py-0.5 rounded-full">Due soon</span>
-          <span className="font-semibold text-sm text-tabular">2</span>
+        <div className="flex justify-between items-center py-2 border-b border-border">
+          <span className="text-sm">Import source</span>
+          <span className="font-semibold text-sm capitalize">{data.importPath || 'Not set'}</span>
         </div>
+        {data.importPath === 'demo' && (
+          <>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-sm">Invoices</span>
+              <span className="font-semibold text-sm text-tabular">12</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-sm">Clients</span>
+              <span className="font-semibold text-sm text-tabular">7</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-sm text-destructive">Overdue</span>
+              <span className="font-semibold text-sm text-tabular text-destructive">5</span>
+            </div>
+          </>
+        )}
       </div>
       <div className="bg-accent/50 rounded-xl p-4 flex items-start gap-2">
         <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-        <p className="text-sm">All contacts have valid email addresses. You're good to go!</p>
+        <p className="text-sm">Everything looks good. You can always change these in Settings.</p>
       </div>
     </div>
   );
 }
 
-function StepTrust() {
-  const [mode, setMode] = useState('approval');
+function StepTrust({ data, update }: StepProps) {
   const modes = [
-    { id: 'visibility', label: 'Visibility Only', desc: 'See what\'s overdue. No messages sent. Good starting point.', icon: Eye },
-    { id: 'drafts', label: 'Drafts Only', desc: 'We\'ll write follow-ups — you send each one manually.', icon: Edit3 },
+    { id: 'visibility', label: 'Visibility Only', desc: "See what's overdue. No messages sent. Good starting point.", icon: Eye },
+    { id: 'drafts', label: 'Drafts Only', desc: "We'll write follow-ups — you send each one manually.", icon: Edit3 },
     { id: 'approval', label: 'Approval Required', desc: 'We queue sends — you approve each before it goes. Recommended.', icon: Shield, recommended: true },
   ];
 
@@ -278,9 +377,9 @@ function StepTrust() {
           return (
             <button
               key={m.id}
-              onClick={() => setMode(m.id)}
+              onClick={() => update?.('trustMode', m.id)}
               className={`w-full p-4 rounded-xl border text-left transition-all active:scale-[0.98] relative ${
-                mode === m.id ? 'border-primary bg-accent ring-2 ring-primary/20' : 'border-border bg-card'
+                data.trustMode === m.id ? 'border-primary bg-accent ring-2 ring-primary/20' : 'border-border bg-card'
               }`}
             >
               {m.recommended && (
@@ -330,7 +429,13 @@ function StepPreview() {
   );
 }
 
-function StepActivate() {
+function StepActivate({ data }: StepProps) {
+  const trustLabels: Record<string, string> = {
+    visibility: 'Visibility Only — no messages will be sent',
+    drafts: 'Drafts Only — you send each message manually',
+    approval: 'Approval Required — we queue, you approve',
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center pt-4">
@@ -354,19 +459,22 @@ function StepActivate() {
         ))}
       </div>
       <div className="bg-accent/50 rounded-xl p-4 text-center">
-        <p className="text-sm">Every message needs your approval before sending. <br /><span className="text-muted-foreground">You're always in control.</span></p>
+        <p className="text-sm font-medium">{trustLabels[data.trustMode] || 'Approval Required'}</p>
+        <p className="text-xs text-muted-foreground mt-1">You're always in control.</p>
       </div>
     </div>
   );
 }
 
-function Field({ label, placeholder, helper }: { label: string; placeholder: string; helper?: string }) {
+function Field({ label, placeholder, helper, value, onChange, required }: { label: string; placeholder: string; helper?: string; value?: string; onChange?: (v: string) => void; required?: boolean }) {
   return (
     <div>
-      <label className="text-sm font-medium block mb-1.5">{label}</label>
+      <label className="text-sm font-medium block mb-1.5">{label}{required && <span className="text-destructive ml-0.5">*</span>}</label>
       <input
         type="text"
         placeholder={placeholder}
+        value={value || ''}
+        onChange={e => onChange?.(e.target.value)}
         className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
       />
       {helper && <p className="text-xs text-muted-foreground mt-1">{helper}</p>}
