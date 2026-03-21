@@ -1,9 +1,10 @@
 import { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, FileText, Users, CheckCircle, Bell, Settings, MessageSquare, BarChart3, HelpCircle, MoreHorizontal } from 'lucide-react';
+import { Home, FileText, Users, CheckCircle, Bell, Settings, MessageSquare, BarChart3, HelpCircle, MoreHorizontal, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Home' },
@@ -28,6 +29,7 @@ export default function AppShell({ children }: AppShellProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { notifications, markNotificationRead } = useAppState();
+  const { user, signOut } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -57,6 +59,18 @@ export default function AppShell({ children }: AppShellProps) {
                 </span>
               )}
             </button>
+            <button
+              onClick={signOut}
+              className="p-2 rounded-full hover:bg-muted transition-colors active:scale-95"
+              title="Sign out"
+            >
+              <LogOut className="w-5 h-5 text-muted-foreground" />
+            </button>
+            {user && (
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                {(user.user_metadata?.full_name || user.email || '?')[0].toUpperCase()}
+              </div>
+            )}
           </div>
         </div>
       </header>

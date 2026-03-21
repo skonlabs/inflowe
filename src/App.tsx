@@ -2,8 +2,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { AppStateProvider } from "@/contexts/AppStateContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import AppShell from "@/components/AppShell";
+import AuthPage from "@/pages/AuthPage";
 import HomePage from "@/pages/HomePage";
 import InvoicesPage from "@/pages/InvoicesPage";
 import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
@@ -21,30 +24,39 @@ import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
 
+const ProtectedShell = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute>
+    <AppShell>{children}</AppShell>
+  </ProtectedRoute>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <AppStateProvider>
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/onboarding" element={<OnboardingPage />} />
-            <Route path="/" element={<AppShell><HomePage /></AppShell>} />
-            <Route path="/invoices" element={<AppShell><InvoicesPage /></AppShell>} />
-            <Route path="/invoices/:id" element={<AppShell><InvoiceDetailPage /></AppShell>} />
-            <Route path="/clients" element={<AppShell><ClientsPage /></AppShell>} />
-            <Route path="/clients/:id" element={<AppShell><ClientDetailPage /></AppShell>} />
-            <Route path="/approvals" element={<AppShell><ApprovalsPage /></AppShell>} />
-            <Route path="/conversations" element={<AppShell><ConversationsPage /></AppShell>} />
-            <Route path="/conversations/:id" element={<AppShell><ConversationDetailPage /></AppShell>} />
-            <Route path="/reports" element={<AppShell><ReportsPage /></AppShell>} />
-            <Route path="/support" element={<AppShell><SupportPage /></AppShell>} />
-            <Route path="/admin" element={<AppShell><AdminPage /></AppShell>} />
-            <Route path="/settings" element={<AppShell><SettingsPage /></AppShell>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AppStateProvider>
+      <AuthProvider>
+        <AppStateProvider>
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedShell><HomePage /></ProtectedShell>} />
+              <Route path="/invoices" element={<ProtectedShell><InvoicesPage /></ProtectedShell>} />
+              <Route path="/invoices/:id" element={<ProtectedShell><InvoiceDetailPage /></ProtectedShell>} />
+              <Route path="/clients" element={<ProtectedShell><ClientsPage /></ProtectedShell>} />
+              <Route path="/clients/:id" element={<ProtectedShell><ClientDetailPage /></ProtectedShell>} />
+              <Route path="/approvals" element={<ProtectedShell><ApprovalsPage /></ProtectedShell>} />
+              <Route path="/conversations" element={<ProtectedShell><ConversationsPage /></ProtectedShell>} />
+              <Route path="/conversations/:id" element={<ProtectedShell><ConversationDetailPage /></ProtectedShell>} />
+              <Route path="/reports" element={<ProtectedShell><ReportsPage /></ProtectedShell>} />
+              <Route path="/support" element={<ProtectedShell><SupportPage /></ProtectedShell>} />
+              <Route path="/admin" element={<ProtectedShell><AdminPage /></ProtectedShell>} />
+              <Route path="/settings" element={<ProtectedShell><SettingsPage /></ProtectedShell>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AppStateProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
