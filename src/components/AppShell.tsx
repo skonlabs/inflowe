@@ -29,6 +29,7 @@ export default function AppShell({ children }: AppShellProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { notifications, markNotificationRead } = useAppState();
+  const { user, signOut } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
