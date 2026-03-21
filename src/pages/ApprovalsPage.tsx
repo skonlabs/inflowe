@@ -73,7 +73,7 @@ export default function ApprovalsPage() {
 
   const handleReject = async (approval: DisplayApproval) => {
     if (approval.isSupabase) {
-      await supabase.from('approvals').update({ status: 'rejected', decision_at: new Date().toISOString() }).eq('id', approval.id);
+      await supabase.from('approvals').update({ status: 'rejected', decision_at: new Date().toISOString(), approver_user_id: (await supabase.auth.getUser()).data.user?.id }).eq('id', approval.id);
       queryClient.invalidateQueries({ queryKey: ['approvals'] });
     }
     setLocalApprovals(prev => ({ ...prev, [approval.id]: 'rejected' }));
