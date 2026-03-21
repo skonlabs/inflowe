@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, Check, Upload, Database, Mail, Play, Building2, Palette, FileSpreadsheet, Eye, Shield, Sparkles, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const steps = [
   { title: 'Create your org', icon: Building2 },
@@ -30,7 +32,9 @@ interface OrgData {
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const [data, setData] = useState<OrgData>({
     businessName: '',
     displayName: '',
@@ -49,7 +53,6 @@ export default function OnboardingPage() {
   const canNext = step < steps.length - 1;
   const canBack = step > 0;
 
-  // Validate current step
   const isStepValid = () => {
     if (step === 0) return data.businessName.trim().length > 0;
     if (step === 1) return data.senderEmail.trim().length > 0;
@@ -57,11 +60,50 @@ export default function OnboardingPage() {
     return true;
   };
 
-  const handleFinish = () => {
-    localStorage.setItem('inflowe_onboarded', 'true');
-    localStorage.setItem('inflowe_org_data', JSON.stringify(data));
-    toast.success('InFlowe is ready! Welcome aboard.');
-    navigate('/');
+  const handleFinish = async () => {
+    if (!user) return;
+    setSubmitting(true);
+    try {
+      // 1. Create organization
+      const { data: org, error: orgError } = await supabase
+        .from('organizations')
+        .insert({
+          legal_name: data.businessName,
+          display_name: data.displayName || data.businessName,
+          country: data.country,
+          default_currency: data.currency,
+          timezone: data.timezone,
+          sender_email: data.senderEmail || null,
+          sender_display_name: data.senderName || null,
+          brand_tone: data.brandTone,
+          is_demo: data.importPath === 'demo',
+        })
+        .select('id')
+        .single();
+
+      if (orgError) throw orgError;
+
+      // 2. Create membership (owner)
+      const { error: memError } = await supabase
+        .from('memberships')
+        .insert({
+          organization_id: org.id,
+          user_id: user.id,
+          role: 'owner',
+          status: 'active',
+          accepted_at: new Date().toISOString(),
+        });
+
+      if (memError) throw memError;
+
+      toast.success('InFlowe is ready! Welcome aboard.');
+      navigate('/');
+    } catch (err: any) {
+      console.error('Onboarding error:', err);
+      toast.error(err.message || 'Failed to create organization');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -128,9 +170,14 @@ export default function OnboardingPage() {
           ) : (
             <button
               onClick={handleFinish}
-              className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform"
+              disabled={submitting}
+              className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-50"
             >
-              <Play className="w-4 h-4" /> Launch InFlowe
+              {submitting ? (
+                <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <><Play className="w-4 h-4" /> Launch InFlowe</>
+              )}
             </button>
           )}
         </div>

@@ -1,15 +1,39 @@
 import { useNavigate } from 'react-router-dom';
-import { Search, ChevronRight, AlertCircle } from 'lucide-react';
+import { Search, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { demoClients, formatCurrency } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
+import { useUserOrganization, useClientSummaries } from '@/hooks/use-supabase-data';
 
 export default function ClientsPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const { data: membership } = useUserOrganization();
+  const orgId = membership?.organization_id;
+  const { data: dbClients } = useClientSummaries(orgId);
 
-  const activeClients = demoClients.filter(c => {
-    if (c.status !== 'active') return false;
+  // Map Supabase data to display format, fallback to demo
+  const clients = (dbClients && dbClients.length > 0)
+    ? dbClients.map(c => ({
+        id: c.client_id,
+        displayName: c.display_name ?? 'Unnamed',
+        contactName: c.account_owner_name ?? '',
+        outstandingTotal: Number(c.outstanding_total ?? 0),
+        overdueTotal: Number(c.overdue_total ?? 0),
+        riskScore: Number(c.risk_score ?? 0),
+        sensitivityLevel: c.sensitivity_level ?? 'standard',
+      }))
+    : demoClients.filter(c => c.status === 'active').map(c => ({
+        id: c.id,
+        displayName: c.displayName,
+        contactName: c.contactName,
+        outstandingTotal: c.outstandingTotal,
+        overdueTotal: c.overdueTotal,
+        riskScore: c.riskScore,
+        sensitivityLevel: c.sensitivityLevel,
+      }));
+
+  const filtered = clients.filter(c => {
     if (search && !c.displayName.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -18,7 +42,7 @@ export default function ClientsPage() {
     <div className="px-4 py-6 space-y-4">
       <ScrollReveal>
         <h1 className="text-xl font-bold" style={{ lineHeight: '1.1' }}>Clients</h1>
-        <p className="text-sm text-muted-foreground mt-1">{demoClients.filter(c => c.status === 'active').length} active clients</p>
+        <p className="text-sm text-muted-foreground mt-1">{clients.length} active clients</p>
       </ScrollReveal>
 
       <ScrollReveal delay={0.05}>
@@ -35,7 +59,7 @@ export default function ClientsPage() {
       </ScrollReveal>
 
       <StaggerContainer className="space-y-2">
-        {activeClients.map(client => (
+        {filtered.map(client => (
           <StaggerItem key={client.id}>
             <button onClick={() => navigate(`/clients/${client.id}`)} className="glass-card-hover rounded-xl p-4 w-full text-left active:scale-[0.97] transition-transform">
               <div className="flex items-center justify-between">
@@ -70,6 +94,12 @@ export default function ClientsPage() {
           </StaggerItem>
         ))}
       </StaggerContainer>
+
+      {filtered.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground text-sm">No clients found</p>
+        </div>
+      )}
     </div>
   );
 }
