@@ -1,23 +1,42 @@
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Clock, CheckCircle2, TrendingUp, ArrowRight, Phone, Calendar, Sparkles } from 'lucide-react';
-import { homeSummary, formatCurrency, aiRecommendations, demoApprovals } from '@/lib/demo-data';
+import { formatCurrency, demoApprovals, homeSummary as demoHomeSummary, aiRecommendations } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
+import { useUserOrganization, useHomeSummary, useApprovals } from '@/hooks/use-supabase-data';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const s = homeSummary;
+  const { data: membership } = useUserOrganization();
+  const orgId = membership?.organization_id;
+  const { data: dbSummary } = useHomeSummary(orgId);
+
+  // Use Supabase data if available, fallback to demo
+  const s = dbSummary ? {
+    overdueTotal: Number(dbSummary.overdue_total ?? 0),
+    overdueCount: dbSummary.overdue_count ?? 0,
+    dueSoonTotal: Number(dbSummary.due_soon_total ?? 0),
+    dueSoonCount: dbSummary.due_soon_count ?? 0,
+    approvalsPending: dbSummary.approvals_pending ?? 0,
+    repliesNeedingAttention: dbSummary.replies_needing_attention ?? 0,
+    recoveredThisWeek: 0,
+    totalOutstanding: Number(dbSummary.overdue_total ?? 0) + Number(dbSummary.due_soon_total ?? 0),
+  } : demoHomeSummary;
+
+  const orgName = membership?.organizations
+    ? (membership.organizations as any).display_name
+    : null;
 
   return (
     <div className="px-4 py-6 space-y-6">
-      {/* Greeting */}
       <ScrollReveal>
         <div>
           <h1 className="text-2xl font-bold" style={{ lineHeight: '1.1' }}>Good morning 👋</h1>
-          <p className="text-muted-foreground text-sm mt-1">Here's what needs your attention today</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            {orgName ? `${orgName} — here's what needs attention` : "Here's what needs your attention today"}
+          </p>
         </div>
       </ScrollReveal>
 
-      {/* Key metrics */}
       <StaggerContainer className="grid grid-cols-2 gap-3">
         <StaggerItem>
           <button onClick={() => navigate('/invoices?filter=overdue')} className="glass-card-hover rounded-xl p-4 w-full text-left active:scale-[0.97] transition-transform">
@@ -65,7 +84,6 @@ export default function HomePage() {
         </StaggerItem>
       </StaggerContainer>
 
-      {/* Pending approvals preview */}
       <ScrollReveal delay={0.1}>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -91,7 +109,6 @@ export default function HomePage() {
         </div>
       </ScrollReveal>
 
-      {/* AI Recommendations */}
       <ScrollReveal delay={0.2}>
         <div className="space-y-3">
           <div className="flex items-center gap-2">
@@ -117,25 +134,26 @@ export default function HomePage() {
         </div>
       </ScrollReveal>
 
-      {/* Outstanding total */}
       <ScrollReveal delay={0.3}>
         <div className="glass-card rounded-xl p-4">
           <p className="text-sm text-muted-foreground">Total outstanding</p>
           <p className="text-3xl font-bold text-tabular mt-1">{formatCurrency(s.totalOutstanding)}</p>
-          <div className="flex gap-4 mt-3">
-            <div className="flex-1">
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div className="h-full rounded-full bg-destructive" style={{ width: `${(s.overdueTotal / s.totalOutstanding) * 100}%` }} />
+          {s.totalOutstanding > 0 && (
+            <div className="flex gap-4 mt-3">
+              <div className="flex-1">
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full rounded-full bg-destructive" style={{ width: `${(s.overdueTotal / s.totalOutstanding) * 100}%` }} />
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">Overdue {Math.round((s.overdueTotal / s.totalOutstanding) * 100)}%</p>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">Overdue {Math.round((s.overdueTotal / s.totalOutstanding) * 100)}%</p>
-            </div>
-            <div className="flex-1">
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div className="h-full rounded-full bg-warning" style={{ width: `${(s.dueSoonTotal / s.totalOutstanding) * 100}%` }} />
+              <div className="flex-1">
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full rounded-full bg-warning" style={{ width: `${(s.dueSoonTotal / s.totalOutstanding) * 100}%` }} />
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">Due soon {Math.round((s.dueSoonTotal / s.totalOutstanding) * 100)}%</p>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">Due soon {Math.round((s.dueSoonTotal / s.totalOutstanding) * 100)}%</p>
             </div>
-          </div>
+          )}
         </div>
       </ScrollReveal>
     </div>

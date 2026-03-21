@@ -4,24 +4,79 @@ import { demoApprovals, formatCurrency } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { useUserOrganization, useApprovals } from '@/hooks/use-supabase-data';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+
+interface DisplayApproval {
+  id: string;
+  clientName: string;
+  invoiceNumber: string;
+  amount: number;
+  daysOverdue: number;
+  stage: string;
+  rationale: string;
+  messagePreview: string;
+  status: string;
+  isSupabase: boolean;
+}
 
 export default function ApprovalsPage() {
-  const [approvals, setApprovals] = useState(demoApprovals);
+  const { data: membership } = useUserOrganization();
+  const orgId = membership?.organization_id;
+  const { data: dbApprovals } = useApprovals(orgId);
+  const queryClient = useQueryClient();
+
+  // Map Supabase approvals or fallback to demo
+  const supabaseApprovals: DisplayApproval[] = (dbApprovals && dbApprovals.length > 0)
+    ? dbApprovals.map(a => ({
+        id: a.id,
+        clientName: (a.clients as any)?.display_name ?? 'Unknown',
+        invoiceNumber: (a.invoices as any)?.invoice_number ?? '',
+        amount: Number((a.invoices as any)?.amount ?? 0),
+        daysOverdue: (a.invoices as any)?.days_overdue ?? 0,
+        stage: a.approval_type,
+        rationale: a.rationale_shown,
+        messagePreview: (a.outbound_messages as any)?.body_text ?? '',
+        status: a.status,
+        isSupabase: true,
+      }))
+    : demoApprovals.map(a => ({
+        id: a.id,
+        clientName: a.clientName,
+        invoiceNumber: a.invoiceNumber,
+        amount: a.amount,
+        daysOverdue: a.daysOverdue,
+        stage: a.stage,
+        rationale: a.rationale,
+        messagePreview: a.messagePreview,
+        status: a.status,
+        isSupabase: false,
+      }));
+
+  const [localApprovals, setLocalApprovals] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
 
-  const pending = approvals.filter(a => a.status === 'pending');
+  const pending = supabaseApprovals.filter(a => !localApprovals[a.id] && a.status === 'pending');
 
-  const handleApprove = (id: string) => {
-    const edited = editedMessages[id];
-    setApprovals(prev => prev.map(a => a.id === id ? { ...a, status: 'approved' as const, messagePreview: edited || a.messagePreview } : a));
+  const handleApprove = async (approval: DisplayApproval) => {
+    if (approval.isSupabase) {
+      await supabase.from('approvals').update({ status: 'approved', decision_at: new Date().toISOString() }).eq('id', approval.id);
+      queryClient.invalidateQueries({ queryKey: ['approvals'] });
+    }
+    setLocalApprovals(prev => ({ ...prev, [approval.id]: 'approved' }));
     setEditingId(null);
-    toast.success(edited ? 'Edited message approved and queued for sending' : 'Message approved and queued for sending');
+    toast.success('Message approved and queued for sending');
   };
 
-  const handleReject = (id: string) => {
-    setApprovals(prev => prev.map(a => a.id === id ? { ...a, status: 'rejected' as const } : a));
+  const handleReject = async (approval: DisplayApproval) => {
+    if (approval.isSupabase) {
+      await supabase.from('approvals').update({ status: 'rejected', decision_at: new Date().toISOString() }).eq('id', approval.id);
+      queryClient.invalidateQueries({ queryKey: ['approvals'] });
+    }
+    setLocalApprovals(prev => ({ ...prev, [approval.id]: 'rejected' }));
     setEditingId(null);
     toast.info('Message rejected — no message will be sent');
   };
@@ -66,7 +121,6 @@ export default function ApprovalsPage() {
           return (
             <StaggerItem key={approval.id}>
               <div className="glass-card rounded-xl overflow-hidden">
-                {/* Header */}
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : approval.id)}
                   className="w-full text-left p-4 active:scale-[0.99] transition-transform"
@@ -86,7 +140,6 @@ export default function ApprovalsPage() {
                   <p className="text-xs text-muted-foreground mt-2">{approval.rationale}</p>
                 </button>
 
-                {/* Expanded content */}
                 <AnimatePresence>
                   {isExpanded && (
                     <motion.div
@@ -96,24 +149,17 @@ export default function ApprovalsPage() {
                       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                     >
                       <div className="px-4 pb-4 space-y-3">
-                        {/* Message preview / editor */}
                         <div className="bg-muted/50 rounded-lg p-3">
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                               <Edit3 className="w-3 h-3" /> {isEditing ? 'Editing message' : 'Message preview'}
                             </p>
                             {!isEditing ? (
-                              <button
-                                onClick={() => startEditing(approval.id, displayText)}
-                                className="text-xs text-primary font-medium flex items-center gap-1 active:scale-95"
-                              >
+                              <button onClick={() => startEditing(approval.id, displayText)} className="text-xs text-primary font-medium flex items-center gap-1 active:scale-95">
                                 <Edit3 className="w-3 h-3" /> Edit
                               </button>
                             ) : (
-                              <button
-                                onClick={() => saveEdit(approval.id)}
-                                className="text-xs text-primary font-medium flex items-center gap-1 active:scale-95"
-                              >
+                              <button onClick={() => saveEdit(approval.id)} className="text-xs text-primary font-medium flex items-center gap-1 active:scale-95">
                                 <Save className="w-3 h-3" /> Save
                               </button>
                             )}
@@ -129,31 +175,16 @@ export default function ApprovalsPage() {
                           )}
                         </div>
 
-                        {editedMessages[approval.id] && editedMessages[approval.id] !== approval.messagePreview && !isEditing && (
-                          <div className="flex items-center gap-1 text-xs text-primary">
-                            <Edit3 className="w-3 h-3" />
-                            <span className="font-medium">Message has been edited</span>
-                          </div>
-                        )}
-
-                        {/* What happens next */}
                         <div className="text-xs text-muted-foreground flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           If approved, this message will be sent via email. Next check-in in 7 days.
                         </div>
 
-                        {/* Actions */}
                         <div className="flex gap-2 pt-1">
-                          <button
-                            onClick={() => handleApprove(approval.id)}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform"
-                          >
+                          <button onClick={() => handleApprove(approval)} className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform">
                             <Check className="w-4 h-4" /> Approve & Send
                           </button>
-                          <button
-                            onClick={() => handleReject(approval.id)}
-                            className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform text-destructive"
-                          >
+                          <button onClick={() => handleReject(approval)} className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform text-destructive">
                             <X className="w-4 h-4" />
                           </button>
                         </div>

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Filter, ArrowUpDown, ChevronRight } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { demoInvoices, formatCurrency, getStateLabel, getStateClass } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useUserOrganization, useInvoiceList } from '@/hooks/use-supabase-data';
 
 const filters = ['All', 'Overdue', 'Due Soon', 'Paid', 'Disputed'];
 const stateMap: Record<string, string[]> = {
@@ -15,19 +16,43 @@ export default function InvoicesPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { invoiceActions } = useAppState();
+  const { data: membership } = useUserOrganization();
+  const orgId = membership?.organization_id;
+  const { data: dbInvoices } = useInvoiceList(orgId);
+
   const initialFilter = searchParams.get('filter') === 'overdue' ? 'Overdue'
     : searchParams.get('filter') === 'due_soon' ? 'Due Soon' : 'All';
   const [activeFilter, setActiveFilter] = useState(initialFilter);
   const [search, setSearch] = useState('');
 
-  const getEffectiveState = (inv: typeof demoInvoices[0]) => {
+  // Map Supabase data or fallback to demo
+  const invoices = (dbInvoices && dbInvoices.length > 0)
+    ? dbInvoices.map(inv => ({
+        id: inv.invoice_id,
+        invoiceNumber: inv.invoice_number ?? '',
+        clientName: inv.client_display_name ?? 'Unknown',
+        amount: Number(inv.amount ?? 0),
+        remainingBalance: Number(inv.remaining_balance ?? 0),
+        currency: inv.currency ?? 'USD',
+        dueDate: inv.due_date ?? '',
+        state: (inv.state ?? 'sent') as string,
+        daysOverdue: inv.days_overdue ?? 0,
+        agingBucket: inv.aging_bucket ?? 'current',
+        collectionPriority: inv.collection_priority ?? 'medium',
+        lastActionAt: inv.last_action_taken_at,
+        nextActionAt: inv.next_action_planned_at,
+        riskScore: Number(inv.risk_score ?? 0),
+      }))
+    : demoInvoices;
+
+  const getEffectiveState = (inv: typeof invoices[0]) => {
     const actions = invoiceActions[inv.id] || {};
     if (actions.isPaid) return 'paid';
     if (actions.isDisputed) return 'disputed';
     return inv.state;
   };
 
-  const filtered = demoInvoices.filter(inv => {
+  const filtered = invoices.filter(inv => {
     const effectiveState = getEffectiveState(inv);
     const states = stateMap[activeFilter];
     if (states && states.length > 0 && !states.includes(effectiveState)) return false;
@@ -35,13 +60,13 @@ export default function InvoicesPage() {
     return true;
   });
 
-  const overdueCount = demoInvoices.filter(i => getEffectiveState(i) === 'overdue').length;
+  const overdueCount = invoices.filter(i => getEffectiveState(i) === 'overdue').length;
 
   return (
     <div className="px-4 py-6 space-y-4">
       <ScrollReveal>
         <h1 className="text-xl font-bold" style={{ lineHeight: '1.1' }}>Invoices</h1>
-        <p className="text-sm text-muted-foreground mt-1">{demoInvoices.length} total · {overdueCount} overdue</p>
+        <p className="text-sm text-muted-foreground mt-1">{invoices.length} total · {overdueCount} overdue</p>
       </ScrollReveal>
 
       <ScrollReveal delay={0.05}>
