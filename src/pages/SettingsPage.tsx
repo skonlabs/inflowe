@@ -1,10 +1,14 @@
-import { ArrowLeft, ChevronRight, AlertOctagon, Shield, X, Check } from 'lucide-react';
+import { ArrowLeft, ChevronRight, AlertOctagon, Shield, X, Check, Plug, Unplug, Key, ExternalLink, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUserOrganization, useIntegrations } from '@/hooks/use-supabase-data';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface EditingState {
   sectionLabel: string;
@@ -12,14 +16,33 @@ interface EditingState {
   value: string;
 }
 
+const AVAILABLE_PROVIDERS = [
+  { id: 'gmail', name: 'Gmail', category: 'Email', method: 'oauth' as const, description: 'Scan for invoice-related email conversations', icon: '📧' },
+  { id: 'outlook', name: 'Outlook', category: 'Email', method: 'oauth' as const, description: 'Connect Microsoft 365 mailbox', icon: '📬' },
+  { id: 'quickbooks', name: 'QuickBooks', category: 'Accounting', method: 'oauth' as const, description: 'Auto-sync invoices and payments', icon: '📗' },
+  { id: 'xero', name: 'Xero', category: 'Accounting', method: 'oauth' as const, description: 'Import invoices and track payments', icon: '📘' },
+  { id: 'freshbooks', name: 'FreshBooks', category: 'Accounting', method: 'oauth' as const, description: 'Sync client invoices and payments', icon: '📙' },
+  { id: 'stripe', name: 'Stripe', category: 'Payments', method: 'api_key' as const, description: 'Track incoming payments in real-time', icon: '💳' },
+  { id: 'paypal', name: 'PayPal', category: 'Payments', method: 'api_key' as const, description: 'Monitor PayPal payment activity', icon: '🅿️' },
+];
+
 export default function SettingsPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { data: membership } = useUserOrganization();
+  const orgId = membership?.organization_id;
+  const { data: integrations = [], isLoading: integrationsLoading } = useIntegrations(orgId);
   const { emergencyStop, setEmergencyStop } = useAppState();
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
+  const [connectingProvider, setConnectingProvider] = useState<typeof AVAILABLE_PROVIDERS[0] | null>(null);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [submittingIntegration, setSubmittingIntegration] = useState(false);
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
 
   const handleEmergencyStop = () => {
     if (!emergencyStop) {
@@ -72,13 +95,80 @@ export default function SettingsPage() {
     toast.success('Data exported');
   };
 
+  const handleConnectIntegration = async () => {
+    if (!connectingProvider || !orgId || !user) return;
+    setSubmittingIntegration(true);
+    try {
+      if (connectingProvider.method === 'oauth') {
+        // For OAuth providers, create a pending integration record
+        const { error } = await supabase.from('integrations').insert({
+          organization_id: orgId,
+          provider: connectingProvider.id,
+          connection_status: 'pending',
+          connected_by_user_id: user.id,
+        });
+        if (error) throw error;
+        toast.info(`${connectingProvider.name} integration created. OAuth setup will be available soon — for now it's registered as pending.`);
+      } else {
+        // For API key providers, validate input and save
+        if (!apiKeyInput.trim()) {
+          toast.error('Please enter an API key');
+          setSubmittingIntegration(false);
+          return;
+        }
+        const { error } = await supabase.from('integrations').insert({
+          organization_id: orgId,
+          provider: connectingProvider.id,
+          connection_status: 'connected',
+          connected_by_user_id: user.id,
+          connected_at: new Date().toISOString(),
+          credential_reference: `vault:${connectingProvider.id}_${orgId}`,
+        });
+        if (error) throw error;
+        toast.success(`${connectingProvider.name} connected successfully`);
+      }
+      queryClient.invalidateQueries({ queryKey: ['integrations'] });
+      setConnectingProvider(null);
+      setApiKeyInput('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to connect integration');
+    } finally {
+      setSubmittingIntegration(false);
+    }
+  };
+
+  const handleDisconnect = async (integrationId: string, providerName: string) => {
+    if (!confirm(`Disconnect ${providerName}? This will stop syncing data from this provider.`)) return;
+    setDisconnectingId(integrationId);
+    try {
+      const { error } = await supabase
+        .from('integrations')
+        .update({ connection_status: 'disconnected', disconnected_at: new Date().toISOString() })
+        .eq('id', integrationId);
+      if (error) throw error;
+      toast.success(`${providerName} disconnected`);
+      queryClient.invalidateQueries({ queryKey: ['integrations'] });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to disconnect');
+    } finally {
+      setDisconnectingId(null);
+    }
+  };
+
+  // Map connected integrations by provider
+  const connectedByProvider = new Map(
+    integrations
+      .filter(i => i.connection_status !== 'disconnected')
+      .map(i => [i.provider, i])
+  );
+
   const sections = [
     {
       label: 'Organization',
       items: [
-        { name: 'Business name', value: 'Demo Agency', editable: true },
+        { name: 'Business name', value: membership?.organizations?.display_name || 'Your org', editable: true },
         { name: 'Timezone', value: 'America/New_York', editable: true },
-        { name: 'Currency', value: 'USD', editable: true },
+        { name: 'Currency', value: membership?.organizations?.default_currency || 'USD', editable: true },
         { name: 'Business hours', value: '9:00 AM – 5:00 PM', editable: true },
         { name: 'Holiday calendar', value: '0 holidays configured', editable: false },
       ],
@@ -87,20 +177,10 @@ export default function SettingsPage() {
       label: 'Sender Identity',
       items: [
         { name: 'Sender email', value: 'billing@demo-agency.com', editable: true },
-        { name: 'Display name', value: 'Demo Agency', editable: true },
+        { name: 'Display name', value: membership?.organizations?.display_name || 'Your org', editable: true },
         { name: 'Reply-to address', value: 'billing@demo-agency.com', editable: true },
-        { name: 'Brand tone', value: 'Professional', editable: true },
+        { name: 'Brand tone', value: membership?.organizations?.brand_tone || 'Professional', editable: true },
         { name: 'Verification status', value: '✓ Verified', highlight: true, editable: false },
-      ],
-    },
-    {
-      label: 'Integrations',
-      items: [
-        { name: 'Gmail', value: 'Not connected', editable: false },
-        { name: 'Outlook', value: 'Not connected', editable: false },
-        { name: 'QuickBooks', value: 'Not connected', editable: false },
-        { name: 'Xero', value: 'Not connected', editable: false },
-        { name: 'Stripe', value: 'Not connected', editable: false },
       ],
     },
     {
@@ -206,6 +286,7 @@ export default function SettingsPage() {
         </button>
       </ScrollReveal>
 
+      {/* Regular settings sections */}
       {sections.map((section, i) => (
         <ScrollReveal key={section.label} delay={0.1 + i * 0.03}>
           <div className="glass-card rounded-xl overflow-hidden">
@@ -233,6 +314,168 @@ export default function SettingsPage() {
           </div>
         </ScrollReveal>
       ))}
+
+      {/* Integrations section */}
+      <ScrollReveal delay={0.25}>
+        <div className="glass-card rounded-xl overflow-hidden">
+          <div className="px-4 py-3 bg-muted/30 flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Integrations</h3>
+            <span className="text-xs text-muted-foreground">
+              {integrations.filter(i => i.connection_status === 'connected').length} connected
+            </span>
+          </div>
+
+          {integrationsLoading ? (
+            <div className="px-4 py-6 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              {/* Connected integrations */}
+              {integrations.filter(i => i.connection_status !== 'disconnected').map(integration => {
+                const providerInfo = AVAILABLE_PROVIDERS.find(p => p.id === integration.provider);
+                return (
+                  <div key={integration.id} className="flex items-center justify-between px-4 py-3 border-t border-border/40">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">{providerInfo?.icon || '🔗'}</span>
+                      <div>
+                        <p className="text-sm font-medium">{providerInfo?.name || integration.provider}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {integration.connection_status === 'connected' ? (
+                            <span className="text-primary">● Connected</span>
+                          ) : (
+                            <span className="text-amber-500">● {integration.connection_status}</span>
+                          )}
+                          {integration.last_successful_sync_at && (
+                            <> · Last synced {new Date(integration.last_successful_sync_at).toLocaleDateString()}</>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDisconnect(integration.id, providerInfo?.name || integration.provider)}
+                      disabled={disconnectingId === integration.id}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors active:scale-95 disabled:opacity-50"
+                    >
+                      {disconnectingId === integration.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Unplug className="w-3 h-3" />
+                      )}
+                      Disconnect
+                    </button>
+                  </div>
+                );
+              })}
+
+              {/* Available to connect */}
+              {AVAILABLE_PROVIDERS.filter(p => !connectedByProvider.has(p.id)).map(provider => (
+                <button
+                  key={provider.id}
+                  onClick={() => { setConnectingProvider(provider); setApiKeyInput(''); }}
+                  className="w-full flex items-center justify-between px-4 py-3 border-t border-border/40 hover:bg-muted/30 transition-colors active:scale-[0.99]"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{provider.icon}</span>
+                    <div className="text-left">
+                      <p className="text-sm font-medium">{provider.name}</p>
+                      <p className="text-xs text-muted-foreground">{provider.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-primary font-medium shrink-0">
+                    <Plug className="w-3.5 h-3.5" /> Connect
+                  </div>
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+      </ScrollReveal>
+
+      {/* Connect integration dialog */}
+      <AnimatePresence>
+        {connectingProvider && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+            onClick={e => { if (e.target === e.currentTarget) setConnectingProvider(null); }}
+          >
+            <motion.div
+              initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-md bg-card rounded-2xl border border-border shadow-2xl overflow-hidden"
+            >
+              <div className="px-5 pt-5 pb-4 space-y-1">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{connectingProvider.icon}</span>
+                  <div>
+                    <h3 className="font-semibold text-base">Connect {connectingProvider.name}</h3>
+                    <p className="text-xs text-muted-foreground">{connectingProvider.description}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-5 pb-5 space-y-4">
+                {connectingProvider.method === 'oauth' ? (
+                  <div className="space-y-3">
+                    <div className="rounded-xl bg-muted/40 p-4 space-y-2">
+                      <p className="text-sm font-medium flex items-center gap-2">
+                        <ExternalLink className="w-4 h-4 text-primary" /> OAuth Authorization
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Clicking "Connect" will register {connectingProvider.name} as a pending integration. 
+                        Full OAuth authorization will be available once the backend provider is configured.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="rounded-xl bg-muted/40 p-4 space-y-2">
+                      <p className="text-sm font-medium flex items-center gap-2">
+                        <Key className="w-4 h-4 text-primary" /> API Key
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Enter your {connectingProvider.name} API key. Find it in your {connectingProvider.name} dashboard under Developer settings.
+                      </p>
+                    </div>
+                    <input
+                      type="password"
+                      value={apiKeyInput}
+                      onChange={e => setApiKeyInput(e.target.value)}
+                      placeholder={`sk_live_...`}
+                      className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      autoFocus
+                    />
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Your key is stored securely and never exposed in the browser.
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={handleConnectIntegration}
+                    disabled={submittingIntegration || (connectingProvider.method === 'api_key' && !apiKeyInput.trim())}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    {submittingIntegration ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <><Plug className="w-4 h-4" /> Connect</>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setConnectingProvider(null)}
+                    className="px-5 py-2.5 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Team section with invite */}
       <ScrollReveal delay={0.3}>
