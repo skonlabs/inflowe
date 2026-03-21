@@ -165,3 +165,19 @@ export function useConversationThreads(orgId: string | undefined) {
     },
   });
 }
+
+export function useIntegrations(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ['integrations', orgId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('integrations')
+        .select('*')
+        .eq('organization_id', orgId!)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
