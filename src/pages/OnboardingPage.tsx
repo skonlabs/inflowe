@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Check, Upload, Database, Mail, Play, Building2, Palette, FileSpreadsheet, Eye, Shield, Sparkles } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, Upload, Database, Mail, Play, Building2, Palette, FileSpreadsheet, Eye, Shield, Sparkles, Edit3 } from 'lucide-react';
 
 const steps = [
   { title: 'Create your org', icon: Building2 },
