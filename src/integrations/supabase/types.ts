@@ -14,6 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
+      approvals: {
+        Row: {
+          approval_type: string
+          approver_role: string | null
+          approver_user_id: string | null
+          client_id: string | null
+          context_shown: Json
+          created_at: string
+          decision_at: string | null
+          edits_applied: Json | null
+          expires_at: string
+          id: string
+          invoice_id: string | null
+          organization_id: string
+          outbound_message_id: string | null
+          rationale_shown: string
+          rejection_reason: string | null
+          status: string
+          updated_at: string
+          workflow_action_id: string | null
+        }
+        Insert: {
+          approval_type: string
+          approver_role?: string | null
+          approver_user_id?: string | null
+          client_id?: string | null
+          context_shown: Json
+          created_at?: string
+          decision_at?: string | null
+          edits_applied?: Json | null
+          expires_at: string
+          id?: string
+          invoice_id?: string | null
+          organization_id: string
+          outbound_message_id?: string | null
+          rationale_shown: string
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          workflow_action_id?: string | null
+        }
+        Update: {
+          approval_type?: string
+          approver_role?: string | null
+          approver_user_id?: string | null
+          client_id?: string | null
+          context_shown?: Json
+          created_at?: string
+          decision_at?: string | null
+          edits_applied?: Json | null
+          expires_at?: string
+          id?: string
+          invoice_id?: string | null
+          organization_id?: string
+          outbound_message_id?: string | null
+          rationale_shown?: string
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          workflow_action_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approvals_approver_user_id_fkey"
+            columns: ["approver_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approvals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approvals_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approvals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approvals_outbound_message_id_fkey"
+            columns: ["outbound_message_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_assignments: {
         Row: {
           client_id: string
@@ -282,6 +381,79 @@ export type Database = {
           },
         ]
       }
+      communication_threads: {
+        Row: {
+          channel: string
+          client_id: string
+          created_at: string
+          id: string
+          latest_message_at: string | null
+          latest_reply_at: string | null
+          linked_invoice_ids: string[]
+          organization_id: string
+          primary_invoice_id: string | null
+          provider_thread_id: string | null
+          subject: string | null
+          thread_classification: string
+          thread_status: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          client_id: string
+          created_at?: string
+          id?: string
+          latest_message_at?: string | null
+          latest_reply_at?: string | null
+          linked_invoice_ids?: string[]
+          organization_id: string
+          primary_invoice_id?: string | null
+          provider_thread_id?: string | null
+          subject?: string | null
+          thread_classification?: string
+          thread_status?: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          latest_message_at?: string | null
+          latest_reply_at?: string | null
+          linked_invoice_ids?: string[]
+          organization_id?: string
+          primary_invoice_id?: string | null
+          provider_thread_id?: string | null
+          subject?: string | null
+          thread_classification?: string
+          thread_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_threads_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_threads_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_threads_primary_invoice_id_fkey"
+            columns: ["primary_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_batches: {
         Row: {
           column_mapping: Json
@@ -353,6 +525,149 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inbound_messages: {
+        Row: {
+          action_outcome: string | null
+          channel: string
+          classification: string
+          classification_confidence: number | null
+          classification_model_used: string | null
+          classification_prompt_version: string | null
+          classified_by_user_id: string | null
+          client_id: string | null
+          communication_thread_id: string | null
+          created_at: string
+          id: string
+          invoice_id: string | null
+          linked_outbound_message_id: string | null
+          manual_review_reason: string | null
+          organization_id: string
+          out_of_office_until: string | null
+          promise_to_pay_date: string | null
+          provider_message_id: string | null
+          provider_thread_id: string | null
+          raw_content: string
+          received_at: string
+          requires_manual_review: boolean
+          sender_contact_id: string | null
+          sender_email: string | null
+          sender_name: string | null
+          sender_phone: string | null
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          action_outcome?: string | null
+          channel: string
+          classification?: string
+          classification_confidence?: number | null
+          classification_model_used?: string | null
+          classification_prompt_version?: string | null
+          classified_by_user_id?: string | null
+          client_id?: string | null
+          communication_thread_id?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          linked_outbound_message_id?: string | null
+          manual_review_reason?: string | null
+          organization_id: string
+          out_of_office_until?: string | null
+          promise_to_pay_date?: string | null
+          provider_message_id?: string | null
+          provider_thread_id?: string | null
+          raw_content: string
+          received_at: string
+          requires_manual_review?: boolean
+          sender_contact_id?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          sender_phone?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action_outcome?: string | null
+          channel?: string
+          classification?: string
+          classification_confidence?: number | null
+          classification_model_used?: string | null
+          classification_prompt_version?: string | null
+          classified_by_user_id?: string | null
+          client_id?: string | null
+          communication_thread_id?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          linked_outbound_message_id?: string | null
+          manual_review_reason?: string | null
+          organization_id?: string
+          out_of_office_until?: string | null
+          promise_to_pay_date?: string | null
+          provider_message_id?: string | null
+          provider_thread_id?: string | null
+          raw_content?: string
+          received_at?: string
+          requires_manual_review?: boolean
+          sender_contact_id?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          sender_phone?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbound_messages_classified_by_user_id_fkey"
+            columns: ["classified_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_messages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_messages_communication_thread_id_fkey"
+            columns: ["communication_thread_id"]
+            isOneToOne: false
+            referencedRelation: "communication_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_messages_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_messages_linked_outbound_message_id_fkey"
+            columns: ["linked_outbound_message_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_messages_sender_contact_id_fkey"
+            columns: ["sender_contact_id"]
+            isOneToOne: false
+            referencedRelation: "client_contacts"
             referencedColumns: ["id"]
           },
         ]
@@ -776,6 +1091,194 @@ export type Database = {
         }
         Relationships: []
       }
+      outbound_messages: {
+        Row: {
+          ai_generation_latency_ms: number | null
+          ai_model_used: string | null
+          ai_policy_check_result: Json | null
+          ai_prompt_version: string | null
+          approval_context: Json | null
+          approval_expires_at: string | null
+          approval_required: boolean
+          approval_status: string
+          approved_at: string | null
+          approved_by_user_id: string | null
+          approver_user_id: string | null
+          body_html: string | null
+          body_text: string
+          channel: string
+          client_id: string
+          collection_stage: string | null
+          communication_thread_id: string | null
+          contact_id: string | null
+          created_at: string
+          delivered_at: string | null
+          edits_applied: Json | null
+          edits_made: boolean
+          failed_at: string | null
+          failure_category: string | null
+          failure_detail: string | null
+          id: string
+          idempotency_key: string
+          invoice_id: string | null
+          organization_id: string
+          provider_message_id: string | null
+          provider_response: Json | null
+          rationale: string | null
+          rationale_code: string | null
+          retry_count: number
+          retry_eligible: boolean
+          send_status: string
+          sent_at: string | null
+          source_type: string
+          subject: string | null
+          template_id: string | null
+          updated_at: string
+          workflow_action_id: string | null
+          workflow_run_id: string | null
+        }
+        Insert: {
+          ai_generation_latency_ms?: number | null
+          ai_model_used?: string | null
+          ai_policy_check_result?: Json | null
+          ai_prompt_version?: string | null
+          approval_context?: Json | null
+          approval_expires_at?: string | null
+          approval_required?: boolean
+          approval_status?: string
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          approver_user_id?: string | null
+          body_html?: string | null
+          body_text: string
+          channel: string
+          client_id: string
+          collection_stage?: string | null
+          communication_thread_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          edits_applied?: Json | null
+          edits_made?: boolean
+          failed_at?: string | null
+          failure_category?: string | null
+          failure_detail?: string | null
+          id?: string
+          idempotency_key: string
+          invoice_id?: string | null
+          organization_id: string
+          provider_message_id?: string | null
+          provider_response?: Json | null
+          rationale?: string | null
+          rationale_code?: string | null
+          retry_count?: number
+          retry_eligible?: boolean
+          send_status?: string
+          sent_at?: string | null
+          source_type: string
+          subject?: string | null
+          template_id?: string | null
+          updated_at?: string
+          workflow_action_id?: string | null
+          workflow_run_id?: string | null
+        }
+        Update: {
+          ai_generation_latency_ms?: number | null
+          ai_model_used?: string | null
+          ai_policy_check_result?: Json | null
+          ai_prompt_version?: string | null
+          approval_context?: Json | null
+          approval_expires_at?: string | null
+          approval_required?: boolean
+          approval_status?: string
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          approver_user_id?: string | null
+          body_html?: string | null
+          body_text?: string
+          channel?: string
+          client_id?: string
+          collection_stage?: string | null
+          communication_thread_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          edits_applied?: Json | null
+          edits_made?: boolean
+          failed_at?: string | null
+          failure_category?: string | null
+          failure_detail?: string | null
+          id?: string
+          idempotency_key?: string
+          invoice_id?: string | null
+          organization_id?: string
+          provider_message_id?: string | null
+          provider_response?: Json | null
+          rationale?: string | null
+          rationale_code?: string | null
+          retry_count?: number
+          retry_eligible?: boolean
+          send_status?: string
+          sent_at?: string | null
+          source_type?: string
+          subject?: string | null
+          template_id?: string | null
+          updated_at?: string
+          workflow_action_id?: string | null
+          workflow_run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outbound_messages_approved_by_user_id_fkey"
+            columns: ["approved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_messages_approver_user_id_fkey"
+            columns: ["approver_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_messages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_messages_communication_thread_id_fkey"
+            columns: ["communication_thread_id"]
+            isOneToOne: false
+            referencedRelation: "communication_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_messages_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "client_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_messages_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_allocations: {
         Row: {
           allocated_amount: number
@@ -1110,6 +1613,383 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_actions: {
+        Row: {
+          action_payload: Json
+          action_type: string
+          cancelled_at: string | null
+          cancelled_reason: string | null
+          client_id: string | null
+          contact_id: string | null
+          created_at: string
+          executed_at: string | null
+          fail_reason: string | null
+          id: string
+          idempotency_key: string
+          invoice_id: string | null
+          organization_id: string
+          outbound_message_id: string | null
+          presend_check_passed: boolean | null
+          presend_check_results: Json | null
+          rationale: string
+          rationale_code: string
+          scheduled_for: string | null
+          status: string
+          updated_at: string
+          workflow_definition_id: string
+          workflow_run_id: string
+        }
+        Insert: {
+          action_payload?: Json
+          action_type: string
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
+          client_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          executed_at?: string | null
+          fail_reason?: string | null
+          id?: string
+          idempotency_key: string
+          invoice_id?: string | null
+          organization_id: string
+          outbound_message_id?: string | null
+          presend_check_passed?: boolean | null
+          presend_check_results?: Json | null
+          rationale: string
+          rationale_code: string
+          scheduled_for?: string | null
+          status?: string
+          updated_at?: string
+          workflow_definition_id: string
+          workflow_run_id: string
+        }
+        Update: {
+          action_payload?: Json
+          action_type?: string
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
+          client_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          executed_at?: string | null
+          fail_reason?: string | null
+          id?: string
+          idempotency_key?: string
+          invoice_id?: string | null
+          organization_id?: string
+          outbound_message_id?: string | null
+          presend_check_passed?: boolean | null
+          presend_check_results?: Json | null
+          rationale?: string
+          rationale_code?: string
+          scheduled_for?: string | null
+          status?: string
+          updated_at?: string
+          workflow_definition_id?: string
+          workflow_run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_actions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_actions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "client_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_actions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_actions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_actions_outbound_message_id_fkey"
+            columns: ["outbound_message_id"]
+            isOneToOne: false
+            referencedRelation: "outbound_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_actions_workflow_definition_id_fkey"
+            columns: ["workflow_definition_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_actions_workflow_run_id_fkey"
+            columns: ["workflow_run_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_definitions: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          id: string
+          is_default_template: boolean
+          last_modified_by_user_id: string | null
+          name: string
+          organization_id: string
+          priority: number
+          published_version_id: string | null
+          scope: string
+          status: string
+          target_client_id: string | null
+          target_segment_filter: Json | null
+          template_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          is_default_template?: boolean
+          last_modified_by_user_id?: string | null
+          name: string
+          organization_id: string
+          priority?: number
+          published_version_id?: string | null
+          scope?: string
+          status?: string
+          target_client_id?: string | null
+          target_segment_filter?: Json | null
+          template_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          is_default_template?: boolean
+          last_modified_by_user_id?: string | null
+          name?: string
+          organization_id?: string
+          priority?: number
+          published_version_id?: string | null
+          scope?: string
+          status?: string
+          target_client_id?: string | null
+          target_segment_filter?: Json | null
+          template_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_definitions_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_definitions_last_modified_by_user_id_fkey"
+            columns: ["last_modified_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_definitions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_definitions_target_client_id_fkey"
+            columns: ["target_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_runs: {
+        Row: {
+          actions_generated: number
+          client_id: string | null
+          completed_at: string | null
+          created_at: string
+          evaluated_decision_path: Json
+          fail_reason: string | null
+          id: string
+          invoice_id: string | null
+          organization_id: string
+          requires_recheck: boolean
+          skip_reason: string | null
+          started_at: string
+          status: string
+          trigger_payload: Json
+          trigger_type: string
+          workflow_definition_id: string
+          workflow_version_id: string
+        }
+        Insert: {
+          actions_generated?: number
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          evaluated_decision_path: Json
+          fail_reason?: string | null
+          id?: string
+          invoice_id?: string | null
+          organization_id: string
+          requires_recheck?: boolean
+          skip_reason?: string | null
+          started_at: string
+          status?: string
+          trigger_payload: Json
+          trigger_type: string
+          workflow_definition_id: string
+          workflow_version_id: string
+        }
+        Update: {
+          actions_generated?: number
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          evaluated_decision_path?: Json
+          fail_reason?: string | null
+          id?: string
+          invoice_id?: string | null
+          organization_id?: string
+          requires_recheck?: boolean
+          skip_reason?: string | null
+          started_at?: string
+          status?: string
+          trigger_payload?: Json
+          trigger_type?: string
+          workflow_definition_id?: string
+          workflow_version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_runs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_runs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_runs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_runs_workflow_definition_id_fkey"
+            columns: ["workflow_definition_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_runs_workflow_version_id_fkey"
+            columns: ["workflow_version_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_versions: {
+        Row: {
+          change_summary: string | null
+          created_at: string
+          created_by_user_id: string | null
+          definition: Json
+          id: string
+          organization_id: string
+          published_at: string | null
+          rolled_back_at: string | null
+          rolled_back_reason: string | null
+          simulation_result: Json | null
+          version_number: number
+          workflow_definition_id: string
+        }
+        Insert: {
+          change_summary?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          definition: Json
+          id?: string
+          organization_id: string
+          published_at?: string | null
+          rolled_back_at?: string | null
+          rolled_back_reason?: string | null
+          simulation_result?: Json | null
+          version_number: number
+          workflow_definition_id: string
+        }
+        Update: {
+          change_summary?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          definition?: Json
+          id?: string
+          organization_id?: string
+          published_at?: string | null
+          rolled_back_at?: string | null
+          rolled_back_reason?: string | null
+          simulation_result?: Json | null
+          version_number?: number
+          workflow_definition_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_versions_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_versions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_versions_workflow_definition_id_fkey"
+            columns: ["workflow_definition_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_definitions"
             referencedColumns: ["id"]
           },
         ]
