@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { BarChart3, TrendingUp, TrendingDown, Calendar, Download, ChevronRight } from 'lucide-react';
-import { formatCurrency, homeSummary } from '@/lib/demo-data';
+import { formatCurrency, homeSummary, demoInvoices, demoClients } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
+import { toast } from 'sonner';
 
 const agingData = [
   { bucket: 'Current', amount: 79800, count: 4, color: 'bg-success' },
@@ -25,6 +26,62 @@ const weeklyBrief = {
   ],
 };
 
+const reportDefinitions = [
+  { name: 'Overdue Summary', generator: () => generateCsv('overdue') },
+  { name: 'Due Soon', generator: () => generateCsv('due_soon') },
+  { name: 'Collections Actions Taken', generator: () => generateCsv('actions') },
+  { name: 'Recovered Amount', generator: () => generateCsv('recovered') },
+  { name: 'Client Payment Behavior', generator: () => generateCsv('behavior') },
+];
+
+function generateCsv(type: string) {
+  let csv = '';
+  switch (type) {
+    case 'overdue':
+      csv = 'Invoice,Client,Amount,Days Overdue,Priority\n';
+      demoInvoices.filter(i => i.state === 'overdue').forEach(i => {
+        csv += `${i.invoiceNumber},${i.clientName},${i.remainingBalance},${i.daysOverdue},${i.collectionPriority}\n`;
+      });
+      break;
+    case 'due_soon':
+      csv = 'Invoice,Client,Amount,Due Date\n';
+      demoInvoices.filter(i => i.state === 'due_soon' || i.state === 'due_today').forEach(i => {
+        csv += `${i.invoiceNumber},${i.clientName},${i.remainingBalance},${i.dueDate}\n`;
+      });
+      break;
+    case 'actions':
+      csv = 'Date,Invoice,Client,Action,Channel\n';
+      csv += '2024-03-10,INV-2024-042,Meridian Creative Co.,Reminder sent,Email\n';
+      csv += '2024-03-15,INV-2024-045,Meridian Creative Co.,Follow-up sent,Email\n';
+      csv += '2024-03-18,INV-2024-051,Northstar Digital,Reminder sent,Email\n';
+      csv += '2024-03-08,INV-2024-038,Fern & Bloom Marketing,Firm follow-up sent,Email\n';
+      break;
+    case 'recovered':
+      csv = 'Date,Invoice,Client,Amount,Method\n';
+      csv += '2024-03-14,INV-2024-025,Bright Pixel Studios,12000,Bank transfer\n';
+      break;
+    case 'behavior':
+      csv = 'Client,Outstanding,Overdue,Risk Score,Avg Days to Pay,Response Rate\n';
+      demoClients.filter(c => c.status === 'active').forEach(c => {
+        csv += `${c.displayName},${c.outstandingTotal},${c.overdueTotal},${Math.round(c.riskScore * 100)}%,${Math.round(15 + c.riskScore * 30)}d,${Math.round((1 - c.riskScore) * 100)}%\n`;
+      });
+      break;
+  }
+  return csv;
+}
+
+function downloadReport(name: string, generator: () => string) {
+  const csv = generator();
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `inflowe-${name.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast.success(`${name} report downloaded`);
+}
+
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'brief'>('overview');
   const maxAmount = Math.max(...agingData.map(d => d.amount));
@@ -36,7 +93,6 @@ export default function ReportsPage() {
         <p className="text-sm text-muted-foreground mt-1">Cash visibility and collection insights</p>
       </ScrollReveal>
 
-      {/* Tabs */}
       <ScrollReveal delay={0.05}>
         <div className="flex bg-muted rounded-xl p-1">
           {(['overview', 'brief'] as const).map(tab => (
@@ -49,7 +105,6 @@ export default function ReportsPage() {
 
       {activeTab === 'overview' && (
         <>
-          {/* Total outstanding */}
           <ScrollReveal delay={0.1}>
             <div className="glass-card rounded-xl p-5">
               <p className="text-sm text-muted-foreground">Total outstanding receivables</p>
@@ -61,7 +116,6 @@ export default function ReportsPage() {
             </div>
           </ScrollReveal>
 
-          {/* Aging breakdown */}
           <ScrollReveal delay={0.15}>
             <div className="glass-card rounded-xl p-5">
               <h2 className="font-semibold text-sm mb-4">Aging breakdown</h2>
@@ -81,7 +135,6 @@ export default function ReportsPage() {
             </div>
           </ScrollReveal>
 
-          {/* Expected inflow */}
           <ScrollReveal delay={0.2}>
             <div className="glass-card rounded-xl p-5">
               <h2 className="font-semibold text-sm mb-1">Money coming in</h2>
@@ -104,13 +157,13 @@ export default function ReportsPage() {
             </div>
           </ScrollReveal>
 
-          {/* Reports list */}
           <ScrollReveal delay={0.25}>
             <div className="glass-card rounded-xl overflow-hidden">
               <div className="px-4 py-3 bg-muted/30"><h3 className="text-sm font-semibold">Available reports</h3></div>
-              {['Overdue Summary', 'Due Soon', 'Collections Actions Taken', 'Recovered Amount', 'Client Payment Behavior'].map(name => (
-                <button key={name} className="w-full flex items-center justify-between px-4 py-3 border-t border-border/40 text-sm hover:bg-muted/30 transition-colors active:scale-[0.99]">
-                  <span>{name}</span>
+              {reportDefinitions.map(report => (
+                <button key={report.name} onClick={() => downloadReport(report.name, report.generator)}
+                  className="w-full flex items-center justify-between px-4 py-3 border-t border-border/40 text-sm hover:bg-muted/30 transition-colors active:scale-[0.99]">
+                  <span>{report.name}</span>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Download className="w-3.5 h-3.5" />
                     <ChevronRight className="w-4 h-4" />
@@ -131,7 +184,6 @@ export default function ReportsPage() {
                 <h2 className="font-semibold text-sm">Week of {weeklyBrief.period}</h2>
               </div>
               <p className="text-sm leading-relaxed">{weeklyBrief.narrative}</p>
-
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <div className="bg-success/10 rounded-lg p-3">
                   <p className="text-lg font-bold text-tabular" style={{ color: 'hsl(var(--success))' }}>{formatCurrency(weeklyBrief.recovered)}</p>

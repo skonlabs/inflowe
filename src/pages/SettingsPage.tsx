@@ -1,6 +1,7 @@
 import { ArrowLeft, ChevronRight, AlertOctagon, Shield, X, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ScrollReveal } from '@/components/ScrollReveal';
+import { useAppState } from '@/contexts/AppStateContext';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,18 +14,21 @@ interface EditingState {
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const [emergencyActive, setEmergencyActive] = useState(false);
+  const { emergencyStop, setEmergencyStop } = useAppState();
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('member');
 
   const handleEmergencyStop = () => {
-    if (!emergencyActive) {
+    if (!emergencyStop) {
       if (confirm('⚠️ EMERGENCY STOP\n\nThis will immediately halt ALL automation and cancel all queued actions.\n\nAre you sure?')) {
-        setEmergencyActive(true);
+        setEmergencyStop(true);
         toast.error('Emergency stop activated — all automation halted');
       }
     } else {
-      setEmergencyActive(false);
+      setEmergencyStop(false);
       toast.success('Automation resumed');
     }
   };
@@ -43,6 +47,29 @@ export default function SettingsPage() {
 
   const getDisplayValue = (sectionLabel: string, itemName: string, defaultValue: string) => {
     return overrides[`${sectionLabel}:${itemName}`] || defaultValue;
+  };
+
+  const handleInvite = () => {
+    if (!inviteEmail.trim()) return;
+    toast.success(`Invitation sent to ${inviteEmail}`);
+    setInviteEmail('');
+    setShowInvite(false);
+  };
+
+  const handleExportData = () => {
+    const data = {
+      exportedAt: new Date().toISOString(),
+      organization: overrides,
+      note: 'Demo mode — no real data exported',
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'inflowe-export.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Data exported');
   };
 
   const sections = [
@@ -77,14 +104,6 @@ export default function SettingsPage() {
       ],
     },
     {
-      label: 'Team',
-      items: [
-        { name: 'Members', value: '1 active (Owner)', editable: false },
-        { name: 'Invite team member', value: '', editable: false },
-        { name: 'Manage roles', value: '', editable: false },
-      ],
-    },
-    {
       label: 'Automation',
       items: [
         { name: 'Trust mode', value: 'Approval Required', editable: true },
@@ -111,14 +130,6 @@ export default function SettingsPage() {
         { name: 'Plan', value: 'Trial — 12 days remaining', editable: false },
         { name: 'Usage this period', value: '7 messages, 12 invoices tracked', editable: false },
         { name: 'Upgrade plan', value: '', editable: false },
-      ],
-    },
-    {
-      label: 'Data & Privacy',
-      items: [
-        { name: 'Export all data', value: '', editable: false },
-        { name: 'Audit log', value: '', editable: false },
-        { name: 'Exit demo mode', value: '', editable: false },
       ],
     },
   ];
@@ -167,14 +178,14 @@ export default function SettingsPage() {
       {/* Emergency stop */}
       <ScrollReveal delay={0.05}>
         <button onClick={handleEmergencyStop}
-          className={`w-full glass-card rounded-xl p-4 flex items-center gap-3 active:scale-[0.98] transition-transform ${emergencyActive ? 'border-destructive bg-destructive/5' : ''}`}
+          className={`w-full glass-card rounded-xl p-4 flex items-center gap-3 active:scale-[0.98] transition-transform ${emergencyStop ? 'border-destructive bg-destructive/5' : ''}`}
         >
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${emergencyActive ? 'bg-destructive' : 'bg-destructive/10'}`}>
-            <AlertOctagon className={`w-5 h-5 ${emergencyActive ? 'text-destructive-foreground' : 'text-destructive'}`} />
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${emergencyStop ? 'bg-destructive' : 'bg-destructive/10'}`}>
+            <AlertOctagon className={`w-5 h-5 ${emergencyStop ? 'text-destructive-foreground' : 'text-destructive'}`} />
           </div>
           <div className="text-left flex-1">
-            <p className="font-medium text-sm">{emergencyActive ? 'Automation stopped — click to resume' : 'Emergency stop'}</p>
-            <p className="text-xs text-muted-foreground">{emergencyActive ? 'All automation is currently halted' : 'Immediately halt all automation org-wide'}</p>
+            <p className="font-medium text-sm">{emergencyStop ? 'Automation stopped — click to resume' : 'Emergency stop'}</p>
+            <p className="text-xs text-muted-foreground">{emergencyStop ? 'All automation is currently halted' : 'Immediately halt all automation org-wide'}</p>
           </div>
         </button>
       </ScrollReveal>
@@ -222,6 +233,67 @@ export default function SettingsPage() {
           </div>
         </ScrollReveal>
       ))}
+
+      {/* Team section with invite */}
+      <ScrollReveal delay={0.3}>
+        <div className="glass-card rounded-xl overflow-hidden">
+          <div className="px-4 py-3 bg-muted/30">
+            <h3 className="text-sm font-semibold">Team</h3>
+          </div>
+          <div className="px-4 py-3 border-t border-border/40 text-sm">
+            <span>Members</span>
+            <span className="text-xs text-muted-foreground float-right">1 active (Owner)</span>
+          </div>
+          <button onClick={() => setShowInvite(!showInvite)}
+            className="w-full text-left px-4 py-3 border-t border-border/40 text-sm hover:bg-muted/30 transition-colors active:scale-[0.99] text-primary font-medium">
+            + Invite team member
+          </button>
+          <AnimatePresence>
+            {showInvite && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}>
+                <div className="px-4 py-4 border-t border-border/40 space-y-3">
+                  <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
+                    placeholder="colleague@company.com" type="email"
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    autoFocus />
+                  <select value={inviteRole} onChange={e => setInviteRole(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+                    <option value="member">Member</option>
+                    <option value="admin">Admin</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
+                  <div className="flex gap-2">
+                    <button onClick={handleInvite} className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm active:scale-95">
+                      Send invite
+                    </button>
+                    <button onClick={() => setShowInvite(false)} className="px-4 py-2.5 rounded-lg bg-card border border-border text-sm active:scale-95">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </ScrollReveal>
+
+      {/* Data & Privacy */}
+      <ScrollReveal delay={0.35}>
+        <div className="glass-card rounded-xl overflow-hidden">
+          <div className="px-4 py-3 bg-muted/30">
+            <h3 className="text-sm font-semibold">Data & Privacy</h3>
+          </div>
+          <button onClick={handleExportData}
+            className="w-full text-left px-4 py-3 border-t border-border/40 text-sm hover:bg-muted/30 transition-colors active:scale-[0.99]">
+            Export all data
+          </button>
+          <button onClick={() => navigate('/admin')}
+            className="w-full text-left px-4 py-3 border-t border-border/40 text-sm hover:bg-muted/30 transition-colors active:scale-[0.99]">
+            Audit log
+          </button>
+        </div>
+      </ScrollReveal>
     </div>
   );
 }
