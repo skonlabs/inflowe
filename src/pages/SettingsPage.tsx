@@ -33,6 +33,7 @@ export default function SettingsPage() {
   const { data: membership } = useUserOrganization();
   const orgId = membership?.organization_id;
   const { data: integrations = [], isLoading: integrationsLoading } = useIntegrations(orgId);
+  const { data: entitlements = [], isLoading: entitlementsLoading } = useModuleEntitlements(orgId);
   const { emergencyStop, setEmergencyStop } = useAppState();
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
@@ -43,6 +44,7 @@ export default function SettingsPage() {
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [submittingIntegration, setSubmittingIntegration] = useState(false);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+  const [togglingModule, setTogglingModule] = useState<string | null>(null);
 
   const handleEmergencyStop = () => {
     if (!emergencyStop) {
