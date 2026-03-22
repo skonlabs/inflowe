@@ -685,7 +685,7 @@ export default function SettingsPage() {
                     <option value="viewer">Viewer</option>
                   </select>
                   <div className="flex gap-2">
-                    <button onClick={handleInvite} className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm active:scale-95">
+                    <button onClick={handleInvite} className="flex-1 py-2.5 rounded-lg bg-accent text-accent-foreground font-medium text-sm active:scale-95">
                       Send invite
                     </button>
                     <button onClick={() => setShowInvite(false)} className="px-4 py-2.5 rounded-lg bg-card border border-border text-sm active:scale-95">

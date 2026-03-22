@@ -222,7 +222,7 @@ export default function ApprovalsPage() {
                         </div>
 
                         <div className="flex gap-2 pt-1">
-                          <button onClick={() => handleApprove(approval)} className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform">
+                          <button onClick={() => handleApprove(approval)} className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl bg-accent text-accent-foreground font-medium text-sm active:scale-95 transition-transform">
                             <Check className="w-4 h-4" /> Approve & Send
                           </button>
                           <button onClick={() => handleReject(approval)} className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform text-destructive">
