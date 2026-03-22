@@ -248,7 +248,7 @@ export default function OnboardingPage() {
             <button
               onClick={handleFinish}
               disabled={submitting}
-              className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-accent text-accent-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-success text-success-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-50"
             >
               {submitting ? (
                 <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />

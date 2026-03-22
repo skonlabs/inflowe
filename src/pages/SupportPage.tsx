@@ -179,7 +179,7 @@ export default function SupportPage() {
                           setSubmittingCase(false);
                         }
                       }}
-                      className="flex-1 py-2.5 rounded-lg bg-accent text-accent-foreground font-medium text-sm active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                      className="flex-1 py-2.5 rounded-lg bg-success text-success-foreground font-medium text-sm active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                     >
                       {submittingCase ? 'Submitting…' : 'Submit case'}
                     </button>

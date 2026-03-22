@@ -812,7 +812,7 @@ function ExceptionCard({
                 onFixed(fixValues);
                 setMode('view');
               }}
-              className="flex-1 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-40"
+              className="flex-1 py-1.5 rounded-lg bg-success text-success-foreground text-xs font-semibold disabled:opacity-40"
             >
               Save fix & retry import
             </button>
