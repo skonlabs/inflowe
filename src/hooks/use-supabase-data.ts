@@ -887,7 +887,7 @@ export function useImportExceptions(orgId: string | undefined, batchId?: string)
     queryFn: async () => {
       let q = supabase
         .from('ingestion_exceptions')
-        .select('*')
+        .select('*, ingestion_candidates(normalized_data), ingestion_raw_records(raw_values)')
         .eq('organization_id', orgId!)
         .eq('resolution_status', 'open')
         .order('created_at', { ascending: false })
@@ -905,8 +905,8 @@ export function useImportExceptions(orgId: string | undefined, batchId?: string)
         suggested_remediation: e.suggested_fix,
         can_fix_in_ui: e.can_fix_in_ui,
         status: e.resolution_status,
-        raw_values: null as Record<string, string> | null,
-        candidate_snapshot: null as Record<string, unknown> | null,
+        raw_values: ((e as any).ingestion_raw_records?.raw_values as Record<string, string>) ?? null,
+        candidate_snapshot: ((e as any).ingestion_candidates?.normalized_data as Record<string, unknown>) ?? null,
         created_at: e.created_at,
       }));
     },
@@ -1074,7 +1074,7 @@ export function useStageImport() {
 
         // 4. Insert candidate
         const mappingConfidence = criticalErrors.length > 0 ? 0.3 : errors.length > 0 ? 0.6 : 0.9;
-        await supabase.from('ingestion_candidates').insert({
+        const { data: candRecord } = await supabase.from('ingestion_candidates').insert({
           batch_id: importBatchId,
           organization_id: orgId,
           candidate_type: 'invoice',
@@ -1084,7 +1084,9 @@ export function useStageImport() {
           validation_status: validationStatus,
           validation_errors: errors as any,
           write_status: validationStatus === 'invalid' ? 'blocked' : 'pending',
-        } as any);
+        } as any).select('id').single();
+
+        const candidateId = candRecord?.id ?? null;
 
         // 5. Create exceptions for critical errors
         if (criticalErrors.length > 0) {
@@ -1092,6 +1094,7 @@ export function useStageImport() {
             await supabase.from('ingestion_exceptions').insert({
               batch_id: importBatchId,
               organization_id: orgId,
+              candidate_id: candidateId,
               exception_type: ce.type,
               severity: 'error',
               field_name: ce.field,
