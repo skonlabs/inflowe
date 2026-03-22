@@ -96,7 +96,18 @@ export default function ImportPage() {
         return;
       }
       setParsed({ file, headers: result.headers, rows: result.rows, warnings: result.warnings });
-      const matched = (templates as MappingTemplate[]).find(t => matchesTemplate(result.headers, t)) ?? null;
+      const mapped: MappingTemplate[] = (templates ?? []).map((t: any) => ({
+        id: t.id,
+        templateName: t.template_name ?? t.templateName ?? '',
+        headerSignature: t.header_signature ?? t.headerSignature ?? '',
+        columnMappings: t.column_mappings ?? t.columnMappings ?? [],
+        dateFormatHint: t.date_format_hint ?? t.dateFormatHint ?? null,
+        defaultCurrency: t.default_currency ?? t.defaultCurrency ?? null,
+        ignoredColumns: t.ignored_columns ?? t.ignoredColumns ?? [],
+        timesUsed: t.times_used ?? t.timesUsed ?? 0,
+        lastUsedAt: t.last_used_at ?? t.lastUsedAt ?? null,
+      }));
+      const matched = mapped.find(t => matchesTemplate(result.headers, t)) ?? null;
       setMatchedTemplate(matched);
       const inferred = inferMapping(result.headers, result.rows.slice(0, 10), matched);
       setProposals(inferred);
