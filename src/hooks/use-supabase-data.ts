@@ -102,7 +102,7 @@ function isUUID(val: string | undefined): boolean {
 
 export function useInvoiceDetail(invoiceId: string | undefined, orgId: string | undefined) {
   return useQuery({
-    queryKey: ['invoice-detail', invoiceId],
+    queryKey: ['invoice-detail', invoiceId, orgId],
     enabled: isUUID(invoiceId) && !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -135,7 +135,7 @@ export function useInvoiceDetail(invoiceId: string | undefined, orgId: string | 
 
 export function useInvoiceTimeline(invoiceId: string | undefined, orgId: string | undefined) {
   return useQuery({
-    queryKey: ['invoice-timeline', invoiceId],
+    queryKey: ['invoice-timeline', invoiceId, orgId],
     enabled: isUUID(invoiceId) && !!orgId,
     queryFn: async () => {
       // Fetch audit logs for this invoice
@@ -259,7 +259,7 @@ export function useClientSummaries(orgId: string | undefined) {
 
 export function useClientDetail(clientId: string | undefined, orgId: string | undefined) {
   return useQuery({
-    queryKey: ['client-detail', clientId],
+    queryKey: ['client-detail', clientId, orgId],
     enabled: isUUID(clientId) && !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase

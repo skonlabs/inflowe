@@ -28,9 +28,10 @@ export default function ApprovalsPage() {
   const { data: dbApprovals } = useApprovals(orgId);
   const queryClient = useQueryClient();
 
-  // Map Supabase approvals or fallback to demo
-  const supabaseApprovals: DisplayApproval[] = (dbApprovals && dbApprovals.length > 0)
-    ? dbApprovals.map(a => ({
+  // When user has an org, only show real approvals (empty while loading).
+  // Only show demo approvals for unauthenticated / demo-mode users.
+  const supabaseApprovals: DisplayApproval[] = orgId
+    ? (dbApprovals ?? []).map(a => ({
         id: a.id,
         outboundMessageId: (a as any).outbound_message_id ?? null,
         clientName: (a.clients as any)?.display_name ?? 'Unknown',
@@ -77,7 +78,7 @@ export default function ApprovalsPage() {
 
   const handleApprove = async (approval: DisplayApproval) => {
     try {
-      if (approval.isSupabase) {
+      if (approval.isSupabase && orgId) {
         // Persist any edited body first
         await persistEditedBody(approval);
         const { data: { user } } = await supabase.auth.getUser();
@@ -85,7 +86,7 @@ export default function ApprovalsPage() {
           .from('approvals')
           .update({ status: 'approved', decision_at: new Date().toISOString(), approver_user_id: user?.id })
           .eq('id', approval.id)
-          .eq('organization_id', orgId!);
+          .eq('organization_id', orgId);
         if (error) throw error;
         queryClient.invalidateQueries({ queryKey: ['approvals'] });
       }
@@ -99,13 +100,13 @@ export default function ApprovalsPage() {
 
   const handleReject = async (approval: DisplayApproval) => {
     try {
-      if (approval.isSupabase) {
+      if (approval.isSupabase && orgId) {
         const { data: { user } } = await supabase.auth.getUser();
         const { error } = await supabase
           .from('approvals')
           .update({ status: 'rejected', decision_at: new Date().toISOString(), approver_user_id: user?.id })
           .eq('id', approval.id)
-          .eq('organization_id', orgId!);
+          .eq('organization_id', orgId);
         if (error) throw error;
         queryClient.invalidateQueries({ queryKey: ['approvals'] });
       }
