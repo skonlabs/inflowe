@@ -500,7 +500,7 @@ export default function SettingsPage() {
                         <p className="text-sm font-medium">{providerInfo?.name || integration.provider}</p>
                         <p className="text-xs text-muted-foreground">
                           {integration.connection_status === 'connected' ? (
-                            <span className="text-accent">● Connected</span>
+                            <span className="text-success">● Connected</span>
                           ) : (
                             <span className="text-warning">● {integration.connection_status}</span>
                           )}
