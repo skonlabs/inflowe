@@ -1045,30 +1045,39 @@ export function useStageImport() {
           }
         }
 
-        // Derive remaining_balance if not provided
-        if (normalized.remaining_balance === undefined && normalized.total_amount != null) {
-          normalized.remaining_balance = (normalized.total_amount as number) - ((normalized.amount_paid as number) ?? 0);
+        // Derive remaining_balance if not provided (invoice only)
+        if (importType === 'invoice') {
+          if (normalized.remaining_balance === undefined && normalized.total_amount != null) {
+            normalized.remaining_balance = (normalized.total_amount as number) - ((normalized.amount_paid as number) ?? 0);
+          }
         }
         if (!normalized.currency) normalized.currency = currency;
 
-        // 3. Validate required fields
-        const hasInvoiceId = !!(normalized.invoice_number || normalized.external_invoice_id);
-        const hasClient = !!normalized.client_name;
-        const hasAmount = normalized.total_amount != null || normalized.remaining_balance != null;
-        const hasDueDate = !!normalized.due_date;
-
+        // 3. Validate required fields — different per import type
         const criticalErrors: Array<{ type: string; field: string; reason: string; suggestedFix: string }> = [];
-        if (!hasInvoiceId && !hasClient) {
-          criticalErrors.push({ type: 'missing_critical_field', field: 'client_name', reason: 'No client name or invoice identifier found', suggestedFix: 'Provide a client name' });
-        }
-        if (!hasAmount) {
-          criticalErrors.push({ type: 'missing_critical_field', field: 'total_amount', reason: 'No amount found', suggestedFix: 'Provide a total amount' });
-        }
 
-        // Cross-field checks
-        if (normalized.total_amount != null && normalized.remaining_balance != null) {
-          if ((normalized.remaining_balance as number) > (normalized.total_amount as number) * 1.01) {
-            errors.push({ severity: 'warning', field: 'remaining_balance', msg: 'Balance exceeds total amount' });
+        if (importType === 'client') {
+          const hasClient = !!normalized.client_name;
+          if (!hasClient) {
+            criticalErrors.push({ type: 'missing_critical_field', field: 'client_name', reason: 'No client name found', suggestedFix: 'Provide a client name' });
+          }
+        } else {
+          const hasInvoiceId = !!(normalized.invoice_number || normalized.external_invoice_id);
+          const hasClient = !!normalized.client_name;
+          const hasAmount = normalized.total_amount != null || normalized.remaining_balance != null;
+
+          if (!hasInvoiceId && !hasClient) {
+            criticalErrors.push({ type: 'missing_critical_field', field: 'client_name', reason: 'No client name or invoice identifier found', suggestedFix: 'Provide a client name' });
+          }
+          if (!hasAmount) {
+            criticalErrors.push({ type: 'missing_critical_field', field: 'total_amount', reason: 'No amount found', suggestedFix: 'Provide a total amount' });
+          }
+
+          // Cross-field checks
+          if (normalized.total_amount != null && normalized.remaining_balance != null) {
+            if ((normalized.remaining_balance as number) > (normalized.total_amount as number) * 1.01) {
+              errors.push({ severity: 'warning', field: 'remaining_balance', msg: 'Balance exceeds total amount' });
+            }
           }
         }
 
