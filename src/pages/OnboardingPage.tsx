@@ -240,7 +240,7 @@ export default function OnboardingPage() {
             <button
               onClick={() => setStep(s => nextVisibleStep(s))}
               disabled={!isStepValid()}
-              className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-40 disabled:pointer-events-none"
+              className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-accent text-accent-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-40 disabled:pointer-events-none"
             >
               Continue <ArrowRight className="w-4 h-4" />
             </button>
