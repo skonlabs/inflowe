@@ -329,7 +329,7 @@ export default function SettingsPage() {
                 onKeyDown={e => e.key === 'Enter' && saveEdit()}
               />
               <div className="flex gap-2">
-                <button onClick={saveEdit} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm active:scale-95">
+                <button onClick={saveEdit} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg bg-accent text-accent-foreground font-medium text-sm active:scale-95">
                   <Check className="w-4 h-4" /> Save
                 </button>
                 <button onClick={() => setEditing(null)} className="px-4 py-2 rounded-lg bg-card border border-border font-medium text-sm active:scale-95">
