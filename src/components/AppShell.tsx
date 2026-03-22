@@ -37,7 +37,6 @@ export default function AppShell({ children }: AppShellProps) {
   const moreItems = [
     { path: '/import', icon: Upload, label: 'Import Data' },
     { path: '/conversations', icon: MessageSquare, label: 'Conversations' },
-    { path: '/import', icon: Upload, label: 'Import data' },
     { path: '/reports', icon: BarChart3, label: 'Reports' },
     { path: '/support', icon: HelpCircle, label: 'Support' },
     { path: '/settings', icon: Settings, label: 'Settings' },
