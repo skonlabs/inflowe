@@ -278,7 +278,7 @@ export function useClientInvoices(clientId: string | undefined, orgId: string | 
 export function useClientTimeline(clientId: string | undefined, orgId: string | undefined) {
   return useQuery({
     queryKey: ['client-timeline', clientId],
-    enabled: !!clientId && !!orgId,
+    enabled: isUUID(clientId) && !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('audit_logs')
