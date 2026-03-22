@@ -402,7 +402,7 @@ export default function ImportPage() {
         </div>
         <button
           onClick={() => setView('upload')}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-medium"
         >
           <Upload className="w-4 h-4" /> New import
         </button>
