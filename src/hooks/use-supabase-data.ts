@@ -794,6 +794,239 @@ export function useProcessCsvImport() {
   });
 }
 
+// ─── Ingestion Pipeline ──────────────────────────────────────────────────────
+
+export function useImportBatches(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ['import-batches', orgId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_import_batches', { _org_id: orgId! });
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        import_type: string;
+        original_filename: string | null;
+        status: string;
+        total_rows: number;
+        successful_rows: number;
+        failed_rows: number;
+        duplicate_rows: number;
+        created_at: string;
+        open_exceptions: number;
+      }>;
+    },
+  });
+}
+
+export function useImportCandidates(orgId: string | undefined, batchId: string | undefined) {
+  return useQuery({
+    queryKey: ['import-candidates', batchId],
+    enabled: !!orgId && !!batchId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_import_candidates', {
+        _org_id: orgId!,
+        _batch_id: batchId!,
+      });
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        invoice_number: string | null;
+        client_name: string | null;
+        billing_contact_email: string | null;
+        due_date: string | null;
+        total_amount: number | null;
+        currency: string | null;
+        mapping_confidence: string;
+        validation_status: string;
+        validation_messages: Array<{ severity: string; field: string; msg: string }>;
+        commit_status: string;
+      }>;
+    },
+  });
+}
+
+export function useImportExceptions(orgId: string | undefined, batchId?: string) {
+  return useQuery({
+    queryKey: ['import-exceptions', orgId, batchId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_import_exceptions', {
+        _org_id: orgId!,
+        _batch_id: batchId ?? null,
+      });
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        import_batch_id: string;
+        exception_type: string;
+        severity: string;
+        field_name: string | null;
+        reason: string;
+        suggested_remediation: string | null;
+        can_fix_in_ui: boolean;
+        status: string;
+        raw_values: Record<string, string> | null;
+        candidate_snapshot: Record<string, unknown> | null;
+        created_at: string;
+      }>;
+    },
+  });
+}
+
+export function useMappingTemplates(orgId: string | undefined, sourceType = 'csv') {
+  return useQuery({
+    queryKey: ['mapping-templates', orgId, sourceType],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_mapping_templates', {
+        _org_id: orgId!,
+        _source_type: sourceType,
+      });
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        template_name: string;
+        header_signature: string;
+        column_mappings: Array<{ sourceCol: string; canonicalField: string }>;
+        date_format_hint: string | null;
+        default_currency: string | null;
+        ignored_columns: string[];
+        times_used: number;
+        last_used_at: string | null;
+      }>;
+    },
+  });
+}
+
+export function useStageImport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      orgId,
+      importBatchId,
+      rows,
+      columnMapping,
+      dateFormatHint,
+      defaultCurrency,
+    }: {
+      orgId: string;
+      importBatchId: string;
+      rows: Array<Record<string, string>>;
+      columnMapping: Record<string, string>;
+      dateFormatHint?: string | null;
+      defaultCurrency?: string;
+    }) => {
+      const { data, error } = await supabase.rpc('stage_csv_import', {
+        _org_id: orgId,
+        _import_batch_id: importBatchId,
+        _rows: rows,
+        _column_mapping: columnMapping,
+        _date_format_hint: dateFormatHint ?? null,
+        _default_currency: defaultCurrency ?? 'USD',
+      });
+      if (error) throw error;
+      return data as { staged: number; excepted: number; skipped: number; errors: unknown[] };
+    },
+    onSuccess: (_, { orgId, importBatchId }) => {
+      qc.invalidateQueries({ queryKey: ['import-batches', orgId] });
+      qc.invalidateQueries({ queryKey: ['import-candidates', importBatchId] });
+      qc.invalidateQueries({ queryKey: ['import-exceptions', orgId] });
+    },
+  });
+}
+
+export function useCommitImport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ orgId, importBatchId }: { orgId: string; importBatchId: string }) => {
+      const { data, error } = await supabase.rpc('commit_staged_import', {
+        _org_id: orgId,
+        _import_batch_id: importBatchId,
+      });
+      if (error) throw error;
+      return data as { committed: number; skipped: number };
+    },
+    onSuccess: (_, { orgId }) => {
+      qc.invalidateQueries({ queryKey: ['invoice-list', orgId] });
+      qc.invalidateQueries({ queryKey: ['client-summaries', orgId] });
+      qc.invalidateQueries({ queryKey: ['home-summary', orgId] });
+      qc.invalidateQueries({ queryKey: ['import-batches', orgId] });
+    },
+  });
+}
+
+export function useResolveException() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      orgId,
+      exceptionId,
+      action,
+      fixedValues,
+    }: {
+      orgId: string;
+      exceptionId: string;
+      action: 'fixed' | 'ignored' | 'skipped';
+      fixedValues?: Record<string, string>;
+    }) => {
+      const { data, error } = await supabase.rpc('resolve_import_exception', {
+        _org_id: orgId,
+        _exception_id: exceptionId,
+        _action: action,
+        _fixed_values: fixedValues ?? null,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, { orgId }) => {
+      qc.invalidateQueries({ queryKey: ['import-exceptions', orgId] });
+      qc.invalidateQueries({ queryKey: ['import-batches', orgId] });
+    },
+  });
+}
+
+export function useSaveMappingTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      orgId,
+      sourceType,
+      templateName,
+      headerSignature,
+      columnMappings,
+      dateFormatHint,
+      defaultCurrency,
+      ignoredColumns,
+    }: {
+      orgId: string;
+      sourceType: string;
+      templateName: string;
+      headerSignature: string;
+      columnMappings: Array<{ sourceCol: string; canonicalField: string }>;
+      dateFormatHint?: string | null;
+      defaultCurrency?: string | null;
+      ignoredColumns?: string[];
+    }) => {
+      const { data, error } = await supabase.rpc('save_mapping_template', {
+        _org_id: orgId,
+        _source_type: sourceType,
+        _template_name: templateName,
+        _header_signature: headerSignature,
+        _column_mappings: columnMappings,
+        _date_format_hint: dateFormatHint ?? null,
+        _default_currency: defaultCurrency ?? null,
+        _ignored_columns: ignoredColumns ?? [],
+      });
+      if (error) throw error;
+      return data as string;
+    },
+    onSuccess: (_, { orgId, sourceType }) => {
+      qc.invalidateQueries({ queryKey: ['mapping-templates', orgId, sourceType] });
+    },
+  });
+}
+
 export function useSubmitSupportCase() {
   const qc = useQueryClient();
   return useMutation({

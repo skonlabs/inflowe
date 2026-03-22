@@ -6,13 +6,17 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
-import { useProcessCsvImport } from '@/hooks/use-supabase-data';
+import { useStageImport, useCommitImport } from '@/hooks/use-supabase-data';
+import { parseCsvFile } from '@/lib/csv-parser';
+import { inferMapping, buildHeaderSignature, MappingProposal, ConfirmedMapping } from '@/lib/mapping-engine';
+import FieldMappingReview from '@/components/FieldMappingReview';
 
 const steps = [
   { title: 'Create your org', icon: Building2 },
   { title: 'Set your tone', icon: Palette },
   { title: 'Choose your path', icon: FileSpreadsheet },
   { title: 'Import data', icon: Upload },
+  { title: 'Map columns', icon: FileSpreadsheet },
   { title: 'Review', icon: Eye },
   { title: 'Trust mode', icon: Shield },
   { title: 'Preview actions', icon: Sparkles },
@@ -36,10 +40,14 @@ export default function OnboardingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const processCsvImport = useProcessCsvImport();
+  const stageImport  = useStageImport();
+  const commitImport = useCommitImport();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [csvRows, setCsvRows] = useState<Array<Record<string, string>>>([]);
+  const [csvHeaders, setCsvHeaders]   = useState<string[]>([]);
+  const [csvRows, setCsvRows]         = useState<Array<Record<string, string>>>([]);
+  const [csvProposals, setCsvProposals] = useState<MappingProposal[]>([]);
+  const [confirmedMapping, setConfirmedMapping] = useState<ConfirmedMapping | null>(null);
   const [data, setData] = useState<OrgData>({
     businessName: '',
     displayName: '',
@@ -58,10 +66,29 @@ export default function OnboardingPage() {
   const canNext = step < steps.length - 1;
   const canBack = step > 0;
 
+  // Step 4 (Map columns) is only shown for CSV path
+  const isStepVisible = (s: number) => {
+    if (s === 4 && data.importPath !== 'csv') return false;
+    return true;
+  };
+
+  const nextVisibleStep = (from: number) => {
+    let next = from + 1;
+    while (next < steps.length && !isStepVisible(next)) next++;
+    return next;
+  };
+  const prevVisibleStep = (from: number) => {
+    let prev = from - 1;
+    while (prev >= 0 && !isStepVisible(prev)) prev--;
+    return prev;
+  };
+
   const isStepValid = () => {
     if (step === 0) return data.businessName.trim().length > 0;
     if (step === 1) return data.senderEmail.trim().length > 0;
     if (step === 2) return data.importPath.length > 0;
+    // Step 4: mapping review — must have confirmed mapping if CSV
+    if (step === 4 && data.importPath === 'csv') return confirmedMapping !== null;
     return true;
   };
 
@@ -83,13 +110,30 @@ export default function OnboardingPage() {
 
       if (error) throw error;
 
-      // If CSV path was chosen and we have rows, import them
-      if (data.importPath === 'csv' && csvRows.length > 0 && orgId) {
+      // If CSV path was chosen and we have a confirmed mapping, import
+      if (data.importPath === 'csv' && csvRows.length > 0 && confirmedMapping && orgId) {
         try {
           const batchId = crypto.randomUUID();
-          await processCsvImport.mutateAsync({ orgId, importBatchId: batchId, rows: csvRows });
+          await supabase.from('import_batches').insert({
+            id: batchId,
+            organization_id: orgId,
+            created_by_user_id: user!.id,
+            import_type: 'csv',
+            status: 'pending',
+            total_rows: csvRows.length,
+            column_mapping: confirmedMapping.fieldToColumn,
+          });
+          await stageImport.mutateAsync({
+            orgId,
+            importBatchId: batchId,
+            rows: csvRows,
+            columnMapping: confirmedMapping.fieldToColumn,
+            dateFormatHint: confirmedMapping.dateFormatHint,
+            defaultCurrency: confirmedMapping.defaultCurrency,
+          });
+          await commitImport.mutateAsync({ orgId, importBatchId: batchId });
         } catch (importErr: any) {
-          // Non-fatal — org is created, import can be retried
+          // Non-fatal — org is created, import can be retried from /import
           toast.warning(`Org created but CSV import failed: ${importErr?.message ?? 'unknown error'}`);
         }
       }
@@ -140,11 +184,42 @@ export default function OnboardingPage() {
             {step === 0 && <StepOrganization data={data} update={update} />}
             {step === 1 && <StepTone data={data} update={update} />}
             {step === 2 && <StepPath data={data} update={update} />}
-            {step === 3 && <StepImport data={data} onDataParsed={setCsvRows} />}
-            {step === 4 && <StepReview data={data} />}
-            {step === 5 && <StepTrust data={data} update={update} />}
-            {step === 6 && <StepPreview />}
-            {step === 7 && <StepActivate data={data} />}
+            {step === 3 && (
+              <StepImport
+                data={data}
+                onDataParsed={(rows, headers, proposals) => {
+                  setCsvRows(rows);
+                  setCsvHeaders(headers);
+                  setCsvProposals(proposals);
+                  setConfirmedMapping(null);
+                }}
+              />
+            )}
+            {step === 4 && data.importPath === 'csv' && csvProposals.length > 0 && (
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-2xl font-bold" style={{ lineHeight: '1.1' }}>Map your columns</h2>
+                  <p className="text-muted-foreground text-sm mt-2">
+                    We've matched most columns automatically. Review and confirm before importing.
+                  </p>
+                </div>
+                <FieldMappingReview
+                  headers={csvHeaders}
+                  sampleRows={csvRows.slice(0, 5)}
+                  proposals={csvProposals}
+                  defaultCurrency={data.currency}
+                  onConfirm={(mapping) => {
+                    setConfirmedMapping(mapping);
+                    setStep(nextVisibleStep(4));
+                  }}
+                  onCancel={() => setStep(3)}
+                />
+              </div>
+            )}
+            {step === 5 && <StepReview data={data} csvRowCount={csvRows.length} confirmedMapping={confirmedMapping} />}
+            {step === 6 && <StepTrust data={data} update={update} />}
+            {step === 7 && <StepPreview />}
+            {step === 8 && <StepActivate data={data} />}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -154,7 +229,7 @@ export default function OnboardingPage() {
         <div className="flex gap-3 max-w-screen-xl mx-auto">
           {canBack && (
             <button
-              onClick={() => setStep(s => s - 1)}
+              onClick={() => setStep(s => prevVisibleStep(s))}
               className="flex items-center justify-center gap-1 px-5 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform"
             >
               <ArrowLeft className="w-4 h-4" /> Back
@@ -162,7 +237,7 @@ export default function OnboardingPage() {
           )}
           {canNext ? (
             <button
-              onClick={() => setStep(s => s + 1)}
+              onClick={() => setStep(s => nextVisibleStep(s))}
               disabled={!isStepValid()}
               className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-40 disabled:pointer-events-none"
             >
@@ -321,41 +396,49 @@ function StepPath({ data, update }: StepProps) {
   );
 }
 
-function StepImport({ data, onDataParsed }: StepProps & { onDataParsed?: (rows: Array<Record<string, string>>) => void }) {
+function StepImport({
+  data,
+  onDataParsed,
+}: StepProps & {
+  onDataParsed?: (
+    rows: Array<Record<string, string>>,
+    headers: string[],
+    proposals: MappingProposal[],
+  ) => void;
+}) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [parsedRows, setParsedRows] = useState<string[][]>([]);
-  const [isDragging, setIsDragging] = useState(false);
+  const [rowCount, setRowCount]         = useState(0);
+  const [previewRows, setPreviewRows]   = useState<Record<string, string>[]>([]);
+  const [previewHeaders, setPreviewHeaders] = useState<string[]>([]);
+  const [isDragging, setIsDragging]     = useState(false);
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     setUploadedFile(file);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const rows = text.split('\n').filter(r => r.trim()).map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
-      setParsedRows(rows);
-      // Convert to array of objects keyed by header row
-      if (rows.length > 1) {
-        const headers = rows[0];
-        const dataRows = rows.slice(1).map(row => {
-          const obj: Record<string, string> = {};
-          headers.forEach((h, i) => { obj[h] = row[i] ?? ''; });
-          return obj;
-        });
-        onDataParsed?.(dataRows);
+    try {
+      const parsed = await parseCsvFile(file);
+      setRowCount(parsed.rows.length);
+      setPreviewHeaders(parsed.headers);
+      setPreviewRows(parsed.rows.slice(0, 3));
+      if (parsed.rows.length > 0) {
+        const proposals = inferMapping(parsed.headers, parsed.rows.slice(0, 10));
+        onDataParsed?.(parsed.rows, parsed.headers, proposals);
       }
-    };
-    reader.readAsText(file);
+      if (parsed.warnings.length > 0) parsed.warnings.forEach(w => toast.warning(w));
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to read file');
+      setUploadedFile(null);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
-    if (file && (file.name.endsWith('.csv') || file.type === 'text/csv')) handleFile(file);
+    if (file) handleFile(file);
   };
 
   const downloadTemplate = () => {
-    const csv = 'client_name,invoice_number,amount,due_date,contact_email\nAcme Corp,INV-001,5000,2024-04-15,billing@acme.com\n';
+    const csv = 'client_name,invoice_number,amount,due_date,contact_email,currency\nAcme Corp,INV-001,5000,2025-04-15,billing@acme.com,USD\n';
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -368,7 +451,9 @@ function StepImport({ data, onDataParsed }: StepProps & { onDataParsed?: (rows: 
       <div>
         <h2 className="text-2xl font-bold" style={{ lineHeight: '1.1' }}>Import your invoices</h2>
         <p className="text-muted-foreground text-sm mt-2">
-          {data.importPath === 'demo' ? "We'll set up demo data so you can explore right away." : 'Upload your invoice data to get started.'}
+          {data.importPath === 'demo'
+            ? "We'll set up demo data so you can explore right away."
+            : 'Upload your invoice spreadsheet — any column names are fine.'}
         </p>
       </div>
       {data.importPath !== 'demo' ? (
@@ -377,7 +462,16 @@ function StepImport({ data, onDataParsed }: StepProps & { onDataParsed?: (rows: 
             onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
-            onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv'; input.onchange = (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) handleFile(f); }; input.click(); }}
+            onClick={() => {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.accept = '.csv,text/csv';
+              input.onchange = (e) => {
+                const f = (e.target as HTMLInputElement).files?.[0];
+                if (f) handleFile(f);
+              };
+              input.click();
+            }}
             className={`glass-card rounded-xl p-6 text-center space-y-4 cursor-pointer transition-colors ${isDragging ? 'border-2 border-primary bg-accent/30' : ''}`}
           >
             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
@@ -386,7 +480,9 @@ function StepImport({ data, onDataParsed }: StepProps & { onDataParsed?: (rows: 
             {uploadedFile ? (
               <div>
                 <p className="font-medium">{uploadedFile.name}</p>
-                <p className="text-sm text-muted-foreground mt-1">{parsedRows.length > 1 ? `${parsedRows.length - 1} rows found` : 'Processing...'}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {rowCount > 0 ? `${rowCount} data rows found` : 'Processing...'}
+                </p>
               </div>
             ) : (
               <div>
@@ -395,23 +491,26 @@ function StepImport({ data, onDataParsed }: StepProps & { onDataParsed?: (rows: 
               </div>
             )}
           </div>
-          {parsedRows.length > 1 && (
+
+          {previewRows.length > 0 && previewHeaders.length > 0 && (
             <div className="glass-card rounded-xl overflow-hidden">
-              <div className="px-4 py-2 bg-muted/30 text-xs font-medium text-muted-foreground">Preview (first 3 rows)</div>
+              <div className="px-4 py-2 bg-muted/30 text-xs font-medium text-muted-foreground">
+                Preview — columns detected: {previewHeaders.length}
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-border">
-                      {parsedRows[0].slice(0, 5).map((h, i) => (
+                      {previewHeaders.slice(0, 5).map((h, i) => (
                         <th key={i} className="text-left px-3 py-2 font-medium text-muted-foreground">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {parsedRows.slice(1, 4).map((row, i) => (
+                    {previewRows.map((row, i) => (
                       <tr key={i} className="border-b border-border/40">
-                        {row.slice(0, 5).map((cell, j) => (
-                          <td key={j} className="px-3 py-2">{cell}</td>
+                        {previewHeaders.slice(0, 5).map((h, j) => (
+                          <td key={j} className="px-3 py-2">{row[h]}</td>
                         ))}
                       </tr>
                     ))}
@@ -420,7 +519,10 @@ function StepImport({ data, onDataParsed }: StepProps & { onDataParsed?: (rows: 
               </div>
             </div>
           )}
-          <button onClick={downloadTemplate} className="text-sm text-primary font-medium underline underline-offset-2">Download template</button>
+
+          <button onClick={downloadTemplate} className="text-sm text-primary font-medium underline underline-offset-2">
+            Download template CSV
+          </button>
         </>
       ) : (
         <div className="glass-card rounded-xl p-6 text-center space-y-3">
@@ -432,13 +534,26 @@ function StepImport({ data, onDataParsed }: StepProps & { onDataParsed?: (rows: 
         </div>
       )}
       <div className="bg-accent/50 rounded-xl p-4">
-        <p className="text-sm text-accent-foreground">💡 <strong>Tip:</strong> {data.importPath === 'demo' ? 'Demo data lets you explore all features safely. No real messages will be sent.' : 'Your CSV should include columns for client name, invoice number, amount, due date, and contact email.'}</p>
+        <p className="text-sm text-accent-foreground">
+          💡 <strong>Tip:</strong>{' '}
+          {data.importPath === 'demo'
+            ? 'Demo data lets you explore all features safely. No real messages will be sent.'
+            : 'Any column names work — you\'ll map them to the right fields on the next step.'}
+        </p>
       </div>
     </div>
   );
 }
 
-function StepReview({ data }: StepProps) {
+function StepReview({
+  data,
+  csvRowCount,
+  confirmedMapping,
+}: StepProps & { csvRowCount?: number; confirmedMapping?: ConfirmedMapping | null }) {
+  const mappedFieldCount = confirmedMapping
+    ? Object.keys(confirmedMapping.fieldToColumn).length
+    : 0;
+
   return (
     <div className="space-y-6">
       <div>
@@ -446,43 +561,43 @@ function StepReview({ data }: StepProps) {
         <p className="text-muted-foreground text-sm mt-2">Here's a summary of what we've configured.</p>
       </div>
       <div className="glass-card rounded-xl p-5 space-y-3">
-        <div className="flex justify-between items-center py-2 border-b border-border">
-          <span className="text-sm">Business</span>
-          <span className="font-semibold text-sm">{data.businessName || 'Not set'}</span>
-        </div>
-        <div className="flex justify-between items-center py-2 border-b border-border">
-          <span className="text-sm">Sender</span>
-          <span className="font-semibold text-sm">{data.senderEmail || 'Not set'}</span>
-        </div>
-        <div className="flex justify-between items-center py-2 border-b border-border">
-          <span className="text-sm">Tone</span>
-          <span className="font-semibold text-sm capitalize">{data.brandTone}</span>
-        </div>
-        <div className="flex justify-between items-center py-2 border-b border-border">
-          <span className="text-sm">Import source</span>
-          <span className="font-semibold text-sm capitalize">{data.importPath || 'Not set'}</span>
-        </div>
+        <ReviewRow label="Business" value={data.businessName || 'Not set'} />
+        <ReviewRow label="Sender" value={data.senderEmail || 'Not set'} />
+        <ReviewRow label="Tone" value={data.brandTone} />
+        <ReviewRow label="Import source" value={data.importPath || 'Not set'} />
+        {data.importPath === 'csv' && csvRowCount != null && (
+          <>
+            <ReviewRow label="Rows to import" value={String(csvRowCount)} />
+            {mappedFieldCount > 0 && (
+              <ReviewRow label="Fields mapped" value={`${mappedFieldCount} columns`} />
+            )}
+          </>
+        )}
         {data.importPath === 'demo' && (
           <>
-            <div className="flex justify-between items-center py-2 border-b border-border">
-              <span className="text-sm">Invoices</span>
-              <span className="font-semibold text-sm text-tabular">12</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-border">
-              <span className="text-sm">Clients</span>
-              <span className="font-semibold text-sm text-tabular">7</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-border">
-              <span className="text-sm text-destructive">Overdue</span>
-              <span className="font-semibold text-sm text-tabular text-destructive">5</span>
-            </div>
+            <ReviewRow label="Invoices" value="12" />
+            <ReviewRow label="Clients" value="7" />
           </>
         )}
       </div>
+      {data.importPath === 'csv' && !confirmedMapping && csvRowCount && csvRowCount > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+          Column mapping not confirmed — go back to step 4 to map your columns.
+        </div>
+      )}
       <div className="bg-accent/50 rounded-xl p-4 flex items-start gap-2">
         <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
         <p className="text-sm">Everything looks good. You can always change these in Settings.</p>
       </div>
+    </div>
+  );
+}
+
+function ReviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between items-center py-2 border-b border-border last:border-0">
+      <span className="text-sm">{label}</span>
+      <span className="font-semibold text-sm capitalize">{value}</span>
     </div>
   );
 }
