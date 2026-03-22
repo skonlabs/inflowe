@@ -9,7 +9,7 @@
  *  - Repeat import with auto-applied templates (spec §19.2)
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Clock,
          ChevronRight, RotateCcw, BookTemplate, X, Wrench, Loader2, ArrowLeft, Sparkles } from 'lucide-react';
@@ -278,7 +278,7 @@ export default function ImportPage() {
         className="p-4 max-w-2xl mx-auto space-y-4"
       >
         <motion.div variants={fadeUp} className="flex items-center gap-2 mb-2">
-          <button onClick={() => { setView('upload'); setParsed(null); }} className="text-sm text-muted-foreground hover:text-foreground transition-colors active:scale-[0.97]">
+          <button onClick={() => { setView('upload'); setParsed(null); }} className="text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md px-1 transition-colors active:scale-[0.97]">
             <ArrowLeft className="w-4 h-4 inline mr-1" />Back
           </button>
           <span className="text-muted-foreground">/</span>
@@ -313,25 +313,30 @@ export default function ImportPage() {
               <motion.div
                 initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                className="w-full max-w-md bg-card rounded-2xl p-6 space-y-4 shadow-xl"
+                className="w-full max-w-md bg-card rounded-2xl p-6 space-y-4 shadow-xl border border-border"
               >
                 <div className="w-10 h-1 rounded-full bg-border mx-auto sm:hidden" />
-                <h3 className="font-semibold text-lg">Save this mapping?</h3>
-                <p className="text-sm text-muted-foreground">
-                  Give it a name and future imports with the same columns will be mapped automatically.
-                </p>
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                  <BookTemplate className="w-6 h-6 text-primary" />
+                </div>
+                <div className="text-center">
+                  <h3 className="font-semibold text-lg">Save this mapping?</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Future imports with the same columns will be mapped automatically.
+                  </p>
+                </div>
                 <input
                   type="text"
                   placeholder="e.g. My QuickBooks export"
                   value={templateSaveName}
                   onChange={e => setTemplateSaveName(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   autoFocus
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={() => runStaging(pendingMapping, null)}
-                    className="flex-1 py-3 rounded-xl border border-border text-sm font-medium active:scale-[0.97] transition-transform"
+                    className="flex-1 py-3 rounded-xl border border-border text-sm font-medium hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
                   >
                     Skip saving
                   </button>
@@ -342,7 +347,7 @@ export default function ImportPage() {
                       }
                     }}
                     disabled={!templateSaveName.trim()}
-                    className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 active:scale-[0.97] transition-transform"
+                    className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 active:scale-[0.97] transition-all"
                   >
                     Save & import
                   </button>
@@ -361,9 +366,18 @@ export default function ImportPage() {
         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
         className="p-8 flex flex-col items-center justify-center gap-4 min-h-[40vh]"
       >
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
-        <p className="text-base font-medium">Analysing your file…</p>
-        <p className="text-sm text-muted-foreground">Normalising rows and checking for issues</p>
+        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+        <div className="text-center">
+          <p className="text-base font-semibold">Analysing your file…</p>
+          <p className="text-sm text-muted-foreground mt-1">Normalising rows and checking for issues</p>
+        </div>
+        <div className="flex gap-1.5 mt-2">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="w-2 h-2 rounded-full bg-primary animate-pulse-dot" style={{ animationDelay: `${i * 300}ms` }} />
+          ))}
+        </div>
       </motion.div>
     );
   }
@@ -375,14 +389,14 @@ export default function ImportPage() {
         className="p-4 max-w-lg mx-auto space-y-5"
       >
         <motion.div variants={scaleIn} className="text-center pt-4">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-7 h-7 text-primary" />
+          <div className="w-14 h-14 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-7 h-7 text-success" />
           </div>
           <h2 className="text-xl font-bold">Import ready to commit</h2>
           <p className="text-muted-foreground text-sm mt-1">Review the summary before finalising.</p>
         </motion.div>
 
-        <motion.div variants={fadeUp} className="rounded-xl border border-border bg-card divide-y divide-border">
+        <motion.div variants={fadeUp} className="rounded-xl border border-border bg-card divide-y divide-border shadow-sm">
           <SummaryRow label="Ready to import" value={stagingResult.staged} color="success" />
           <SummaryRow label="Need attention (exceptions)" value={stagingResult.excepted} color={stagingResult.excepted > 0 ? 'warning' : 'success'} />
           <SummaryRow label="Skipped (duplicates)" value={stagingResult.skipped} />
@@ -393,7 +407,7 @@ export default function ImportPage() {
             <div className="flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-warning-foreground">{stagingResult.excepted} rows need attention</p>
+                <p className="font-medium text-warning">{stagingResult.excepted} rows need attention</p>
                 <p className="text-muted-foreground mt-0.5">
                   You can still commit the valid rows now, then fix the exceptions later.
                 </p>
@@ -406,7 +420,7 @@ export default function ImportPage() {
           {stagingResult.excepted > 0 && (
             <button
               onClick={() => setView('exceptions')}
-              className="flex-1 py-3 rounded-xl border border-border text-sm font-medium active:scale-[0.97] transition-transform"
+              className="flex-1 py-3 rounded-xl border border-border text-sm font-medium hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
             >
               View exceptions first
             </button>
@@ -414,12 +428,12 @@ export default function ImportPage() {
           <button
             onClick={handleCommit}
             disabled={stagingResult.staged === 0 || commitImport.isPending}
-            className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 active:scale-[0.97] transition-transform"
+            className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 active:scale-[0.97] transition-all"
           >
             {commitImport.isPending ? (
               <span className="flex items-center justify-center gap-2">
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Importing...
+                <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                Importing…
               </span>
             ) : (
               `Commit ${stagingResult.staged} invoice${stagingResult.staged !== 1 ? 's' : ''}`
@@ -443,7 +457,7 @@ export default function ImportPage() {
         </div>
         <button
           onClick={() => setView('upload')}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium active:scale-[0.97] transition-transform"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.97] transition-all"
         >
           <Upload className="w-4 h-4" /> New import
         </button>
@@ -454,10 +468,12 @@ export default function ImportPage() {
         <motion.button
           variants={fadeUp}
           onClick={() => setView('exceptions')}
-          className="w-full rounded-xl border border-warning/30 bg-warning/10 p-4 text-left flex items-center justify-between active:scale-[0.98] transition-transform"
+          className="w-full rounded-xl border border-warning/30 bg-warning/10 p-4 text-left flex items-center justify-between hover:bg-warning/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] transition-all"
         >
           <div className="flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-warning shrink-0" />
+            <div className="w-9 h-9 rounded-xl bg-warning/20 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-4.5 h-4.5 text-warning" />
+            </div>
             <div>
               <p className="text-sm font-medium">
                 {openExceptions.length} row{openExceptions.length !== 1 ? 's' : ''} need attention
@@ -465,7 +481,7 @@ export default function ImportPage() {
               <p className="text-xs text-muted-foreground mt-0.5">These rows couldn't be imported automatically</p>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-warning" />
+          <ChevronRight className="w-4 h-4 text-warning shrink-0" />
         </motion.button>
       )}
 
@@ -492,11 +508,17 @@ export default function ImportPage() {
                 };
                 input.click();
               }}
-              className={`rounded-xl border-2 border-dashed p-10 text-center cursor-pointer transition-all active:scale-[0.99] ${
-                isDragging ? 'border-primary bg-primary/5' : 'border-border bg-card hover:border-primary/40 hover:shadow-md'
+              className={`group rounded-xl border-2 border-dashed p-10 text-center cursor-pointer transition-all active:scale-[0.99] ${
+                isDragging
+                  ? 'border-primary bg-primary/5 shadow-md'
+                  : 'border-border bg-card hover:border-primary/40 hover:shadow-md hover:bg-muted/30'
               }`}
             >
-              <FileSpreadsheet className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors ${
+                isDragging ? 'bg-primary/10' : 'bg-muted group-hover:bg-primary/10'
+              }`}>
+                <FileSpreadsheet className={`w-7 h-7 transition-colors ${isDragging ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
+              </div>
               <p className="font-medium">Drag & drop your file</p>
               <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
               <p className="text-xs text-muted-foreground mt-3">
@@ -517,7 +539,7 @@ export default function ImportPage() {
                         await parseAndProcess(pendingExcelFile, s);
                         setPendingExcelFile(null);
                       }}
-                      className="w-full text-left px-3 py-2.5 rounded-lg border border-border bg-card text-sm hover:border-primary/40 active:scale-[0.98] transition-transform"
+                      className="w-full text-left px-3 py-2.5 rounded-xl border border-border bg-card text-sm hover:border-primary/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] transition-all"
                     >
                       {s}
                     </button>
@@ -530,14 +552,16 @@ export default function ImportPage() {
               <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Your saved templates</p>
                 {templates.map(t => (
-                  <div key={t.id} className="rounded-xl border border-border bg-card px-4 py-3 flex items-center justify-between">
+                  <div key={t.id} className="rounded-xl border border-border bg-card px-4 py-3 flex items-center justify-between hover:shadow-sm transition-shadow">
                     <div>
                       <p className="text-sm font-medium">{t.template_name}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {t.last_used_at ? `Last used ${new Date(t.last_used_at).toLocaleDateString()}` : 'Never used'}
                       </p>
                     </div>
-                    <BookTemplate className="w-4 h-4 text-muted-foreground" />
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                      <BookTemplate className="w-4 h-4 text-muted-foreground" />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -545,7 +569,7 @@ export default function ImportPage() {
 
             <button
               onClick={() => setView('list')}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors active:scale-[0.97]"
+              className="text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md px-1 transition-colors active:scale-[0.97]"
             >
               <ArrowLeft className="w-3.5 h-3.5 inline mr-1" />Back to import history
             </button>
@@ -565,7 +589,7 @@ export default function ImportPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setView(currentBatchId ? 'summary' : 'list')}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors active:scale-[0.97]"
+                className="text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md px-1 transition-colors active:scale-[0.97]"
               >
                 <ArrowLeft className="w-3.5 h-3.5 inline mr-1" />{currentBatchId ? 'Back to summary' : 'Back'}
               </button>
@@ -574,15 +598,20 @@ export default function ImportPage() {
             </div>
 
             {excLoading ? (
-              <div className="text-center py-10 text-muted-foreground text-sm">Loading...</div>
+              <div className="text-center py-10">
+                <Loader2 className="w-6 h-6 text-muted-foreground animate-spin mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Loading exceptions…</p>
+              </div>
             ) : openExceptions.length === 0 ? (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-10">
-                <CheckCircle2 className="w-10 h-10 text-success mx-auto mb-2" />
-                <p className="font-medium">All exceptions resolved</p>
+              <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12">
+                <div className="w-14 h-14 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle2 className="w-7 h-7 text-success" />
+                </div>
+                <p className="font-semibold">All exceptions resolved</p>
                 {currentBatchId ? (
                   <button
                     onClick={() => setView('summary')}
-                    className="mt-4 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold active:scale-[0.97] transition-transform"
+                    className="mt-4 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
                   >
                     Continue to commit
                   </button>
@@ -619,15 +648,20 @@ export default function ImportPage() {
       {view === 'list' && (
         <>
           {batchLoading ? (
-            <motion.div variants={fadeUp} className="text-center py-10 text-muted-foreground text-sm">Loading imports...</motion.div>
+            <motion.div variants={fadeUp} className="text-center py-10">
+              <Loader2 className="w-6 h-6 text-muted-foreground animate-spin mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Loading imports…</p>
+            </motion.div>
           ) : batches.length === 0 ? (
             <motion.div variants={scaleIn} className="text-center py-16">
-              <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="font-medium">No imports yet</p>
+              <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+                <Upload className="w-7 h-7 text-muted-foreground" />
+              </div>
+              <p className="font-semibold">No imports yet</p>
               <p className="text-sm text-muted-foreground mt-1">Upload a CSV or Excel file to get started</p>
               <button
                 onClick={() => setView('upload')}
-                className="mt-4 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium active:scale-[0.97] transition-transform"
+                className="mt-5 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
               >
                 <Upload className="w-4 h-4 inline mr-1.5" />Upload file
               </button>
@@ -639,10 +673,16 @@ export default function ImportPage() {
                 const s = STATUS_ICON[batch.status] ?? STATUS_ICON.pending;
                 const Icon = s.icon;
                 return (
-                  <motion.div key={batch.id} variants={fadeUp} className="rounded-xl border border-border bg-card p-4">
+                  <motion.div key={batch.id} variants={fadeUp} className="rounded-xl border border-border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3">
-                        <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${s.color}`} />
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                          batch.status === 'completed' ? 'bg-success/10' :
+                          batch.status === 'failed' ? 'bg-destructive/10' :
+                          'bg-muted'
+                        }`}>
+                          <Icon className={`w-4.5 h-4.5 ${s.color}`} />
+                        </div>
                         <div>
                           <p className="text-sm font-medium">
                             {batch.original_filename ?? batch.import_type.toUpperCase()}
@@ -652,7 +692,7 @@ export default function ImportPage() {
                           </p>
                         </div>
                       </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${
                         batch.status === 'completed' ? 'text-success bg-success/10 border-success/20' :
                         batch.status === 'failed'    ? 'text-destructive bg-destructive/10 border-destructive/20' :
                         'text-warning bg-warning/10 border-warning/20'
@@ -670,9 +710,9 @@ export default function ImportPage() {
                     {batch.open_exceptions > 0 && (
                       <button
                         onClick={() => setView('exceptions')}
-                        className="mt-3 w-full text-xs text-warning font-medium flex items-center gap-1 justify-center py-2 rounded-lg bg-warning/10 border border-warning/20 active:scale-[0.98] transition-transform"
+                        className="mt-3 w-full text-xs text-warning font-medium flex items-center gap-1.5 justify-center py-2.5 rounded-xl bg-warning/10 border border-warning/20 hover:bg-warning/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] transition-all"
                       >
-                        <Wrench className="w-3 h-3" />
+                        <Wrench className="w-3.5 h-3.5" />
                         Fix {batch.open_exceptions} exception{batch.open_exceptions !== 1 ? 's' : ''}
                       </button>
                     )}
@@ -689,7 +729,7 @@ export default function ImportPage() {
 
 function SummaryRow({ label, value, color }: { label: string; value: number; color?: string }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3">
+    <div className="flex items-center justify-between px-4 py-3.5">
       <span className="text-sm">{label}</span>
       <span className={`text-sm font-bold tabular-nums ${
         color === 'success' ? 'text-success' :
@@ -795,15 +835,17 @@ function ExceptionCard({
   const isError = exception.severity === 'error';
 
   return (
-    <div className={`rounded-xl border p-4 space-y-3 ${
+    <div className={`rounded-xl border p-4 space-y-3 transition-shadow hover:shadow-sm ${
       isError ? 'border-destructive/30 bg-destructive/5' : 'border-warning/30 bg-warning/10'
     }`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-2">
-          <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${
-            isError ? 'text-destructive' : 'text-warning'
-          }`} />
+        <div className="flex items-start gap-2.5">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+            isError ? 'bg-destructive/10' : 'bg-warning/20'
+          }`}>
+            <AlertTriangle className={`w-4 h-4 ${isError ? 'text-destructive' : 'text-warning'}`} />
+          </div>
           <div>
             <p className="text-sm font-medium">
               {TYPE_LABELS[exception.exception_type] ?? exception.exception_type}
@@ -812,7 +854,10 @@ function ExceptionCard({
           </div>
         </div>
         {mode === 'view' && (
-          <button onClick={() => setExpanded(v => !v)} className="text-xs text-muted-foreground underline shrink-0 active:scale-[0.95]">
+          <button
+            onClick={() => setExpanded(v => !v)}
+            className="text-xs text-muted-foreground hover:text-foreground underline shrink-0 active:scale-[0.95] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md px-1"
+          >
             {expanded ? 'Less' : 'Details'}
           </button>
         )}
@@ -833,7 +878,7 @@ function ExceptionCard({
               </p>
             )}
             {Object.keys(snapshot).length > 0 && (
-              <div className="rounded-lg bg-background border border-border p-3 font-mono space-y-0.5">
+              <div className="rounded-xl bg-background border border-border p-3 font-mono space-y-0.5">
                 {Object.entries(snapshot).map(([k, v]) =>
                   v ? (
                     <div key={k}>
@@ -864,14 +909,14 @@ function ExceptionCard({
                   value={fixValues[f.key] ?? ''}
                   onChange={e => setFixValues(prev => ({ ...prev, [f.key]: e.target.value }))}
                   placeholder={f.type === 'date' ? 'YYYY-MM-DD' : ''}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 />
               </div>
             ))}
             <div className="flex gap-2 pt-1">
               <button
                 onClick={() => setMode('view')}
-                className="px-3 py-1.5 rounded-lg border border-border bg-card text-xs font-medium active:scale-[0.97] transition-transform"
+                className="px-3 py-2 rounded-xl border border-border bg-card text-xs font-medium hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
               >
                 Cancel
               </button>
@@ -881,7 +926,7 @@ function ExceptionCard({
                   onFixed(fixValues);
                   setMode('view');
                 }}
-                className="flex-1 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-40 active:scale-[0.97] transition-transform"
+                className="flex-1 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 active:scale-[0.97] transition-all"
               >
                 Save fix & retry import
               </button>
@@ -895,16 +940,16 @@ function ExceptionCard({
         <div className="flex gap-2">
           <button
             onClick={onIgnore}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border bg-card text-xs font-medium active:scale-[0.97] transition-transform"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-card text-xs font-medium hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
           >
-            <X className="w-3 h-3" /> Skip row
+            <X className="w-3.5 h-3.5" /> Skip row
           </button>
           {exception.can_fix_in_ui && (
             <button
               onClick={() => setMode('fix')}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-medium active:scale-[0.97] transition-transform"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-medium hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
             >
-              <Wrench className="w-3 h-3" /> Fix this row
+              <Wrench className="w-3.5 h-3.5" /> Fix this row
             </button>
           )}
         </div>
