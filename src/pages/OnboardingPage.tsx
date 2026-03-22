@@ -240,7 +240,7 @@ export default function OnboardingPage() {
             <button
               onClick={() => setStep(s => nextVisibleStep(s))}
               disabled={!isStepValid()}
-              className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-40 disabled:pointer-events-none"
+              className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-accent text-accent-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-40 disabled:pointer-events-none"
             >
               Continue <ArrowRight className="w-4 h-4" />
             </button>
@@ -248,7 +248,7 @@ export default function OnboardingPage() {
             <button
               onClick={handleFinish}
               disabled={submitting}
-              className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-accent text-accent-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-50"
             >
               {submitting ? (
                 <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
@@ -584,7 +584,7 @@ function StepReview({
         )}
       </div>
       {data.importPath === 'csv' && !confirmedMapping && csvRowCount && csvRowCount > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+        <div className="bg-warning/10 border border-warning/20 rounded-xl p-4 text-sm text-warning-foreground">
           Column mapping not confirmed — go back to step 4 to map your columns.
         </div>
       )}

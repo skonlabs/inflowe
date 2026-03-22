@@ -244,7 +244,7 @@ export default function ClientDetailPage() {
                   className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-primary/30" />
               </div>
               <div className="flex gap-2">
-                <button onClick={handleSaveEdit} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform">
+                <button onClick={handleSaveEdit} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-accent text-accent-foreground font-medium text-sm active:scale-95 transition-transform">
                   <Check className="w-4 h-4" /> Save
                 </button>
                 <button onClick={() => setIsEditing(false)} className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform">

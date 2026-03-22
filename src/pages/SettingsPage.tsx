@@ -329,7 +329,7 @@ export default function SettingsPage() {
                 onKeyDown={e => e.key === 'Enter' && saveEdit()}
               />
               <div className="flex gap-2">
-                <button onClick={saveEdit} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm active:scale-95">
+                <button onClick={saveEdit} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg bg-accent text-accent-foreground font-medium text-sm active:scale-95">
                   <Check className="w-4 h-4" /> Save
                 </button>
                 <button onClick={() => setEditing(null)} className="px-4 py-2 rounded-lg bg-card border border-border font-medium text-sm active:scale-95">
@@ -443,7 +443,7 @@ export default function SettingsPage() {
                       </>
                     ) : isTrialing ? (
                       <>
-                        <span className="text-xs text-amber-600 font-medium">Trial · {trialDaysLeft}d left</span>
+                        <span className="text-xs text-warning font-medium">Trial · {trialDaysLeft}d left</span>
                         <button
                           onClick={() => handleDeactivateModule(mod.id, mod.name)}
                           disabled={togglingModule === mod.id}
@@ -499,7 +499,7 @@ export default function SettingsPage() {
                           {integration.connection_status === 'connected' ? (
                             <span className="text-primary">● Connected</span>
                           ) : (
-                            <span className="text-amber-500">● {integration.connection_status}</span>
+                            <span className="text-warning">● {integration.connection_status}</span>
                           )}
                           {integration.last_successful_sync_at && (
                             <> · Last synced {new Date(integration.last_successful_sync_at).toLocaleDateString()}</>
@@ -627,7 +627,7 @@ export default function SettingsPage() {
                   <button
                     onClick={handleConnectIntegration}
                     disabled={submittingIntegration || (connectingProvider.method === 'api_key' && !apiKeyInput.trim())}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-40 disabled:pointer-events-none"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-accent text-accent-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-40 disabled:pointer-events-none"
                   >
                     {submittingIntegration ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -685,7 +685,7 @@ export default function SettingsPage() {
                     <option value="viewer">Viewer</option>
                   </select>
                   <div className="flex gap-2">
-                    <button onClick={handleInvite} className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm active:scale-95">
+                    <button onClick={handleInvite} className="flex-1 py-2.5 rounded-lg bg-accent text-accent-foreground font-medium text-sm active:scale-95">
                       Send invite
                     </button>
                     <button onClick={() => setShowInvite(false)} className="px-4 py-2.5 rounded-lg bg-card border border-border text-sm active:scale-95">

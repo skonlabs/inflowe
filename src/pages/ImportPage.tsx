@@ -358,7 +358,7 @@ export default function ImportPage() {
                       }
                     }}
                     disabled={!templateSaveName.trim()}
-                    className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 active:scale-[0.97] transition-all"
+                    className="flex-1 py-3 rounded-xl bg-accent text-accent-foreground text-sm font-semibold shadow-sm hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 active:scale-[0.97] transition-all"
                   >
                     Save & import
                   </button>
@@ -439,7 +439,7 @@ export default function ImportPage() {
           <button
             onClick={handleCommit}
             disabled={stagingResult.staged === 0 || commitImport.isPending}
-            className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 active:scale-[0.97] transition-all"
+            className="flex-1 py-3 rounded-xl bg-accent text-accent-foreground text-sm font-semibold shadow-sm hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 active:scale-[0.97] transition-all"
           >
             {commitImport.isPending ? (
               <span className="flex items-center justify-center gap-2">
@@ -468,7 +468,7 @@ export default function ImportPage() {
         </div>
         <button
           onClick={() => setView('upload')}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.97] transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-medium shadow-sm hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.97] transition-all"
         >
           <Upload className="w-4 h-4" /> New import
         </button>
@@ -669,7 +669,7 @@ export default function ImportPage() {
                 {currentBatchId ? (
                   <button
                     onClick={() => setView('summary')}
-                    className="mt-4 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
+                    className="mt-4 px-5 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-semibold shadow-sm hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
                   >
                     Continue to commit
                   </button>
@@ -719,7 +719,7 @@ export default function ImportPage() {
               <p className="text-sm text-muted-foreground mt-1">Upload a CSV or Excel file to get started</p>
               <button
                 onClick={() => setView('upload')}
-                className="mt-5 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
+                className="mt-5 px-5 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-medium shadow-sm hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
               >
                 <Upload className="w-4 h-4 inline mr-1.5" />Upload file
               </button>
@@ -984,7 +984,7 @@ function ExceptionCard({
                   onFixed(fixValues);
                   setMode('view');
                 }}
-                className="flex-1 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 active:scale-[0.97] transition-all"
+                className="flex-1 py-2 rounded-xl bg-accent text-accent-foreground text-xs font-semibold shadow-sm hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 active:scale-[0.97] transition-all"
               >
                 Save fix & retry import
               </button>
