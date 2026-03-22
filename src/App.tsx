@@ -21,6 +21,7 @@ import SupportPage from "@/pages/SupportPage";
 import AdminPage from "@/pages/AdminPage";
 import OnboardingPage from "@/pages/OnboardingPage";
 import SettingsPage from "@/pages/SettingsPage";
+import ImportPage from "@/pages/ImportPage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
