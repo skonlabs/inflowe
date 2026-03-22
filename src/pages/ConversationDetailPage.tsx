@@ -91,7 +91,7 @@ export default function ConversationDetailPage() {
                 <div className="max-w-[85%] space-y-1">
                   <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-line ${
                     msg.direction === 'outbound'
-                      ? 'bg-primary/10 text-foreground rounded-br-md'
+                      ? 'bg-accent/10 text-foreground rounded-br-md'
                       : 'glass-card rounded-bl-md'
                   }`}>
                     {msg.text}
