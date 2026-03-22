@@ -390,7 +390,7 @@ export default function SettingsPage() {
                   <span>{item.name}</span>
                   <div className="flex items-center gap-2">
                     {displayVal && (
-                      <span className={`text-xs ${item.highlight ? 'text-primary font-medium' : 'text-muted-foreground'}`}>{displayVal}</span>
+                      <span className={`text-xs ${item.highlight ? 'text-accent font-medium' : 'text-muted-foreground'}`}>{displayVal}</span>
                     )}
                     {item.editable && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                   </div>
@@ -456,7 +456,7 @@ export default function SettingsPage() {
                       <button
                         onClick={() => handleStartTrial(mod.id)}
                         disabled={togglingModule === mod.id}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-primary hover:bg-accent/20 transition-colors active:scale-95 disabled:opacity-50"
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent hover:bg-accent/20 transition-colors active:scale-95 disabled:opacity-50"
                       >
                         {togglingModule === mod.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
                         Start trial
@@ -497,7 +497,7 @@ export default function SettingsPage() {
                         <p className="text-sm font-medium">{providerInfo?.name || integration.provider}</p>
                         <p className="text-xs text-muted-foreground">
                           {integration.connection_status === 'connected' ? (
-                            <span className="text-primary">● Connected</span>
+                            <span className="text-accent">● Connected</span>
                           ) : (
                             <span className="text-warning">● {integration.connection_status}</span>
                           )}

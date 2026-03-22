@@ -1005,7 +1005,7 @@ function ExceptionCard({
           {exception.can_fix_in_ui && (
             <button
               onClick={() => setMode('fix')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-accent/10 border border-accent/20 text-primary text-xs font-medium hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-accent/10 border border-accent/20 text-accent text-xs font-medium hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
             >
               <Wrench className="w-3.5 h-3.5" /> Fix this row
             </button>

@@ -207,7 +207,7 @@ export default function ReportsPage() {
                       {(latestBrief.recommended_next_steps as string[]).map((rec, i) => (
                         <div key={i} className="flex items-start gap-3">
                           <div className="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center shrink-0 mt-0.5">
-                            <span className="text-xs font-bold text-primary">{i + 1}</span>
+                            <span className="text-xs font-bold text-accent">{i + 1}</span>
                           </div>
                           <p className="text-sm">{rec}</p>
                         </div>
