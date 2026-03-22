@@ -96,7 +96,6 @@ export default function ImportPage() {
         return;
       }
       setParsed({ file, headers: result.headers, rows: result.rows, warnings: result.warnings });
-      const sig = buildHeaderSignature(result.headers);
       const matched = (templates as MappingTemplate[]).find(t => matchesTemplate(result.headers, t)) ?? null;
       setMatchedTemplate(matched);
       const inferred = inferMapping(result.headers, result.rows.slice(0, 10), matched);
@@ -229,6 +228,8 @@ export default function ImportPage() {
     setCurrentBatchId(null);
     setStagingResult(null);
     setPendingMapping(null);
+    setTemplateSaveName('');
+    setShowTemplateSave(false);
   };
 
   // ── Exception resolution ───────────────────────────────────────────────────

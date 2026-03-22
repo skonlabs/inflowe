@@ -65,7 +65,7 @@ export default function ClientsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-primary font-semibold text-sm">{client.displayName.split(' ').map(w => w[0]).join('').slice(0, 2)}</span>
+                    <span className="text-primary font-semibold text-sm">{client.displayName.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2)}</span>
                   </div>
                   <div className="min-w-0">
                     <p className="font-medium text-sm truncate">{client.displayName}</p>

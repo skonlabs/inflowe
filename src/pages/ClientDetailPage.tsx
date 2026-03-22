@@ -161,7 +161,7 @@ export default function ClientDetailPage() {
         <div className="glass-card rounded-xl p-5">
           <div className="flex items-start gap-3">
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="text-primary font-bold text-lg">{client.displayName.split(' ').map(w => w[0]).join('').slice(0, 2)}</span>
+              <span className="text-primary font-bold text-lg">{client.displayName.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2)}</span>
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-bold truncate">{client.displayName}</h1>
@@ -263,7 +263,7 @@ export default function ClientDetailPage() {
             <h2 className="font-semibold text-sm mb-3">Primary contact</h2>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                <span className="text-sm font-medium">{client.contactName.split(' ').map(w => w[0]).join('')}</span>
+                <span className="text-sm font-medium">{client.contactName.split(' ').filter(Boolean).map(w => w[0]).join('')}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm">{client.contactName}</p>
