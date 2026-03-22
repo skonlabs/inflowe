@@ -187,7 +187,8 @@ export default function SettingsPage() {
       const { error } = await supabase
         .from('integrations')
         .update({ connection_status: 'disconnected', disconnected_at: new Date().toISOString() })
-        .eq('id', integrationId);
+        .eq('id', integrationId)
+        .eq('organization_id', orgId!);
       if (error) throw error;
       toast.success(`${providerName} disconnected`);
       queryClient.invalidateQueries({ queryKey: ['integrations'] });

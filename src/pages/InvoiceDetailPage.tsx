@@ -5,6 +5,7 @@ import { ScrollReveal } from '@/components/ScrollReveal';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   useUserOrganization,
@@ -37,6 +38,7 @@ function getTimelineIcon(eventType: string): React.ElementType {
 export default function InvoiceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: membership } = useUserOrganization();
   const orgId = membership?.organization_id;
   const { data: dbInvoice, isLoading } = useInvoiceDetail(id, orgId);
@@ -180,6 +182,8 @@ export default function InvoiceDetailPage() {
 
       if (invoiceError) throw invoiceError;
 
+      queryClient.invalidateQueries({ queryKey: ['invoice-detail', id] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-list', orgId] });
       toast.success(`Payment plan created: ${planInstallments} installments of ${formatCurrency(Math.floor(invoice.remainingBalance / planInstallments))}`);
       setShowPaymentPlan(false);
     } catch (err: any) {

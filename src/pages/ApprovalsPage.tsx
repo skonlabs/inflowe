@@ -84,7 +84,8 @@ export default function ApprovalsPage() {
         const { error } = await supabase
           .from('approvals')
           .update({ status: 'approved', decision_at: new Date().toISOString(), approver_user_id: user?.id })
-          .eq('id', approval.id);
+          .eq('id', approval.id)
+          .eq('organization_id', orgId!);
         if (error) throw error;
         queryClient.invalidateQueries({ queryKey: ['approvals'] });
       }
@@ -103,7 +104,8 @@ export default function ApprovalsPage() {
         const { error } = await supabase
           .from('approvals')
           .update({ status: 'rejected', decision_at: new Date().toISOString(), approver_user_id: user?.id })
-          .eq('id', approval.id);
+          .eq('id', approval.id)
+          .eq('organization_id', orgId!);
         if (error) throw error;
         queryClient.invalidateQueries({ queryKey: ['approvals'] });
       }
