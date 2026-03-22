@@ -194,7 +194,7 @@ export default function ImportPage() {
         id:                 batchId,
         organization_id:    orgId,
         created_by_user_id: (await supabase.auth.getUser()).data.user?.id,
-        import_type:        isExcelFile(parsed.file) ? 'excel' : 'csv',
+        import_type:        importType === 'client' ? 'client_csv' : (isExcelFile(parsed.file) ? 'excel' : 'csv'),
         original_filename:  parsed.file.name,
         status:             'pending',
         total_rows:         parsed.rows.length,
