@@ -117,7 +117,7 @@ export function useInvoiceDetail(invoiceId: string | undefined, orgId: string | 
 export function useInvoiceTimeline(invoiceId: string | undefined, orgId: string | undefined) {
   return useQuery({
     queryKey: ['invoice-timeline', invoiceId],
-    enabled: !!invoiceId && !!orgId,
+    enabled: isUUID(invoiceId) && !!orgId,
     queryFn: async () => {
       // Fetch audit logs for this invoice
       const { data: auditData, error: auditError } = await supabase
