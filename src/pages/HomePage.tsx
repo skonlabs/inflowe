@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Clock, CheckCircle2, TrendingUp, ArrowRight, Phone, Calendar, Sparkles } from 'lucide-react';
 import { formatCurrency, demoApprovals, homeSummary as demoHomeSummary, aiRecommendations } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
-import { useUserOrganization, useHomeSummary, useApprovals } from '@/hooks/use-supabase-data';
+import { useUserOrganization, useHomeSummary, useApprovals, useRecoveredThisWeek } from '@/hooks/use-supabase-data';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -10,6 +10,7 @@ export default function HomePage() {
   const orgId = membership?.organization_id;
   const { data: dbSummary } = useHomeSummary(orgId);
   const { data: dbApprovals } = useApprovals(orgId);
+  const { data: recoveredThisWeek = 0 } = useRecoveredThisWeek(orgId);
 
   const s = dbSummary ? {
     overdueTotal: Number(dbSummary.overdue_total ?? 0),
@@ -18,7 +19,7 @@ export default function HomePage() {
     dueSoonCount: dbSummary.due_soon_count ?? 0,
     approvalsPending: dbSummary.approvals_pending ?? 0,
     repliesNeedingAttention: dbSummary.replies_needing_attention ?? 0,
-    recoveredThisWeek: 0,
+    recoveredThisWeek,
     totalOutstanding: Number(dbSummary.overdue_total ?? 0) + Number(dbSummary.due_soon_total ?? 0),
   } : demoHomeSummary;
 
@@ -47,8 +48,8 @@ export default function HomePage() {
     : null;
 
   const handleRecommendationClick = (recommendationId: string) => {
-    if (recommendationId === 'r1') navigate('/clients/c3');
-    else if (recommendationId === 'r2') navigate('/invoices/i8');
+    if (recommendationId === 'r1') navigate('/clients');
+    else if (recommendationId === 'r2') navigate('/invoices');
     else navigate('/invoices?filter=due_soon');
   };
 

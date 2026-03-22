@@ -11,12 +11,13 @@ interface IncidentControl {
   desc: string;
   active: boolean;
   severity: string;
+  flagKey: string;
 }
 
-const initialIncidentControls: IncidentControl[] = [
-  { label: 'Global send shutdown', desc: 'Stop ALL outbound sends across all tenants', active: false, severity: 'critical' },
-  { label: 'Email channel shutdown', desc: 'Stop email sends globally', active: false, severity: 'high' },
-  { label: 'WhatsApp channel shutdown', desc: 'Stop WhatsApp sends globally', active: false, severity: 'high' },
+const INCIDENT_CONTROLS: Omit<IncidentControl, 'active'>[] = [
+  { label: 'Global send shutdown', desc: 'Stop ALL outbound sends across all tenants', severity: 'critical', flagKey: 'incident:global_send_shutdown' },
+  { label: 'Email channel shutdown', desc: 'Stop email sends globally', severity: 'high', flagKey: 'incident:email_channel_shutdown' },
+  { label: 'WhatsApp channel shutdown', desc: 'Stop WhatsApp sends globally', severity: 'high', flagKey: 'incident:whatsapp_channel_shutdown' },
 ];
 
 const queueStats = [
@@ -31,10 +32,10 @@ const queueStats = [
 export default function AdminPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [controls, setControls] = useState(initialIncidentControls);
   const [togglingFlag, setTogglingFlag] = useState<string | null>(null);
+  const [togglingControl, setTogglingControl] = useState<string | null>(null);
 
-  // Load feature flags from DB
+  // Load all feature flags from DB (includes incident: and regular flags)
   const { data: dbFlags = [], isLoading: flagsLoading } = useQuery({
     queryKey: ['feature-flags'],
     queryFn: async () => {
@@ -45,6 +46,12 @@ export default function AdminPage() {
       if (error) throw error;
       return data ?? [];
     },
+  });
+
+  // Derive incident controls active state from DB flags
+  const controls: IncidentControl[] = INCIDENT_CONTROLS.map(ctrl => {
+    const dbFlag = dbFlags.find(f => f.flag_key === ctrl.flagKey);
+    return { ...ctrl, active: dbFlag ? dbFlag.enabled_by_default : false };
   });
 
   // Load tenants (organizations) from DB
@@ -61,17 +68,31 @@ export default function AdminPage() {
     },
   });
 
-  const toggleControl = (index: number) => {
-    setControls(prev => prev.map((c, i) => {
-      if (i !== index) return c;
-      const newActive = !c.active;
-      if (newActive) {
-        toast.error(`${c.label} activated`, { duration: 5000 });
-      } else {
-        toast.success(`${c.label} deactivated — sends resumed`);
+  const toggleControl = async (ctrl: IncidentControl) => {
+    setTogglingControl(ctrl.flagKey);
+    const newActive = !ctrl.active;
+    try {
+      const dbFlag = dbFlags.find(f => f.flag_key === ctrl.flagKey);
+      if (!dbFlag) {
+        toast.error('Incident control flag not found in DB — run latest migrations');
+        return;
       }
-      return { ...c, active: newActive };
-    }));
+      const { error } = await supabase.rpc('update_feature_flag', {
+        _flag_id: dbFlag.id,
+        _enabled: newActive,
+      });
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ['feature-flags'] });
+      if (newActive) {
+        toast.error(`${ctrl.label} activated`, { duration: 5000 });
+      } else {
+        toast.success(`${ctrl.label} deactivated — sends resumed`);
+      }
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to update incident control');
+    } finally {
+      setTogglingControl(null);
+    }
   };
 
   const toggleFlag = async (flagId: string, flagKey: string, currentEnabled: boolean) => {
@@ -113,19 +134,20 @@ export default function AdminPage() {
             <AlertOctagon className="w-4 h-4 text-destructive" />
             <h3 className="text-sm font-semibold">Incident Controls</h3>
           </div>
-          {controls.map((ctrl, i) => (
+          {controls.map(ctrl => (
             <div key={ctrl.label} className="flex items-center justify-between px-4 py-3 border-t border-border/40">
               <div>
                 <p className="text-sm font-medium">{ctrl.label}</p>
                 <p className="text-xs text-muted-foreground">{ctrl.desc}</p>
               </div>
               <button
-                onClick={() => toggleControl(i)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors active:scale-95 ${
+                onClick={() => toggleControl(ctrl)}
+                disabled={togglingControl === ctrl.flagKey}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors active:scale-95 disabled:opacity-60 ${
                   ctrl.active ? 'bg-destructive text-destructive-foreground' : 'bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
                 }`}
               >
-                {ctrl.active ? 'Deactivate' : 'Activate'}
+                {togglingControl === ctrl.flagKey ? '…' : ctrl.active ? 'Deactivate' : 'Activate'}
               </button>
             </div>
           ))}

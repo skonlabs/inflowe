@@ -58,6 +58,25 @@ export function useHomeSummary(orgId: string | undefined) {
   });
 }
 
+export function useRecoveredThisWeek(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ['recovered-this-week', orgId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const startOfWeek = new Date();
+      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      const { data, error } = await supabase
+        .from('payments')
+        .select('amount')
+        .eq('organization_id', orgId!)
+        .gte('payment_date', startOfWeek.toISOString().slice(0, 10));
+      if (error) throw error;
+      return (data ?? []).reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
+    },
+  });
+}
+
 // ─── Invoices ────────────────────────────────────────────────────────────────
 
 export function useInvoiceList(orgId: string | undefined) {
@@ -334,7 +353,8 @@ export function useConversationThreads(orgId: string | undefined) {
         .from('communication_threads')
         .select(`
           *,
-          clients(display_name)
+          clients(display_name),
+          invoices!primary_invoice_id(invoice_number)
         `)
         .eq('organization_id', orgId!)
         .order('latest_message_at', { ascending: false, nullsFirst: false });
@@ -1495,9 +1515,10 @@ export function useTriggerSync() {
       orgId: string;
       integrationId: string;
     }) => {
-      // Invoke the edge function directly
-      const { data, error: fnError } = await supabase.functions.invoke('sync-integration', {
-        body: { integration_id: integrationId, organization_id: orgId },
+      const { data, error: fnError } = await supabase.rpc('trigger_integration_sync', {
+        _org_id: orgId,
+        _integration_id: integrationId,
+        _sync_type: 'manual',
       });
       if (fnError) throw fnError;
       return data;
