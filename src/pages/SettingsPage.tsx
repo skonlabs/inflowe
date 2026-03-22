@@ -435,7 +435,7 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-2 shrink-0 ml-3">
                     {isActive ? (
                       <>
-                        <span className="text-xs text-accent font-medium">● Active</span>
+                        <span className="text-xs text-success font-medium">● Active</span>
                         <button
                           onClick={() => handleDeactivateModule(mod.id, mod.name)}
                           disabled={togglingModule === mod.id}
