@@ -66,7 +66,7 @@ const scaleIn = {
 
 const STATUS_ICON: Record<string, { icon: React.FC<{ className?: string }>; color: string; label: string }> = {
   pending:    { icon: Clock,         color: 'text-muted-foreground', label: 'Pending' },
-  processing: { icon: RotateCcw,     color: 'text-primary',          label: 'Processing' },
+  processing: { icon: RotateCcw,     color: 'text-accent',          label: 'Processing' },
   staged:     { icon: Clock,         color: 'text-warning',          label: 'Awaiting commit' },
   completed:  { icon: CheckCircle2,  color: 'text-success',          label: 'Completed' },
   partial:    { icon: AlertTriangle, color: 'text-warning',          label: 'Partial' },
@@ -328,7 +328,7 @@ export default function ImportPage() {
               >
                 <div className="w-10 h-1 rounded-full bg-border mx-auto sm:hidden" />
                 <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto">
-                  <BookTemplate className="w-6 h-6 text-primary" />
+                  <BookTemplate className="w-6 h-6 text-accent" />
                 </div>
                 <div className="text-center">
                   <h3 className="font-semibold text-lg">Save this mapping?</h3>
@@ -931,7 +931,7 @@ function ExceptionCard({
           >
             {exception.suggested_remediation && (
               <p className="text-muted-foreground">
-                <Sparkles className="w-3 h-3 inline mr-1 text-primary" />
+                <Sparkles className="w-3 h-3 inline mr-1 text-accent" />
                 <strong>Suggestion:</strong> {exception.suggested_remediation}
               </p>
             )}

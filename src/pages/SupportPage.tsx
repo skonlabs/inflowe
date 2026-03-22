@@ -66,7 +66,7 @@ export default function SupportPage() {
           <ScrollReveal delay={0.1}>
             <div className="glass-card rounded-xl p-5 text-center">
               <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-3">
-                <HelpCircle className="w-6 h-6 text-primary" />
+                <HelpCircle className="w-6 h-6 text-accent" />
               </div>
               <h2 className="font-semibold">How can I help?</h2>
               <p className="text-sm text-muted-foreground mt-1">I can explain any action InFlowe has taken and help you decide what to do next.</p>

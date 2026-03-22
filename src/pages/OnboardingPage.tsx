@@ -381,7 +381,7 @@ function StepPath({ data, update }: StepProps) {
             >
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
-                  <Icon className="w-5 h-5 text-primary" />
+                  <Icon className="w-5 h-5 text-accent" />
                 </div>
                 <div>
                   <p className="font-medium text-sm">{p.label}</p>
@@ -478,7 +478,7 @@ function StepImport({
             className={`glass-card rounded-xl p-6 text-center space-y-4 cursor-pointer transition-colors ${isDragging ? 'border-2 border-primary bg-accent/30' : ''}`}
           >
             <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto">
-              {uploadedFile ? <Check className="w-8 h-8 text-success" /> : <Upload className="w-8 h-8 text-primary" />}
+              {uploadedFile ? <Check className="w-8 h-8 text-success" /> : <Upload className="w-8 h-8 text-accent" />}
             </div>
             {uploadedFile ? (
               <div>
@@ -634,7 +634,7 @@ function StepTrust({ data, update }: StepProps) {
               )}
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
-                  <Icon className="w-5 h-5 text-primary" />
+                  <Icon className="w-5 h-5 text-accent" />
                 </div>
                 <div>
                   <p className="font-medium text-sm">{m.label}</p>
@@ -687,7 +687,7 @@ function StepActivate({ data }: StepProps) {
     <div className="space-y-6">
       <div className="text-center pt-4">
         <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
-          <Sparkles className="w-8 h-8 text-primary" />
+          <Sparkles className="w-8 h-8 text-accent" />
         </div>
         <h2 className="text-2xl font-bold" style={{ lineHeight: '1.1' }}>You're all set!</h2>
         <p className="text-muted-foreground text-sm mt-2 max-w-xs mx-auto">Your default follow-up workflow is ready. Here's what it will do:</p>

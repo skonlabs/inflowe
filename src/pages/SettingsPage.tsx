@@ -362,7 +362,7 @@ export default function SettingsPage() {
           className="w-full glass-card-hover rounded-xl p-4 flex items-center gap-3 active:scale-[0.98] transition-transform"
         >
           <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-primary" />
+            <Shield className="w-5 h-5 text-accent" />
           </div>
           <div className="text-left flex-1">
             <p className="font-medium text-sm">Admin Console</p>
@@ -591,7 +591,7 @@ export default function SettingsPage() {
                   <div className="space-y-3">
                     <div className="rounded-xl bg-muted/40 p-4 space-y-2">
                       <p className="text-sm font-medium flex items-center gap-2">
-                        <ExternalLink className="w-4 h-4 text-primary" /> OAuth Authorization
+                        <ExternalLink className="w-4 h-4 text-accent" /> OAuth Authorization
                       </p>
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         Clicking "Connect" will register {connectingProvider.name} as a pending integration. 
@@ -603,7 +603,7 @@ export default function SettingsPage() {
                   <div className="space-y-3">
                     <div className="rounded-xl bg-muted/40 p-4 space-y-2">
                       <p className="text-sm font-medium flex items-center gap-2">
-                        <Key className="w-4 h-4 text-primary" /> API Key
+                        <Key className="w-4 h-4 text-accent" /> API Key
                       </p>
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         Enter your {connectingProvider.name} API key. Find it in your {connectingProvider.name} dashboard under Developer settings.
