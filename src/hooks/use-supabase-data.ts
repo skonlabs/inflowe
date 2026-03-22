@@ -1159,100 +1159,163 @@ export function useCommitImport() {
       for (const cand of (candidates ?? [])) {
         const nd = cand.normalized_data as Record<string, unknown>;
         try {
-          // Find or create client
-          let clientId: string | null = null;
-          const clientName = (nd.client_name as string) || 'Unknown Client';
+          if (importType === 'client') {
+            // ── Client commit path ────────────────────────────────────
+            const clientName = (nd.client_name as string) || 'Unknown Client';
 
-          const { data: existingClient } = await supabase
-            .from('clients')
-            .select('id')
-            .eq('organization_id', orgId)
-            .ilike('display_name', clientName)
-            .limit(1)
-            .maybeSingle();
-
-          if (existingClient) {
-            clientId = existingClient.id;
-          } else {
-            const { data: newClient, error: clientErr } = await supabase
+            // Check for duplicate client
+            const { data: existingClient } = await supabase
               .from('clients')
-              .insert({
-                organization_id: orgId,
-                display_name: clientName,
-                legal_name: (nd.client_legal_name as string) ?? null,
-              })
-              .select('id')
-              .single();
-            if (clientErr) throw clientErr;
-            clientId = newClient.id;
-
-            // Create contact if email provided
-            if (nd.billing_contact_email) {
-              await supabase.from('client_contacts').insert({
-                organization_id: orgId,
-                client_id: clientId,
-                full_name: (nd.billing_contact_name as string) || clientName,
-                email: nd.billing_contact_email as string,
-                phone: (nd.billing_contact_phone as string) ?? null,
-                is_primary: true,
-              });
-            }
-          }
-
-          // Check for duplicate invoice
-          const invNumber = (nd.invoice_number as string) || null;
-          if (invNumber) {
-            const { data: existing } = await supabase
-              .from('invoices')
               .select('id')
               .eq('organization_id', orgId)
-              .eq('invoice_number', invNumber)
+              .ilike('display_name', clientName)
               .limit(1)
               .maybeSingle();
-            if (existing) {
+
+            if (existingClient) {
               skipped++;
               await supabase.from('ingestion_candidates').update({
                 write_status: 'skipped',
               }).eq('id', cand.id);
               continue;
             }
+
+            // Create client
+            const { data: newClient, error: clientErr } = await supabase
+              .from('clients')
+              .insert({
+                organization_id: orgId,
+                display_name: clientName,
+                legal_name: (nd.legal_name as string) ?? null,
+                sensitivity_level: (nd.sensitivity_level as string) ?? 'standard',
+                preferred_channel: (nd.preferred_channel as string) ?? 'email',
+                notes: (nd.notes as string) ?? null,
+                tags: nd.tags ? String(nd.tags).split(',').map(t => t.trim()).filter(Boolean) : [],
+                import_batch_id: importBatchId,
+                imported_at: new Date().toISOString(),
+                source_system: 'csv_import',
+              })
+              .select('id')
+              .single();
+            if (clientErr) throw clientErr;
+
+            // Create contact if email provided
+            const contactEmail = nd.billing_contact_email || nd.contact_email;
+            const contactName = nd.billing_contact_name || nd.contact_name;
+            const contactPhone = nd.billing_contact_phone || nd.contact_phone;
+
+            if (contactEmail || contactName) {
+              await supabase.from('client_contacts').insert({
+                organization_id: orgId,
+                client_id: newClient.id,
+                full_name: (contactName as string) || clientName,
+                email: (contactEmail as string) ?? null,
+                phone: (contactPhone as string) ?? null,
+                is_primary: true,
+              });
+            }
+
+            await supabase.from('ingestion_candidates').update({
+              write_status: 'written',
+              written_at: new Date().toISOString(),
+              canonical_record_id: newClient.id,
+            }).eq('id', cand.id);
+
+            committed++;
+          } else {
+            // ── Invoice commit path ───────────────────────────────────
+            let clientId: string | null = null;
+            const clientName = (nd.client_name as string) || 'Unknown Client';
+
+            const { data: existingClient } = await supabase
+              .from('clients')
+              .select('id')
+              .eq('organization_id', orgId)
+              .ilike('display_name', clientName)
+              .limit(1)
+              .maybeSingle();
+
+            if (existingClient) {
+              clientId = existingClient.id;
+            } else {
+              const { data: newClient, error: clientErr } = await supabase
+                .from('clients')
+                .insert({
+                  organization_id: orgId,
+                  display_name: clientName,
+                  legal_name: (nd.client_legal_name as string) ?? null,
+                })
+                .select('id')
+                .single();
+              if (clientErr) throw clientErr;
+              clientId = newClient.id;
+
+              if (nd.billing_contact_email) {
+                await supabase.from('client_contacts').insert({
+                  organization_id: orgId,
+                  client_id: clientId,
+                  full_name: (nd.billing_contact_name as string) || clientName,
+                  email: nd.billing_contact_email as string,
+                  phone: (nd.billing_contact_phone as string) ?? null,
+                  is_primary: true,
+                });
+              }
+            }
+
+            // Check for duplicate invoice
+            const invNumber = (nd.invoice_number as string) || null;
+            if (invNumber) {
+              const { data: existing } = await supabase
+                .from('invoices')
+                .select('id')
+                .eq('organization_id', orgId)
+                .eq('invoice_number', invNumber)
+                .limit(1)
+                .maybeSingle();
+              if (existing) {
+                skipped++;
+                await supabase.from('ingestion_candidates').update({
+                  write_status: 'skipped',
+                }).eq('id', cand.id);
+                continue;
+              }
+            }
+
+            // Derive state
+            const totalAmount = (nd.total_amount as number) ?? (nd.remaining_balance as number) ?? 0;
+            const amountPaid = (nd.amount_paid as number) ?? 0;
+            const remaining = (nd.remaining_balance as number) ?? (totalAmount - amountPaid);
+            const dueDateStr = (nd.due_date as string) ?? new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+            const dueDate = new Date(dueDateStr);
+            let state = (nd.status as string) ?? 'sent';
+            if (state === 'sent' && remaining <= 0) state = 'paid';
+            else if (state === 'sent' && dueDate < new Date()) state = 'overdue';
+
+            const { error: invErr } = await supabase.from('invoices').insert({
+              organization_id: orgId,
+              client_id: clientId!,
+              invoice_number: invNumber,
+              external_id: (nd.external_invoice_id as string) ?? null,
+              amount: totalAmount,
+              amount_paid: amountPaid,
+              remaining_balance: remaining,
+              currency: (nd.currency as string) ?? 'USD',
+              due_date: dueDateStr,
+              issue_date: (nd.issue_date as string) ?? null,
+              state,
+              import_batch_id: importBatchId,
+              imported_at: new Date().toISOString(),
+              source_system: 'csv_import',
+            });
+            if (invErr) throw invErr;
+
+            await supabase.from('ingestion_candidates').update({
+              write_status: 'written',
+              written_at: new Date().toISOString(),
+            }).eq('id', cand.id);
+
+            committed++;
           }
-
-          // Derive state
-          const totalAmount = (nd.total_amount as number) ?? (nd.remaining_balance as number) ?? 0;
-          const amountPaid = (nd.amount_paid as number) ?? 0;
-          const remaining = (nd.remaining_balance as number) ?? (totalAmount - amountPaid);
-          const dueDateStr = (nd.due_date as string) ?? new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
-          const dueDate = new Date(dueDateStr);
-          let state = (nd.status as string) ?? 'sent';
-          if (state === 'sent' && remaining <= 0) state = 'paid';
-          else if (state === 'sent' && dueDate < new Date()) state = 'overdue';
-
-          // Create invoice
-          const { error: invErr } = await supabase.from('invoices').insert({
-            organization_id: orgId,
-            client_id: clientId!,
-            invoice_number: invNumber,
-            external_id: (nd.external_invoice_id as string) ?? null,
-            amount: totalAmount,
-            amount_paid: amountPaid,
-            remaining_balance: remaining,
-            currency: (nd.currency as string) ?? 'USD',
-            due_date: dueDateStr,
-            issue_date: (nd.issue_date as string) ?? null,
-            state,
-            import_batch_id: importBatchId,
-            imported_at: new Date().toISOString(),
-            source_system: 'csv_import',
-          });
-          if (invErr) throw invErr;
-
-          await supabase.from('ingestion_candidates').update({
-            write_status: 'written',
-            written_at: new Date().toISOString(),
-          }).eq('id', cand.id);
-
-          committed++;
         } catch (err: any) {
           conflicts++;
           await supabase.from('ingestion_candidates').update({
