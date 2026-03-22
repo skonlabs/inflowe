@@ -4,17 +4,16 @@
  * Infers how customer CSV/spreadsheet columns map to InFlowe's canonical fields
  * using synonym dictionaries, type inference from sample values, and confidence scoring.
  *
- * Architecture:
- *  1. Normalize column header (lower-case, trim, strip punctuation)
- *  2. Exact match against synonym sets  → high confidence
- *  3. Fuzzy/token match                → medium confidence
- *  4. Type inference from sample values → medium/low confidence
- *  5. No match                          → null suggestion
+ * Supports both invoice and client import types.
  */
+
+// ─── Import type ─────────────────────────────────────────────────────────────
+
+export type ImportType = 'invoice' | 'client';
 
 // ─── Canonical field definitions ─────────────────────────────────────────────
 
-export const CANONICAL_FIELDS = [
+export const INVOICE_CANONICAL_FIELDS = [
   'invoice_number',
   'client_name',
   'contact_name',
@@ -32,17 +31,42 @@ export const CANONICAL_FIELDS = [
   'ignore',
 ] as const;
 
-export type CanonicalField = typeof CANONICAL_FIELDS[number];
+export const CLIENT_CANONICAL_FIELDS = [
+  'client_name',
+  'legal_name',
+  'contact_name',
+  'contact_email',
+  'contact_phone',
+  'address',
+  'currency',
+  'preferred_channel',
+  'payment_terms',
+  'sensitivity_level',
+  'tags',
+  'notes',
+  'ignore',
+] as const;
+
+export type InvoiceCanonicalField = typeof INVOICE_CANONICAL_FIELDS[number];
+export type ClientCanonicalField = typeof CLIENT_CANONICAL_FIELDS[number];
+export type CanonicalField = InvoiceCanonicalField | ClientCanonicalField;
+
+// Keep backward compat
+export const CANONICAL_FIELDS = INVOICE_CANONICAL_FIELDS;
+
+export function getCanonicalFields(importType: ImportType): readonly CanonicalField[] {
+  return importType === 'client' ? CLIENT_CANONICAL_FIELDS : INVOICE_CANONICAL_FIELDS;
+}
 
 export interface CanonicalFieldMeta {
   label: string;
   description: string;
   isCritical: boolean;
-  type: 'text' | 'amount' | 'date' | 'email' | 'phone' | 'currency' | 'status' | 'ignore';
+  type: 'text' | 'amount' | 'date' | 'email' | 'phone' | 'currency' | 'status' | 'ignore' | 'select';
   required: boolean;
 }
 
-export const FIELD_META: Record<CanonicalField, CanonicalFieldMeta> = {
+export const INVOICE_FIELD_META: Record<InvoiceCanonicalField, CanonicalFieldMeta> = {
   invoice_number:    { label: 'Invoice Number',    description: 'Unique invoice identifier (e.g. INV-001)', isCritical: true,  type: 'text',     required: false },
   client_name:       { label: 'Client Name',        description: 'Name of the client or company',          isCritical: true,  type: 'text',     required: true  },
   contact_name:      { label: 'Contact Name',        description: 'Billing contact person\'s name',         isCritical: false, type: 'text',     required: false },
@@ -60,9 +84,32 @@ export const FIELD_META: Record<CanonicalField, CanonicalFieldMeta> = {
   ignore:            { label: 'Ignore this column',  description: 'Skip this column',                       isCritical: false, type: 'ignore',   required: false },
 };
 
-// ─── Synonym dictionary ──────────────────────────────────────────────────────
+export const CLIENT_FIELD_META: Record<ClientCanonicalField, CanonicalFieldMeta> = {
+  client_name:       { label: 'Client Name',          description: 'Display name of the client or company',   isCritical: true,  type: 'text',     required: true  },
+  legal_name:        { label: 'Legal Name',            description: 'Registered legal/business name',          isCritical: false, type: 'text',     required: false },
+  contact_name:      { label: 'Contact Name',          description: 'Primary contact person\'s name',          isCritical: false, type: 'text',     required: false },
+  contact_email:     { label: 'Contact Email',         description: 'Primary contact email address',           isCritical: true,  type: 'email',    required: false },
+  contact_phone:     { label: 'Contact Phone',         description: 'Primary contact phone number',            isCritical: false, type: 'phone',    required: false },
+  address:           { label: 'Address',               description: 'Business or billing address',              isCritical: false, type: 'text',     required: false },
+  currency:          { label: 'Currency',              description: 'Default currency (e.g. USD, GBP)',         isCritical: false, type: 'currency', required: false },
+  preferred_channel: { label: 'Preferred Channel',     description: 'Preferred contact channel (email, sms)',   isCritical: false, type: 'select',   required: false },
+  payment_terms:     { label: 'Payment Terms',         description: 'Default payment terms (e.g. Net 30)',      isCritical: false, type: 'text',     required: false },
+  sensitivity_level: { label: 'Sensitivity Level',     description: 'Client sensitivity (standard, high, vip)', isCritical: false, type: 'select',   required: false },
+  tags:              { label: 'Tags',                  description: 'Comma-separated tags or categories',       isCritical: false, type: 'text',     required: false },
+  notes:             { label: 'Notes',                 description: 'Additional notes about this client',       isCritical: false, type: 'text',     required: false },
+  ignore:            { label: 'Ignore this column',    description: 'Skip this column',                         isCritical: false, type: 'ignore',   required: false },
+};
 
-const SYNONYMS: Record<CanonicalField, string[]> = {
+// Backward compat
+export const FIELD_META = INVOICE_FIELD_META as Record<CanonicalField, CanonicalFieldMeta>;
+
+export function getFieldMeta(importType: ImportType): Record<string, CanonicalFieldMeta> {
+  return importType === 'client' ? CLIENT_FIELD_META : INVOICE_FIELD_META;
+}
+
+// ─── Synonym dictionaries ────────────────────────────────────────────────────
+
+const INVOICE_SYNONYMS: Record<string, string[]> = {
   invoice_number: [
     'invoice_number', 'invoice number', 'inv number', 'inv no', 'inv_no', 'inv#',
     'invoice#', 'invoice no', 'bill no', 'bill number', 'bill_number', 'invoice id',
@@ -76,7 +123,7 @@ const SYNONYMS: Record<CanonicalField, string[]> = {
   ],
   contact_name: [
     'contact_name', 'contact name', 'contact', 'billing contact', 'billing_contact',
-    'contact person', 'attn', 'attention', 'person', 'name', 'recipient',
+    'contact person', 'attn', 'attention', 'person', 'recipient',
   ],
   contact_email: [
     'contact_email', 'contact email', 'email', 'email address', 'e-mail',
@@ -129,16 +176,77 @@ const SYNONYMS: Record<CanonicalField, string[]> = {
   ignore: [],
 };
 
-// Pre-build reverse lookup: normalized synonym → canonical field
-const SYNONYM_LOOKUP = new Map<string, CanonicalField>();
-for (const [field, synonyms] of Object.entries(SYNONYMS) as [CanonicalField, string[]][]) {
-  for (const syn of synonyms) {
-    SYNONYM_LOOKUP.set(normalizeHeader(syn), field);
-  }
-}
+const CLIENT_SYNONYMS: Record<string, string[]> = {
+  client_name: [
+    'client_name', 'client name', 'client', 'customer', 'customer name',
+    'customer_name', 'company', 'company name', 'account', 'account name',
+    'party', 'debtor', 'debtor name', 'business name', 'name', 'display name',
+  ],
+  legal_name: [
+    'legal_name', 'legal name', 'registered name', 'business name', 'entity name',
+    'official name', 'legal entity',
+  ],
+  contact_name: [
+    'contact_name', 'contact name', 'contact', 'contact person', 'primary contact',
+    'billing contact', 'attn', 'attention', 'person', 'recipient', 'first name',
+  ],
+  contact_email: [
+    'contact_email', 'contact email', 'email', 'email address', 'e-mail',
+    'billing email', 'billing_email', 'email_address', 'mail', 'primary email',
+  ],
+  contact_phone: [
+    'contact_phone', 'contact phone', 'phone', 'phone number', 'telephone',
+    'mobile', 'cell', 'cell number', 'tel', 'primary phone',
+  ],
+  address: [
+    'address', 'street address', 'billing address', 'mailing address', 'location',
+    'street', 'city', 'full address', 'postal address',
+  ],
+  currency: [
+    'currency', 'default currency', 'curr', 'currency code', 'ccy',
+  ],
+  preferred_channel: [
+    'preferred_channel', 'preferred channel', 'channel', 'contact method',
+    'communication channel', 'contact preference',
+  ],
+  payment_terms: [
+    'payment_terms', 'payment terms', 'terms', 'net terms', 'credit terms',
+    'default terms', 'default payment terms',
+  ],
+  sensitivity_level: [
+    'sensitivity_level', 'sensitivity', 'priority', 'tier', 'level', 'vip',
+    'client tier', 'importance',
+  ],
+  tags: [
+    'tags', 'tag', 'category', 'categories', 'group', 'segment', 'label', 'labels',
+    'classification', 'type',
+  ],
+  notes: [
+    'notes', 'note', 'description', 'comments', 'comment', 'remarks', 'memo',
+    'details', 'info',
+  ],
+  ignore: [],
+};
 
 function normalizeHeader(h: string): string {
   return h.toLowerCase().trim().replace(/[_\-\s.#/]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function buildSynonymLookup(synonyms: Record<string, string[]>): Map<string, CanonicalField> {
+  const lookup = new Map<string, CanonicalField>();
+  for (const [field, syns] of Object.entries(synonyms)) {
+    for (const syn of syns) {
+      lookup.set(normalizeHeader(syn), field as CanonicalField);
+    }
+  }
+  return lookup;
+}
+
+const INVOICE_SYNONYM_LOOKUP = buildSynonymLookup(INVOICE_SYNONYMS);
+const CLIENT_SYNONYM_LOOKUP = buildSynonymLookup(CLIENT_SYNONYMS);
+
+function getSynonymLookup(importType: ImportType) {
+  return importType === 'client' ? CLIENT_SYNONYM_LOOKUP : INVOICE_SYNONYM_LOOKUP;
 }
 
 // ─── Type patterns for inference ─────────────────────────────────────────────
@@ -154,7 +262,7 @@ const PATTERNS = {
   status:    /^(paid|unpaid|open|outstanding|overdue|partial|void|cancelled|canceled|draft|sent)$/i,
 };
 
-function inferTypeFromSamples(samples: string[]): CanonicalField | null {
+function inferTypeFromSamples(samples: string[], importType: ImportType): CanonicalField | null {
   const nonEmpty = samples.filter(s => s && s.trim().length > 0);
   if (nonEmpty.length === 0) return null;
 
@@ -164,21 +272,24 @@ function inferTypeFromSamples(samples: string[]): CanonicalField | null {
     if (n > 0) counts[field] = (counts[field] ?? 0) + n;
   };
 
-  test(PATTERNS.email,     'contact_email');
-  test(PATTERNS.isoDate,   'issue_date');
-  test(PATTERNS.date,      'due_date');
-  test(PATTERNS.amount,    'amount');
-  test(PATTERNS.currency,  'currency');
-  test(PATTERNS.status,    'status');
-  test(PATTERNS.invoiceId, 'invoice_number');
+  test(PATTERNS.email, 'contact_email');
 
-  // Phone: length check + digit-dominant
+  if (importType === 'invoice') {
+    test(PATTERNS.isoDate,   'issue_date');
+    test(PATTERNS.date,      'due_date');
+    test(PATTERNS.amount,    'amount');
+    test(PATTERNS.currency,  'currency');
+    test(PATTERNS.status,    'status');
+    test(PATTERNS.invoiceId, 'invoice_number');
+  } else {
+    test(PATTERNS.currency, 'currency');
+  }
+
   const phoneLike = nonEmpty.filter(s => PATTERNS.phone.test(s.trim()) && /\d{7,}/.test(s.replace(/\D/g, ''))).length;
   if (phoneLike > 0) counts['contact_phone'] = (counts['contact_phone'] ?? 0) + phoneLike;
 
   if (Object.keys(counts).length === 0) return null;
 
-  // Pick the field with the highest match count (majority rule)
   const best = (Object.entries(counts) as [CanonicalField, number][])
     .sort((a, b) => b[1] - a[1])[0];
 
@@ -224,20 +335,16 @@ export interface MappingTemplate {
 
 // ─── Core inference function ──────────────────────────────────────────────────
 
-/**
- * Given CSV headers and a few sample rows, return mapping proposals for each column.
- *
- * @param headers   Array of raw column names from the CSV
- * @param sampleRows First few data rows (max 10 used for inference)
- * @param savedTemplate Optional previously-saved mapping template
- */
 export function inferMapping(
   headers: string[],
   sampleRows: Record<string, string>[],
   savedTemplate?: MappingTemplate | null,
+  importType: ImportType = 'invoice',
 ): MappingProposal[] {
   const usedFields = new Set<CanonicalField>();
   const rows = sampleRows.slice(0, 10);
+  const synonymLookup = getSynonymLookup(importType);
+  const fieldMeta = getFieldMeta(importType);
 
   return headers.map((col): MappingProposal => {
     const normalized = normalizeHeader(col);
@@ -257,7 +364,7 @@ export function inferMapping(
             sampleValues: samples,
             suggestedField: field,
             confidence: 'high',
-            isCritical: FIELD_META[field]?.isCritical ?? false,
+            isCritical: fieldMeta[field]?.isCritical ?? false,
             matchReason: 'exact',
           };
         }
@@ -275,7 +382,7 @@ export function inferMapping(
     }
 
     // 2. Exact synonym match
-    const synonymMatch = SYNONYM_LOOKUP.get(normalized);
+    const synonymMatch = synonymLookup.get(normalized);
     if (synonymMatch && !usedFields.has(synonymMatch)) {
       usedFields.add(synonymMatch);
       return {
@@ -283,17 +390,17 @@ export function inferMapping(
         sampleValues: samples,
         suggestedField: synonymMatch,
         confidence: 'high',
-        isCritical: FIELD_META[synonymMatch]?.isCritical ?? false,
+        isCritical: fieldMeta[synonymMatch]?.isCritical ?? false,
         matchReason: 'exact',
-        validationHint: getValidationHint(synonymMatch, samples),
+        validationHint: getValidationHint(synonymMatch, samples, importType),
       };
     }
 
-    // 3. Fuzzy match: try removing common prefixes/suffixes and re-matching
+    // 3. Fuzzy match
     const tokens = normalized.split(' ');
     for (let len = tokens.length; len >= 1; len--) {
       const sub = tokens.slice(0, len).join(' ');
-      const fuzzy = SYNONYM_LOOKUP.get(sub);
+      const fuzzy = synonymLookup.get(sub);
       if (fuzzy && !usedFields.has(fuzzy)) {
         usedFields.add(fuzzy);
         return {
@@ -301,15 +408,15 @@ export function inferMapping(
           sampleValues: samples,
           suggestedField: fuzzy,
           confidence: 'medium',
-          isCritical: FIELD_META[fuzzy]?.isCritical ?? false,
+          isCritical: fieldMeta[fuzzy]?.isCritical ?? false,
           matchReason: 'fuzzy',
-          validationHint: getValidationHint(fuzzy, samples),
+          validationHint: getValidationHint(fuzzy, samples, importType),
         };
       }
     }
 
     // 4. Type inference from sample values
-    const typeGuess = inferTypeFromSamples(samples);
+    const typeGuess = inferTypeFromSamples(samples, importType);
     if (typeGuess && !usedFields.has(typeGuess)) {
       usedFields.add(typeGuess);
       return {
@@ -317,9 +424,9 @@ export function inferMapping(
         sampleValues: samples,
         suggestedField: typeGuess,
         confidence: 'medium',
-        isCritical: FIELD_META[typeGuess]?.isCritical ?? false,
+        isCritical: fieldMeta[typeGuess]?.isCritical ?? false,
         matchReason: 'type_inference',
-        validationHint: getValidationHint(typeGuess, samples),
+        validationHint: getValidationHint(typeGuess, samples, importType),
       };
     }
 
@@ -335,7 +442,7 @@ export function inferMapping(
   });
 }
 
-function getValidationHint(field: CanonicalField, samples: string[]): string | undefined {
+function getValidationHint(field: CanonicalField, samples: string[], _importType: ImportType = 'invoice'): string | undefined {
   if (field === 'due_date' || field === 'issue_date') {
     const hasSlash = samples.some(s => s.includes('/'));
     const hasDash  = samples.some(s => /\d{4}-\d/.test(s));
@@ -350,6 +457,9 @@ function getValidationHint(field: CanonicalField, samples: string[]): string | u
     const invalid = samples.filter(s => s.length > 0 && !PATTERNS.email.test(s));
     if (invalid.length > 0) return `Some values don't look like valid emails: ${invalid[0]}`;
   }
+  if (field === 'tags') {
+    if (samples.some(s => s.includes(','))) return 'Comma-separated values will be split into individual tags.';
+  }
   return undefined;
 }
 
@@ -359,17 +469,15 @@ export function detectDateFormat(samples: string[]): string | null {
   const nonEmpty = samples.filter(Boolean);
   if (nonEmpty.length === 0) return null;
 
-  // YYYY-MM-DD
   if (nonEmpty.every(s => PATTERNS.isoDate.test(s.trim()))) return 'YYYY-MM-DD';
 
-  // MM/DD/YYYY vs DD/MM/YYYY — heuristic: if any day > 12, the other must be month
   const slashDates = nonEmpty.filter(s => /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s.trim()));
   if (slashDates.length > 0) {
     const firstParts = slashDates.map(s => parseInt(s.split('/')[0]));
     const secondParts = slashDates.map(s => parseInt(s.split('/')[1]));
     if (firstParts.some(d => d > 12)) return 'DD/MM/YYYY';
     if (secondParts.some(d => d > 12)) return 'MM/DD/YYYY';
-    return 'MM/DD/YYYY'; // default US
+    return 'MM/DD/YYYY';
   }
 
   return null;
@@ -377,7 +485,6 @@ export function detectDateFormat(samples: string[]): string | null {
 
 // ─── Normalization utilities ──────────────────────────────────────────────────
 
-/** Normalize a raw cell value for a given canonical field */
 export function normalizeValue(raw: string, field: CanonicalField): string {
   if (!raw || !raw.trim()) return '';
   const v = raw.trim();
@@ -389,46 +496,53 @@ export function normalizeValue(raw: string, field: CanonicalField): string {
     case 'amount':
     case 'amount_paid':
     case 'remaining_balance':
-      // Strip currency symbols and thousands separators
       return v.replace(/[£$€,\s]/g, '').replace(/[^\d.\-]/g, '');
 
-    case 'currency':
-      // Map common symbols to ISO codes
+    case 'currency': {
       const curMap: Record<string, string> = {
         '$': 'USD', '£': 'GBP', '€': 'EUR', 'A$': 'AUD', 'C$': 'CAD',
       };
       return (curMap[v] ?? v).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+    }
 
     case 'status':
       return normalizeStatus(v);
 
     case 'contact_phone':
-      // Keep digits, +, spaces, dashes, parens
       return v.replace(/[^\d+\s\-().]/g, '').trim();
+
+    case 'preferred_channel': {
+      const ch = v.toLowerCase();
+      if (ch.includes('sms') || ch.includes('text')) return 'sms';
+      if (ch.includes('whatsapp') || ch.includes('wa')) return 'whatsapp';
+      if (ch.includes('phone') || ch.includes('call')) return 'phone';
+      return 'email';
+    }
+
+    case 'sensitivity_level': {
+      const sl = v.toLowerCase();
+      if (sl.includes('vip') || sl.includes('high')) return 'high';
+      if (sl.includes('low')) return 'low';
+      return 'standard';
+    }
 
     default:
       return v;
   }
 }
 
-/** Map source status strings to canonical InFlowe status values */
 export function normalizeStatus(raw: string): string {
   const v = raw.toLowerCase().trim();
   const statusMap: Record<string, string> = {
-    // → pending / sent
     'open': 'sent', 'unpaid': 'sent', 'outstanding': 'sent',
     'new': 'sent', 'issued': 'sent', 'sent': 'sent', 'draft': 'draft',
-    // → paid
     'paid': 'paid', 'settled': 'paid', 'closed': 'paid',
     'complete': 'paid', 'completed': 'paid', 'cleared': 'paid',
-    // → partially paid
     'partial': 'partially_paid', 'partially paid': 'partially_paid',
     'part paid': 'partially_paid', 'partial payment': 'partially_paid',
-    // → cancelled
     'void': 'cancelled', 'voided': 'cancelled',
     'canceled': 'cancelled', 'cancelled': 'cancelled',
     'written off': 'cancelled', 'written_off': 'cancelled',
-    // → overdue (let the system determine from due_date, but mark intent)
     'overdue': 'overdue', 'late': 'overdue', 'past due': 'overdue',
   };
   return statusMap[v] ?? v;
@@ -447,13 +561,24 @@ export interface RecordValidationResult {
   messages: ValidationMessage[];
 }
 
-/** Validate a normalized record against business rules */
 export function validateMappedRecord(
   record: Partial<Record<CanonicalField, string>>,
+  importType: ImportType = 'invoice',
 ): RecordValidationResult {
   const msgs: ValidationMessage[] = [];
 
-  // Required fields
+  if (importType === 'client') {
+    if (!record.client_name?.trim()) {
+      msgs.push({ severity: 'error', field: 'client_name', message: 'Client name is required' });
+    }
+    if (record.contact_email?.trim() && !PATTERNS.email.test(record.contact_email.trim())) {
+      msgs.push({ severity: 'warning', field: 'contact_email', message: 'Email address appears invalid' });
+    }
+    const hasError = msgs.some(m => m.severity === 'error');
+    return { status: hasError ? 'invalid' : msgs.length > 0 ? 'warning' : 'valid', messages: msgs };
+  }
+
+  // Invoice validation
   if (!record.client_name?.trim()) {
     msgs.push({ severity: 'error', field: 'client_name', message: 'Client name is required' });
   }
@@ -466,7 +591,6 @@ export function validateMappedRecord(
     msgs.push({ severity: 'error', field: 'due_date', message: 'Due date is required' });
   }
 
-  // Cross-field checks
   if (record.due_date && record.issue_date) {
     const due   = new Date(record.due_date);
     const issue = new Date(record.issue_date);
@@ -499,7 +623,6 @@ export function validateMappedRecord(
 
 // ─── Template fingerprint ─────────────────────────────────────────────────────
 
-/** Build a stable fingerprint for a set of column headers (for template matching) */
 export function buildHeaderSignature(headers: string[]): string {
   return [...headers]
     .map(h => normalizeHeader(h))
@@ -507,7 +630,6 @@ export function buildHeaderSignature(headers: string[]): string {
     .join('|');
 }
 
-/** Check if a set of headers is a close-enough match for a saved template */
 export function matchesTemplate(
   headers: string[],
   template: MappingTemplate,
