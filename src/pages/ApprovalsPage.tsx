@@ -196,11 +196,11 @@ export default function ApprovalsPage() {
                               <Edit3 className="w-3 h-3" /> {isEditing ? 'Editing message' : 'Message preview'}
                             </p>
                             {!isEditing ? (
-                              <button onClick={() => startEditing(approval.id, displayText)} className="text-xs text-primary font-medium flex items-center gap-1 active:scale-95">
+                              <button onClick={() => startEditing(approval.id, displayText)} className="text-xs text-accent font-medium flex items-center gap-1 active:scale-95">
                                 <Edit3 className="w-3 h-3" /> Edit
                               </button>
                             ) : (
-                              <button onClick={() => saveEdit(approval)} className="text-xs text-primary font-medium flex items-center gap-1 active:scale-95">
+                              <button onClick={() => saveEdit(approval)} className="text-xs text-accent font-medium flex items-center gap-1 active:scale-95">
                                 <Save className="w-3 h-3" /> Save
                               </button>
                             )}

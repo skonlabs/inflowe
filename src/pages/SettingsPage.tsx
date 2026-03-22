@@ -432,7 +432,7 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-2 shrink-0 ml-3">
                     {isActive ? (
                       <>
-                        <span className="text-xs text-primary font-medium">● Active</span>
+                        <span className="text-xs text-accent font-medium">● Active</span>
                         <button
                           onClick={() => handleDeactivateModule(mod.id, mod.name)}
                           disabled={togglingModule === mod.id}
@@ -512,7 +512,7 @@ export default function SettingsPage() {
                         <button
                           onClick={() => handleSyncNow(integration.id, providerInfo?.name || integration.provider)}
                           disabled={syncingId === integration.id}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors active:scale-95 disabled:opacity-50"
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-accent/10 hover:text-accent hover:border-accent/30 transition-colors active:scale-95 disabled:opacity-50"
                         >
                           {syncingId === integration.id ? (
                             <Loader2 className="w-3 h-3 animate-spin" />
@@ -553,7 +553,7 @@ export default function SettingsPage() {
                       <p className="text-xs text-muted-foreground">{provider.description}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-primary font-medium shrink-0">
+                  <div className="flex items-center gap-1 text-xs text-accent font-medium shrink-0">
                     <Plug className="w-3.5 h-3.5" /> Connect
                   </div>
                 </button>
@@ -666,7 +666,7 @@ export default function SettingsPage() {
             );
           })}
           <button onClick={() => setShowInvite(!showInvite)}
-            className="w-full text-left px-4 py-3 border-t border-border/40 text-sm hover:bg-muted/30 transition-colors active:scale-[0.99] text-primary font-medium">
+            className="w-full text-left px-4 py-3 border-t border-border/40 text-sm hover:bg-muted/30 transition-colors active:scale-[0.99] text-accent font-medium">
             + Invite team member
           </button>
           <AnimatePresence>

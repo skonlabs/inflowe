@@ -379,7 +379,7 @@ export default function FieldMappingReview({
         <motion.button
           variants={fadeUp}
           onClick={() => setShowPreview(v => !v)}
-          className="flex items-center gap-2 text-sm text-primary font-medium hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg px-2 py-1 -mx-2 active:scale-[0.97] transition-all"
+          className="flex items-center gap-2 text-sm text-accent font-medium hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg px-2 py-1 -mx-2 active:scale-[0.97] transition-all"
         >
           {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           {showPreview ? 'Hide preview' : `Preview mapped data (first 3 rows)`}

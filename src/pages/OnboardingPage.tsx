@@ -386,7 +386,7 @@ function StepPath({ data, update }: StepProps) {
                 <div>
                   <p className="font-medium text-sm">{p.label}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{p.desc}</p>
-                  <p className="text-xs text-primary mt-1">{p.rec}</p>
+                  <p className="text-xs text-accent mt-1">{p.rec}</p>
                 </div>
               </div>
             </button>
@@ -523,7 +523,7 @@ function StepImport({
             </div>
           )}
 
-          <button onClick={downloadTemplate} className="text-sm text-primary font-medium underline underline-offset-2">
+          <button onClick={downloadTemplate} className="text-sm text-accent font-medium underline underline-offset-2">
             Download template CSV
           </button>
         </>
