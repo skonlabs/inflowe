@@ -34,10 +34,11 @@ import {
   MappingProposal,
   ConfirmedMapping,
   MappingTemplate,
+  type ImportType,
 } from '@/lib/mapping-engine';
 import FieldMappingReview from '@/components/FieldMappingReview';
 
-type View = 'list' | 'upload' | 'mapping' | 'staging' | 'summary' | 'exceptions';
+type View = 'list' | 'upload' | 'type-select' | 'mapping' | 'staging' | 'summary' | 'exceptions';
 
 interface ParsedFile {
   file: File;
