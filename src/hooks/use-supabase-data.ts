@@ -75,23 +75,41 @@ export function useInvoiceList(orgId: string | undefined) {
   });
 }
 
+// UUID regex for validating IDs before Supabase queries
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUUID(val: string | undefined): boolean {
+  return !!val && UUID_RE.test(val);
+}
+
 export function useInvoiceDetail(invoiceId: string | undefined, orgId: string | undefined) {
   return useQuery({
     queryKey: ['invoice-detail', invoiceId],
-    enabled: !!invoiceId && !!orgId,
+    enabled: isUUID(invoiceId) && !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('invoices')
         .select(`
           *,
-          clients(display_name, id, sensitivity_level, do_not_automate),
-          client_contacts(id, full_name, email, phone, is_primary, contact_role, escalation_order)
+          clients(display_name, id, sensitivity_level, do_not_automate)
         `)
         .eq('id', invoiceId!)
         .eq('organization_id', orgId!)
         .maybeSingle();
       if (error) throw error;
-      return data;
+
+      // Fetch contacts separately via client_id
+      let contacts: any[] = [];
+      if (data?.client_id) {
+        const { data: contactData } = await supabase
+          .from('client_contacts')
+          .select('id, full_name, email, phone, is_primary, contact_role, escalation_order')
+          .eq('client_id', data.client_id)
+          .eq('organization_id', orgId!)
+          .order('is_primary', { ascending: false });
+        contacts = contactData ?? [];
+      }
+
+      return data ? { ...data, client_contacts: contacts } : null;
     },
   });
 }
@@ -99,7 +117,7 @@ export function useInvoiceDetail(invoiceId: string | undefined, orgId: string | 
 export function useInvoiceTimeline(invoiceId: string | undefined, orgId: string | undefined) {
   return useQuery({
     queryKey: ['invoice-timeline', invoiceId],
-    enabled: !!invoiceId && !!orgId,
+    enabled: isUUID(invoiceId) && !!orgId,
     queryFn: async () => {
       // Fetch audit logs for this invoice
       const { data: auditData, error: auditError } = await supabase
@@ -223,7 +241,7 @@ export function useClientSummaries(orgId: string | undefined) {
 export function useClientDetail(clientId: string | undefined, orgId: string | undefined) {
   return useQuery({
     queryKey: ['client-detail', clientId],
-    enabled: !!clientId && !!orgId,
+    enabled: isUUID(clientId) && !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('clients')
@@ -243,7 +261,7 @@ export function useClientDetail(clientId: string | undefined, orgId: string | un
 export function useClientInvoices(clientId: string | undefined, orgId: string | undefined) {
   return useQuery({
     queryKey: ['client-invoices', clientId],
-    enabled: !!clientId && !!orgId,
+    enabled: isUUID(clientId) && !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('invoices')
@@ -260,7 +278,7 @@ export function useClientInvoices(clientId: string | undefined, orgId: string | 
 export function useClientTimeline(clientId: string | undefined, orgId: string | undefined) {
   return useQuery({
     queryKey: ['client-timeline', clientId],
-    enabled: !!clientId && !!orgId,
+    enabled: isUUID(clientId) && !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('audit_logs')
@@ -329,7 +347,7 @@ export function useConversationThreads(orgId: string | undefined) {
 export function useThreadMessages(threadId: string | undefined, orgId: string | undefined) {
   return useQuery({
     queryKey: ['thread-messages', threadId],
-    enabled: !!threadId && !!orgId,
+    enabled: isUUID(threadId) && !!orgId,
     queryFn: async () => {
       const [outboundRes, inboundRes] = await Promise.all([
         supabase

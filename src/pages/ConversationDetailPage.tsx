@@ -41,8 +41,14 @@ export default function ConversationDetailPage() {
   const subject = dbThread?.subject ?? demoThread?.subject ?? '';
   const channel = dbThread?.channel ?? demoThread?.channel ?? 'email';
 
+  const isValidUUID = (val: string | undefined) => !!val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
   const handleSend = async () => {
     if (!reply.trim() || !orgId || !id) return;
+    if (!isValidUUID(id)) {
+      toast.error('This is a demo conversation — replies are not supported.');
+      return;
+    }
     setSending(true);
     try {
       const { error } = await supabase.rpc('create_manual_thread_reply', {
