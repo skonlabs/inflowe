@@ -87,6 +87,7 @@ export default function ImportPage() {
   const [templateSaveName, setTemplateSaveName] = useState('');
   const [showTemplateSave, setShowTemplateSave] = useState(false);
   const [pendingMapping, setPendingMapping] = useState<ConfirmedMapping | null>(null);
+  const [importType, setImportType] = useState<ImportType>('invoice');
 
   const { data: batches = [],    isLoading: batchLoading   } = useImportBatches(orgId);
   const { data: exceptions = [], isLoading: excLoading      } = useImportExceptions(orgId);
