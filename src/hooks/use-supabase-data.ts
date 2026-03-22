@@ -1523,8 +1523,6 @@ export function useSubmitSupportCase() {
             organization_id: orgId,
             description,
             case_type: caseType ?? 'general',
-            entity_type: entityType ?? null,
-            entity_id: entityId ?? null,
             status: 'open',
             created_by_user_id: (await supabase.auth.getUser()).data.user?.id,
           })
