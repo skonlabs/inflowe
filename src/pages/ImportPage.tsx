@@ -311,7 +311,7 @@ export default function ImportPage() {
                     }
                   }}
                   disabled={!templateSaveName.trim()}
-                  className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40"
+                  className="flex-1 py-3 rounded-xl bg-success text-success-foreground text-sm font-semibold disabled:opacity-40"
                 >
                   Save & import
                 </button>
