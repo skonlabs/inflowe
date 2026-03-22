@@ -241,7 +241,7 @@ export function useClientSummaries(orgId: string | undefined) {
 export function useClientDetail(clientId: string | undefined, orgId: string | undefined) {
   return useQuery({
     queryKey: ['client-detail', clientId],
-    enabled: !!clientId && !!orgId,
+    enabled: isUUID(clientId) && !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('clients')
