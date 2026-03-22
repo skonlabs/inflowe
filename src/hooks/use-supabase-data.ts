@@ -953,6 +953,7 @@ export function useStageImport() {
       columnMapping,
       dateFormatHint,
       defaultCurrency,
+      importType = 'invoice',
     }: {
       orgId: string;
       importBatchId: string;
@@ -960,6 +961,7 @@ export function useStageImport() {
       columnMapping: Record<string, string>;
       dateFormatHint?: string | null;
       defaultCurrency?: string;
+      importType?: 'invoice' | 'client';
     }) => {
       const { normalizeDate, normalizeNumber, normalizeCurrency, normalizeStatus, normalizeEmail, normalizePhone } = await import('@/lib/ingestion/normalizers');
 
@@ -1077,7 +1079,7 @@ export function useStageImport() {
         const { data: candRecord } = await supabase.from('ingestion_candidates').insert({
           batch_id: importBatchId,
           organization_id: orgId,
-          candidate_type: 'invoice',
+          candidate_type: importType,
           normalized_data: normalized as any,
           mapping_confidence: mappingConfidence,
           normalization_status: 'normalized',
@@ -1132,7 +1134,7 @@ export function useStageImport() {
 export function useCommitImport() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ orgId, importBatchId }: { orgId: string; importBatchId: string }) => {
+    mutationFn: async ({ orgId, importBatchId, importType = 'invoice' }: { orgId: string; importBatchId: string; importType?: 'invoice' | 'client' }) => {
       // Read valid candidates
       const { data: candidates, error: candErr } = await supabase
         .from('ingestion_candidates')

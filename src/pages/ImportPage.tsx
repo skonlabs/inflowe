@@ -34,10 +34,11 @@ import {
   MappingProposal,
   ConfirmedMapping,
   MappingTemplate,
+  type ImportType,
 } from '@/lib/mapping-engine';
 import FieldMappingReview from '@/components/FieldMappingReview';
 
-type View = 'list' | 'upload' | 'mapping' | 'staging' | 'summary' | 'exceptions';
+type View = 'list' | 'upload' | 'type-select' | 'mapping' | 'staging' | 'summary' | 'exceptions';
 
 interface ParsedFile {
   file: File;
@@ -86,6 +87,7 @@ export default function ImportPage() {
   const [templateSaveName, setTemplateSaveName] = useState('');
   const [showTemplateSave, setShowTemplateSave] = useState(false);
   const [pendingMapping, setPendingMapping] = useState<ConfirmedMapping | null>(null);
+  const [importType, setImportType] = useState<ImportType>('invoice');
 
   const { data: batches = [],    isLoading: batchLoading   } = useImportBatches(orgId);
   const { data: exceptions = [], isLoading: excLoading      } = useImportExceptions(orgId);
@@ -114,27 +116,34 @@ export default function ImportPage() {
         return;
       }
       setParsed({ file, headers: result.headers, rows: result.rows, warnings: result.warnings });
-      const mappedTemplates: MappingTemplate[] = (templates ?? []).map((t: any) => ({
-        id: t.id,
-        templateName: t.template_name,
-        headerSignature: t.header_signature,
-        columnMappings: t.column_mappings ?? [],
-        dateFormatHint: t.date_format_hint,
-        defaultCurrency: t.default_currency,
-        ignoredColumns: t.ignored_columns ?? [],
-        timesUsed: t.times_used ?? 0,
-        lastUsedAt: t.last_used_at,
-      }));
-      const matched = mappedTemplates.find(t => matchesTemplate(result.headers, t)) ?? null;
-      setMatchedTemplate(matched);
-      const inferred = inferMapping(result.headers, result.rows.slice(0, 10), matched);
-      setProposals(inferred);
-      if (result.warnings.length > 0) result.warnings.forEach(w => toast.warning(w));
-      setView('mapping');
+      // Show type selector before mapping
+      setView('type-select');
     } catch (err: any) {
       toast.error(err.message || 'Failed to parse file');
     }
-  }, [templates]);
+  }, []);
+
+  const proceedToMapping = useCallback((type: ImportType) => {
+    if (!parsed) return;
+    setImportType(type);
+    const mappedTemplates: MappingTemplate[] = (templates ?? []).map((t: any) => ({
+      id: t.id,
+      templateName: t.template_name,
+      headerSignature: t.header_signature,
+      columnMappings: t.column_mappings ?? [],
+      dateFormatHint: t.date_format_hint,
+      defaultCurrency: t.default_currency,
+      ignoredColumns: t.ignored_columns ?? [],
+      timesUsed: t.times_used ?? 0,
+      lastUsedAt: t.last_used_at,
+    }));
+    const matched = mappedTemplates.find(t => matchesTemplate(parsed.headers, t)) ?? null;
+    setMatchedTemplate(matched);
+    const inferred = inferMapping(parsed.headers, parsed.rows.slice(0, 10), matched, type);
+    setProposals(inferred);
+    if (parsed.warnings.length > 0) parsed.warnings.forEach(w => toast.warning(w));
+    setView('mapping');
+  }, [parsed, templates]);
 
   const handleFile = useCallback(async (file: File) => {
     const isExcel = isExcelFile(file);
@@ -185,7 +194,7 @@ export default function ImportPage() {
         id:                 batchId,
         organization_id:    orgId,
         created_by_user_id: (await supabase.auth.getUser()).data.user?.id,
-        import_type:        isExcelFile(parsed.file) ? 'excel' : 'csv',
+        import_type:        importType === 'client' ? 'client_csv' : (isExcelFile(parsed.file) ? 'excel' : 'csv'),
         original_filename:  parsed.file.name,
         status:             'pending',
         total_rows:         parsed.rows.length,
@@ -204,6 +213,7 @@ export default function ImportPage() {
         columnMapping: mapping.fieldToColumn,
         dateFormatHint: mapping.dateFormatHint,
         defaultCurrency: mapping.defaultCurrency,
+        importType,
       });
 
       setStagingResult(result);
@@ -236,8 +246,9 @@ export default function ImportPage() {
   const handleCommit = async () => {
     if (!orgId || !currentBatchId) return;
     try {
-      const result = await commitImport.mutateAsync({ orgId, importBatchId: currentBatchId });
-      const parts = [`${result.committed} invoice${result.committed !== 1 ? 's' : ''} imported`];
+      const result = await commitImport.mutateAsync({ orgId, importBatchId: currentBatchId, importType });
+      const entityLabel = importType === 'client' ? 'client' : 'invoice';
+      const parts = [`${result.committed} ${entityLabel}${result.committed !== 1 ? 's' : ''} imported`];
       if (result.conflicts > 0) parts.push(`${result.conflicts} conflict${result.conflicts !== 1 ? 's' : ''} queued for review`);
       toast.success(parts.join(' · '));
       setView('list');
