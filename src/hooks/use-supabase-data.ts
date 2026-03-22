@@ -953,6 +953,7 @@ export function useStageImport() {
       columnMapping,
       dateFormatHint,
       defaultCurrency,
+      importType = 'invoice',
     }: {
       orgId: string;
       importBatchId: string;
@@ -960,6 +961,7 @@ export function useStageImport() {
       columnMapping: Record<string, string>;
       dateFormatHint?: string | null;
       defaultCurrency?: string;
+      importType?: 'invoice' | 'client';
     }) => {
       const { normalizeDate, normalizeNumber, normalizeCurrency, normalizeStatus, normalizeEmail, normalizePhone } = await import('@/lib/ingestion/normalizers');
 
