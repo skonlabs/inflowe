@@ -130,7 +130,7 @@ export default function SupportPage() {
             onKeyDown={e => e.key === 'Enter' && handleAsk()}
             className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
           />
-          <button onClick={() => handleAsk()} className="p-3 rounded-xl bg-primary text-primary-foreground active:scale-95 transition-transform">
+          <button onClick={() => handleAsk()} className="p-3 rounded-xl bg-accent text-accent-foreground active:scale-95 transition-transform">
             <Send className="w-5 h-5" />
           </button>
         </div>
