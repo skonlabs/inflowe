@@ -64,7 +64,7 @@ export default function ConversationDetailPage() {
     return (
       <div className="px-4 py-12 text-center">
         <p className="text-muted-foreground">Thread not found</p>
-        <button onClick={() => navigate('/conversations')} className="text-primary text-sm mt-2">← Back to conversations</button>
+        <button onClick={() => navigate('/conversations')} className="text-accent text-sm mt-2">← Back to conversations</button>
       </div>
     );
   }

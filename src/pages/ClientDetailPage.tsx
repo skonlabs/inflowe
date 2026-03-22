@@ -104,7 +104,7 @@ export default function ClientDetailPage() {
     return (
       <div className="px-4 py-12 text-center">
         <p className="text-muted-foreground">Client not found</p>
-        <button onClick={() => navigate('/clients')} className="text-primary text-sm mt-2">← Back to clients</button>
+        <button onClick={() => navigate('/clients')} className="text-accent text-sm mt-2">← Back to clients</button>
       </div>
     );
   }
