@@ -137,7 +137,7 @@ export default function AuthPage() {
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
                 {mode === 'login' && (
-                  <button type="button" onClick={() => setMode('forgot')} className="text-xs text-primary hover:underline">
+                  <button type="button" onClick={() => setMode('forgot')} className="text-xs text-accent hover:underline">
                     Forgot password?
                   </button>
                 )}
