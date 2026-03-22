@@ -443,7 +443,7 @@ export default function SettingsPage() {
                       </>
                     ) : isTrialing ? (
                       <>
-                        <span className="text-xs text-amber-600 font-medium">Trial · {trialDaysLeft}d left</span>
+                        <span className="text-xs text-warning font-medium">Trial · {trialDaysLeft}d left</span>
                         <button
                           onClick={() => handleDeactivateModule(mod.id, mod.name)}
                           disabled={togglingModule === mod.id}
