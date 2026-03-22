@@ -160,8 +160,8 @@ export default function ClientDetailPage() {
       <ScrollReveal>
         <div className="glass-card rounded-xl p-5">
           <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="text-primary font-bold text-lg">{client.displayName.split(' ').map(w => w[0]).join('').slice(0, 2)}</span>
+            <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+              <span className="text-accent font-bold text-lg">{client.displayName.split(' ').map(w => w[0]).join('').slice(0, 2)}</span>
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-bold truncate">{client.displayName}</h1>

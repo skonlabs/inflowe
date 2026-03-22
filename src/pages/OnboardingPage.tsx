@@ -380,7 +380,7 @@ function StepPath({ data, update }: StepProps) {
               }`}
             >
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
                   <Icon className="w-5 h-5 text-primary" />
                 </div>
                 <div>
@@ -477,7 +477,7 @@ function StepImport({
             }}
             className={`glass-card rounded-xl p-6 text-center space-y-4 cursor-pointer transition-colors ${isDragging ? 'border-2 border-primary bg-accent/30' : ''}`}
           >
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+            <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto">
               {uploadedFile ? <Check className="w-8 h-8 text-success" /> : <Upload className="w-8 h-8 text-primary" />}
             </div>
             {uploadedFile ? (
@@ -589,7 +589,7 @@ function StepReview({
         </div>
       )}
       <div className="bg-accent/50 rounded-xl p-4 flex items-start gap-2">
-        <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+        <Check className="w-4 h-4 text-accent mt-0.5 shrink-0" />
         <p className="text-sm">Everything looks good. You can always change these in Settings.</p>
       </div>
     </div>
@@ -633,7 +633,7 @@ function StepTrust({ data, update }: StepProps) {
                 <span className="absolute -top-2 right-3 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">Recommended</span>
               )}
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
                   <Icon className="w-5 h-5 text-primary" />
                 </div>
                 <div>
@@ -686,7 +686,7 @@ function StepActivate({ data }: StepProps) {
   return (
     <div className="space-y-6">
       <div className="text-center pt-4">
-        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+        <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
           <Sparkles className="w-8 h-8 text-primary" />
         </div>
         <h2 className="text-2xl font-bold" style={{ lineHeight: '1.1' }}>You're all set!</h2>

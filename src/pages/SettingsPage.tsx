@@ -314,7 +314,7 @@ export default function SettingsPage() {
         {editing && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}>
-            <div className="glass-card rounded-xl p-4 space-y-3 border-2 border-primary/30">
+            <div className="glass-card rounded-xl p-4 space-y-3 border-2 border-accent/30">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">Edit: {editing.itemName}</p>
                 <button onClick={() => setEditing(null)} className="p-1 rounded-full hover:bg-muted active:scale-95">
@@ -361,7 +361,7 @@ export default function SettingsPage() {
         <button onClick={() => navigate('/admin')}
           className="w-full glass-card-hover rounded-xl p-4 flex items-center gap-3 active:scale-[0.98] transition-transform"
         >
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
             <Shield className="w-5 h-5 text-primary" />
           </div>
           <div className="text-left flex-1">
@@ -456,7 +456,7 @@ export default function SettingsPage() {
                       <button
                         onClick={() => handleStartTrial(mod.id)}
                         disabled={togglingModule === mod.id}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors active:scale-95 disabled:opacity-50"
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-primary hover:bg-accent/20 transition-colors active:scale-95 disabled:opacity-50"
                       >
                         {togglingModule === mod.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
                         Start trial

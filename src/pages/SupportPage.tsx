@@ -65,7 +65,7 @@ export default function SupportPage() {
         {chat.length === 0 && (
           <ScrollReveal delay={0.1}>
             <div className="glass-card rounded-xl p-5 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-3">
                 <HelpCircle className="w-6 h-6 text-primary" />
               </div>
               <h2 className="font-semibold">How can I help?</h2>
