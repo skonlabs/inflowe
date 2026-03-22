@@ -770,6 +770,29 @@ export function useCreateClient() {
   });
 }
 
+export function useUpdateClient() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ clientId, orgId, fields }: {
+      clientId: string;
+      orgId: string;
+      fields: Record<string, string | boolean | null>;
+    }) => {
+      const { error } = await supabase
+        .from('clients')
+        .update(fields)
+        .eq('id', clientId)
+        .eq('organization_id', orgId);
+      if (error) throw error;
+    },
+    onSuccess: (_, { clientId, orgId }) => {
+      qc.invalidateQueries({ queryKey: ['client-detail', clientId] });
+      qc.invalidateQueries({ queryKey: ['client-summaries', orgId] });
+      qc.invalidateQueries({ queryKey: ['home-summary', orgId] });
+    },
+  });
+}
+
 // ─── Ingestion Pipeline ──────────────────────────────────────────────────────
 
 export function useImportBatches(orgId: string | undefined) {

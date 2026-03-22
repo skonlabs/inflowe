@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, Check, Upload, Database, Mail, Play, Building2, Palette, FileSpreadsheet, Eye, Shield, Sparkles, Edit3 } from 'lucide-react';
@@ -713,18 +713,23 @@ function StepActivate({ data }: StepProps) {
   );
 }
 
-function Field({ label, placeholder, helper, value, onChange, required }: { label: string; placeholder: string; helper?: string; value?: string; onChange?: (v: string) => void; required?: boolean }) {
-  return (
-    <div>
-      <label className="text-sm font-medium block mb-1.5">{label}{required && <span className="text-destructive ml-0.5">*</span>}</label>
-      <input
-        type="text"
-        placeholder={placeholder}
-        value={value || ''}
-        onChange={e => onChange?.(e.target.value)}
-        className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
-      />
-      {helper && <p className="text-xs text-muted-foreground mt-1">{helper}</p>}
-    </div>
-  );
-}
+const Field = forwardRef<HTMLInputElement, { label: string; placeholder: string; helper?: string; value?: string; onChange?: (v: string) => void; required?: boolean }>(
+  ({ label, placeholder, helper, value, onChange, required }, ref) => {
+    return (
+      <div>
+        <label className="text-sm font-medium block mb-1.5">{label}{required && <span className="text-destructive ml-0.5">*</span>}</label>
+        <input
+          ref={ref}
+          type="text"
+          placeholder={placeholder}
+          value={value || ''}
+          onChange={e => onChange?.(e.target.value)}
+          className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+        />
+        {helper && <p className="text-xs text-muted-foreground mt-1">{helper}</p>}
+      </div>
+    );
+  }
+);
+
+Field.displayName = 'Field';
