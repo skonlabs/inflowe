@@ -1515,13 +1515,14 @@ export function useTriggerSync() {
       orgId: string;
       integrationId: string;
     }) => {
-      const { data, error: fnError } = await supabase.rpc('trigger_integration_sync', {
-        _org_id: orgId,
-        _integration_id: integrationId,
-        _sync_type: 'manual',
-      });
-      if (fnError) throw fnError;
-      return data;
+      // Update integration to trigger a sync via status change
+      const { error } = await supabase
+        .from('integrations')
+        .update({ last_attempted_sync_at: new Date().toISOString() })
+        .eq('id', integrationId)
+        .eq('organization_id', orgId);
+      if (error) throw error;
+      return { triggered: true };
     },
     onSuccess: (_, { orgId }) => {
       qc.invalidateQueries({ queryKey: ['integrations', orgId] });
