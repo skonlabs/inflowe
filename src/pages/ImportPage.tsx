@@ -312,16 +312,18 @@ export default function ImportPage() {
         } catch (err: any) {
           failed++;
           // Store exception
-          await supabase.from('ingestion_exceptions').insert({
-            batch_id: batchId,
-            organization_id: orgId,
-            exception_type: 'canonical_write_failure',
-            severity: 'error',
-            reason: err.message || 'Failed to create invoice',
-            field_name: 'invoice',
-            can_fix_in_ui: false,
-            requires_reprocessing: true,
-          }).catch(() => {});
+          try {
+            await supabase.from('ingestion_exceptions').insert({
+              batch_id: batchId,
+              organization_id: orgId,
+              exception_type: 'canonical_write_failure',
+              severity: 'error',
+              reason: err.message || 'Failed to create invoice',
+              field_name: 'invoice',
+              can_fix_in_ui: false,
+              requires_reprocessing: true,
+            });
+          } catch { /* best-effort */ }
         }
       }
 
