@@ -584,7 +584,7 @@ function StepReview({
         )}
       </div>
       {data.importPath === 'csv' && !confirmedMapping && csvRowCount && csvRowCount > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+        <div className="bg-warning/10 border border-warning/20 rounded-xl p-4 text-sm text-warning-foreground">
           Column mapping not confirmed — go back to step 4 to map your columns.
         </div>
       )}

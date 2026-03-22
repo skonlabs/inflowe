@@ -499,7 +499,7 @@ export default function SettingsPage() {
                           {integration.connection_status === 'connected' ? (
                             <span className="text-primary">● Connected</span>
                           ) : (
-                            <span className="text-amber-500">● {integration.connection_status}</span>
+                            <span className="text-warning">● {integration.connection_status}</span>
                           )}
                           {integration.last_successful_sync_at && (
                             <> · Last synced {new Date(integration.last_successful_sync_at).toLocaleDateString()}</>
