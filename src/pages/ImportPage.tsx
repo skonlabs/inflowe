@@ -447,7 +447,7 @@ export default function ImportPage() {
                 Importing…
               </span>
             ) : (
-              `Commit ${stagingResult.staged} invoice${stagingResult.staged !== 1 ? 's' : ''}`
+              `Commit ${stagingResult.staged} ${importType === 'client' ? 'client' : 'invoice'}${stagingResult.staged !== 1 ? 's' : ''}`
             )}
           </button>
         </motion.div>
