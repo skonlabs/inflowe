@@ -607,18 +607,33 @@ export type Database = {
       }
       import_batches: {
         Row: {
+          adapter_version: string | null
+          candidates_created: number | null
+          canonical_writes: number | null
           column_mapping: Json
           created_at: string
           created_by_user_id: string
           duplicate_rows: number
           error_report_object_key: string | null
+          exceptions_created: number | null
           failed_rows: number
+          file_checksum: string | null
           file_object_key: string | null
           id: string
           idempotency_hash: string | null
           import_type: string
+          mapping_template_id: string | null
           organization_id: string
           original_filename: string | null
+          parser_version: string | null
+          processing_completed_at: string | null
+          processing_mode: string | null
+          processing_started_at: string | null
+          raw_row_count: number | null
+          source_connection_id: string | null
+          source_headers: string[] | null
+          source_system: string | null
+          source_type: string | null
           status: string
           successful_rows: number
           total_rows: number
@@ -626,18 +641,33 @@ export type Database = {
           validation_errors: Json
         }
         Insert: {
+          adapter_version?: string | null
+          candidates_created?: number | null
+          canonical_writes?: number | null
           column_mapping?: Json
           created_at?: string
           created_by_user_id: string
           duplicate_rows?: number
           error_report_object_key?: string | null
+          exceptions_created?: number | null
           failed_rows?: number
+          file_checksum?: string | null
           file_object_key?: string | null
           id?: string
           idempotency_hash?: string | null
           import_type?: string
+          mapping_template_id?: string | null
           organization_id: string
           original_filename?: string | null
+          parser_version?: string | null
+          processing_completed_at?: string | null
+          processing_mode?: string | null
+          processing_started_at?: string | null
+          raw_row_count?: number | null
+          source_connection_id?: string | null
+          source_headers?: string[] | null
+          source_system?: string | null
+          source_type?: string | null
           status?: string
           successful_rows?: number
           total_rows?: number
@@ -645,18 +675,33 @@ export type Database = {
           validation_errors?: Json
         }
         Update: {
+          adapter_version?: string | null
+          candidates_created?: number | null
+          canonical_writes?: number | null
           column_mapping?: Json
           created_at?: string
           created_by_user_id?: string
           duplicate_rows?: number
           error_report_object_key?: string | null
+          exceptions_created?: number | null
           failed_rows?: number
+          file_checksum?: string | null
           file_object_key?: string | null
           id?: string
           idempotency_hash?: string | null
           import_type?: string
+          mapping_template_id?: string | null
           organization_id?: string
           original_filename?: string | null
+          parser_version?: string | null
+          processing_completed_at?: string | null
+          processing_mode?: string | null
+          processing_started_at?: string | null
+          raw_row_count?: number | null
+          source_connection_id?: string | null
+          source_headers?: string[] | null
+          source_system?: string | null
+          source_type?: string | null
           status?: string
           successful_rows?: number
           total_rows?: number
@@ -669,6 +714,13 @@ export type Database = {
             columns: ["created_by_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_batches_mapping_template_id_fkey"
+            columns: ["mapping_template_id"]
+            isOneToOne: false
+            referencedRelation: "mapping_templates"
             referencedColumns: ["id"]
           },
           {
@@ -819,6 +871,250 @@ export type Database = {
             columns: ["sender_contact_id"]
             isOneToOne: false
             referencedRelation: "client_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingestion_candidates: {
+        Row: {
+          batch_id: string
+          candidate_type: string
+          canonical_record_id: string | null
+          created_at: string
+          id: string
+          mapping_confidence: number | null
+          mapping_version: number | null
+          normalization_status: string
+          normalized_data: Json
+          organization_id: string
+          raw_record_id: string | null
+          updated_at: string
+          validation_errors: Json | null
+          validation_status: string
+          validation_warnings: Json | null
+          write_status: string
+          written_at: string | null
+        }
+        Insert: {
+          batch_id: string
+          candidate_type?: string
+          canonical_record_id?: string | null
+          created_at?: string
+          id?: string
+          mapping_confidence?: number | null
+          mapping_version?: number | null
+          normalization_status?: string
+          normalized_data?: Json
+          organization_id: string
+          raw_record_id?: string | null
+          updated_at?: string
+          validation_errors?: Json | null
+          validation_status?: string
+          validation_warnings?: Json | null
+          write_status?: string
+          written_at?: string | null
+        }
+        Update: {
+          batch_id?: string
+          candidate_type?: string
+          canonical_record_id?: string | null
+          created_at?: string
+          id?: string
+          mapping_confidence?: number | null
+          mapping_version?: number | null
+          normalization_status?: string
+          normalized_data?: Json
+          organization_id?: string
+          raw_record_id?: string | null
+          updated_at?: string
+          validation_errors?: Json | null
+          validation_status?: string
+          validation_warnings?: Json | null
+          write_status?: string
+          written_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_candidates_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_candidates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_candidates_raw_record_id_fkey"
+            columns: ["raw_record_id"]
+            isOneToOne: false
+            referencedRelation: "ingestion_raw_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingestion_exceptions: {
+        Row: {
+          batch_id: string
+          can_fix_in_ui: boolean
+          candidate_id: string | null
+          created_at: string
+          exception_type: string
+          field_name: string | null
+          id: string
+          organization_id: string
+          raw_record_id: string | null
+          raw_value: string | null
+          reason: string
+          requires_reprocessing: boolean
+          resolution_action: string | null
+          resolution_status: string
+          resolution_value: string | null
+          resolved_at: string | null
+          resolved_by_user_id: string | null
+          severity: string
+          suggested_fix: string | null
+        }
+        Insert: {
+          batch_id: string
+          can_fix_in_ui?: boolean
+          candidate_id?: string | null
+          created_at?: string
+          exception_type: string
+          field_name?: string | null
+          id?: string
+          organization_id: string
+          raw_record_id?: string | null
+          raw_value?: string | null
+          reason: string
+          requires_reprocessing?: boolean
+          resolution_action?: string | null
+          resolution_status?: string
+          resolution_value?: string | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          severity?: string
+          suggested_fix?: string | null
+        }
+        Update: {
+          batch_id?: string
+          can_fix_in_ui?: boolean
+          candidate_id?: string | null
+          created_at?: string
+          exception_type?: string
+          field_name?: string | null
+          id?: string
+          organization_id?: string
+          raw_record_id?: string | null
+          raw_value?: string | null
+          reason?: string
+          requires_reprocessing?: boolean
+          resolution_action?: string | null
+          resolution_status?: string
+          resolution_value?: string | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          severity?: string
+          suggested_fix?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_exceptions_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_exceptions_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "ingestion_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_exceptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_exceptions_raw_record_id_fkey"
+            columns: ["raw_record_id"]
+            isOneToOne: false
+            referencedRelation: "ingestion_raw_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_exceptions_resolved_by_user_id_fkey"
+            columns: ["resolved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingestion_raw_records: {
+        Row: {
+          batch_id: string
+          created_at: string
+          field_confidences: Json | null
+          id: string
+          mapping_suggestions: Json | null
+          organization_id: string
+          parser_warnings: string[] | null
+          processing_status: string
+          raw_columns: Json
+          raw_values: Json
+          row_errors: string[] | null
+          row_index: number
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          field_confidences?: Json | null
+          id?: string
+          mapping_suggestions?: Json | null
+          organization_id: string
+          parser_warnings?: string[] | null
+          processing_status?: string
+          raw_columns?: Json
+          raw_values?: Json
+          row_errors?: string[] | null
+          row_index: number
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          field_confidences?: Json | null
+          id?: string
+          mapping_suggestions?: Json | null
+          organization_id?: string
+          parser_warnings?: string[] | null
+          processing_status?: string
+          raw_columns?: Json
+          raw_values?: Json
+          row_errors?: string[] | null
+          row_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_raw_records_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_raw_records_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1042,6 +1338,116 @@ export type Database = {
           },
           {
             foreignKeyName: "invoices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mapping_template_fields: {
+        Row: {
+          canonical_field: string
+          created_at: string
+          default_value: string | null
+          id: string
+          is_required: boolean
+          source_column: string
+          template_id: string
+          transform: string | null
+        }
+        Insert: {
+          canonical_field: string
+          created_at?: string
+          default_value?: string | null
+          id?: string
+          is_required?: boolean
+          source_column: string
+          template_id: string
+          transform?: string | null
+        }
+        Update: {
+          canonical_field?: string
+          created_at?: string
+          default_value?: string | null
+          id?: string
+          is_required?: boolean
+          source_column?: string
+          template_id?: string
+          transform?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mapping_template_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "mapping_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mapping_templates: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          custom_field_mappings: Json | null
+          date_format: string | null
+          default_currency: string | null
+          header_signature: string | null
+          id: string
+          ignored_columns: string[] | null
+          name: string
+          organization_id: string
+          source_system: string | null
+          source_type: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          custom_field_mappings?: Json | null
+          date_format?: string | null
+          default_currency?: string | null
+          header_signature?: string | null
+          id?: string
+          ignored_columns?: string[] | null
+          name: string
+          organization_id: string
+          source_system?: string | null
+          source_type?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          custom_field_mappings?: Json | null
+          date_format?: string | null
+          default_currency?: string | null
+          header_signature?: string | null
+          id?: string
+          ignored_columns?: string[] | null
+          name?: string
+          organization_id?: string
+          source_system?: string | null
+          source_type?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mapping_templates_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mapping_templates_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
