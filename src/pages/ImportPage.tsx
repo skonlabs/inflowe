@@ -527,7 +527,7 @@ export default function ImportPage() {
               {currentBatchId ? (
                 <button
                   onClick={() => setView('summary')}
-                  className="mt-4 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
+                  className="mt-4 px-5 py-2.5 rounded-xl bg-success text-success-foreground text-sm font-semibold"
                 >
                   Continue to commit
                 </button>
