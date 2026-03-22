@@ -570,7 +570,7 @@ export default function ImportPage() {
               <p className="text-sm text-muted-foreground mt-1">Upload a CSV to get started</p>
               <button
                 onClick={() => setView('upload')}
-                className="mt-4 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium"
+                className="mt-4 px-5 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-medium"
               >
                 Upload CSV
               </button>
