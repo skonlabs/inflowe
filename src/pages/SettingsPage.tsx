@@ -630,7 +630,7 @@ export default function SettingsPage() {
                   <button
                     onClick={handleConnectIntegration}
                     disabled={submittingIntegration || (connectingProvider.method === 'api_key' && !apiKeyInput.trim())}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-accent text-accent-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-40 disabled:pointer-events-none"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-success text-success-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-40 disabled:pointer-events-none"
                   >
                     {submittingIntegration ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
