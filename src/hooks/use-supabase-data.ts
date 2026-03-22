@@ -1079,7 +1079,7 @@ export function useStageImport() {
         const { data: candRecord } = await supabase.from('ingestion_candidates').insert({
           batch_id: importBatchId,
           organization_id: orgId,
-          candidate_type: 'invoice',
+          candidate_type: importType,
           normalized_data: normalized as any,
           mapping_confidence: mappingConfidence,
           normalization_status: 'normalized',
