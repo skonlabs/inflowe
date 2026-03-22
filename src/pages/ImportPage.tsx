@@ -116,27 +116,34 @@ export default function ImportPage() {
         return;
       }
       setParsed({ file, headers: result.headers, rows: result.rows, warnings: result.warnings });
-      const mappedTemplates: MappingTemplate[] = (templates ?? []).map((t: any) => ({
-        id: t.id,
-        templateName: t.template_name,
-        headerSignature: t.header_signature,
-        columnMappings: t.column_mappings ?? [],
-        dateFormatHint: t.date_format_hint,
-        defaultCurrency: t.default_currency,
-        ignoredColumns: t.ignored_columns ?? [],
-        timesUsed: t.times_used ?? 0,
-        lastUsedAt: t.last_used_at,
-      }));
-      const matched = mappedTemplates.find(t => matchesTemplate(result.headers, t)) ?? null;
-      setMatchedTemplate(matched);
-      const inferred = inferMapping(result.headers, result.rows.slice(0, 10), matched);
-      setProposals(inferred);
-      if (result.warnings.length > 0) result.warnings.forEach(w => toast.warning(w));
-      setView('mapping');
+      // Show type selector before mapping
+      setView('type-select');
     } catch (err: any) {
       toast.error(err.message || 'Failed to parse file');
     }
-  }, [templates]);
+  }, []);
+
+  const proceedToMapping = useCallback((type: ImportType) => {
+    if (!parsed) return;
+    setImportType(type);
+    const mappedTemplates: MappingTemplate[] = (templates ?? []).map((t: any) => ({
+      id: t.id,
+      templateName: t.template_name,
+      headerSignature: t.header_signature,
+      columnMappings: t.column_mappings ?? [],
+      dateFormatHint: t.date_format_hint,
+      defaultCurrency: t.default_currency,
+      ignoredColumns: t.ignored_columns ?? [],
+      timesUsed: t.times_used ?? 0,
+      lastUsedAt: t.last_used_at,
+    }));
+    const matched = mappedTemplates.find(t => matchesTemplate(parsed.headers, t)) ?? null;
+    setMatchedTemplate(matched);
+    const inferred = inferMapping(parsed.headers, parsed.rows.slice(0, 10), matched, type);
+    setProposals(inferred);
+    if (parsed.warnings.length > 0) parsed.warnings.forEach(w => toast.warning(w));
+    setView('mapping');
+  }, [parsed, templates]);
 
   const handleFile = useCallback(async (file: File) => {
     const isExcel = isExcelFile(file);
