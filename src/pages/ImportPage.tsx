@@ -447,7 +447,7 @@ export default function ImportPage() {
                 Importing…
               </span>
             ) : (
-              `Commit ${stagingResult.staged} invoice${stagingResult.staged !== 1 ? 's' : ''}`
+              `Commit ${stagingResult.staged} ${importType === 'client' ? 'client' : 'invoice'}${stagingResult.staged !== 1 ? 's' : ''}`
             )}
           </button>
         </motion.div>
@@ -464,7 +464,7 @@ export default function ImportPage() {
       <motion.div variants={fadeUp} className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">Import</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Upload invoices from a spreadsheet or connected source</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Upload invoices or clients from a spreadsheet</p>
         </div>
         <button
           onClick={() => setView('upload')}
@@ -495,6 +495,53 @@ export default function ImportPage() {
           <ChevronRight className="w-4 h-4 text-warning shrink-0" />
         </motion.button>
       )}
+
+      {/* Type selector (invoices vs clients) */}
+      <AnimatePresence mode="wait">
+        {view === 'type-select' && parsed && (
+          <motion.div
+            key="type-select"
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="space-y-4"
+          >
+            <div className="text-center pt-2">
+              <h2 className="text-lg font-semibold">What are you importing?</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                We found {parsed.headers.length} columns in <strong>{parsed.file.name}</strong>
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => proceedToMapping('invoice')}
+                className="glass-card-hover rounded-xl p-6 text-center active:scale-[0.97] transition-transform"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-3">
+                  <FileSpreadsheet className="w-6 h-6 text-accent" />
+                </div>
+                <p className="font-semibold text-sm">Invoices</p>
+                <p className="text-xs text-muted-foreground mt-1">Import outstanding invoices and payment data</p>
+              </button>
+              <button
+                onClick={() => proceedToMapping('client')}
+                className="glass-card-hover rounded-xl p-6 text-center active:scale-[0.97] transition-transform"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-3">
+                  <Upload className="w-6 h-6 text-success" />
+                </div>
+                <p className="font-semibold text-sm">Clients</p>
+                <p className="text-xs text-muted-foreground mt-1">Import client contacts and company info</p>
+              </button>
+            </div>
+            <button
+              onClick={() => { setView('upload'); setParsed(null); }}
+              className="text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md px-1 transition-colors active:scale-[0.97]"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 inline mr-1" />Choose a different file
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Upload area (when view=upload) */}
       <AnimatePresence mode="wait">

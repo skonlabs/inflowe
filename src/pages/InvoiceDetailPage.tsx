@@ -48,7 +48,6 @@ export default function InvoiceDetailPage() {
   const [showPaymentPlan, setShowPaymentPlan] = useState(false);
   const [planInstallments, setPlanInstallments] = useState(3);
 
-  // Map Supabase data or fallback to demo
   const demoInvoice = demoInvoices.find(i => i.id === id);
   const invoice = dbInvoice ? {
     id: dbInvoice.id,
@@ -81,23 +80,18 @@ export default function InvoiceDetailPage() {
   } : null;
 
   if (isLoading && !demoInvoice) {
-    return (
-      <div className="px-4 py-12 text-center">
-        <p className="text-muted-foreground text-sm">Loading invoice…</p>
-      </div>
-    );
+    return <div className="px-4 py-12 text-center"><p className="text-muted-foreground text-sm">Loading invoice…</p></div>;
   }
 
   if (!invoice) {
     return (
       <div className="px-4 py-12 text-center">
         <p className="text-muted-foreground">Invoice not found</p>
-        <button onClick={() => navigate('/invoices')} className="text-primary text-sm mt-2">← Back to invoices</button>
+        <button onClick={() => navigate('/invoices')} className="text-accent text-sm mt-2">← Back to invoices</button>
       </div>
     );
   }
 
-  // Derive state flags from DB state
   const isPaid = invoice.state === 'paid';
   const isPaused = invoice.state === 'on_hold';
   const isDisputed = invoice.state === 'disputed';
@@ -154,17 +148,17 @@ export default function InvoiceDetailPage() {
   const isMutating = markPaid.isPending || setHold.isPending || setDispute.isPending;
 
   return (
-    <div className="px-4 py-4 space-y-6">
+    <div className="px-4 py-4 space-y-6 max-w-screen-lg mx-auto">
       <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95">
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
 
       <ScrollReveal>
-        <div className="glass-card rounded-xl p-5">
+        <div className="glass-card rounded-2xl p-5">
           <div className="flex items-start justify-between mb-4">
             <div>
               <h1 className="text-lg font-bold">{invoice.invoiceNumber}</h1>
-              <button onClick={() => navigate(`/clients/${invoice.clientId}`)} className="text-sm text-primary mt-0.5 active:scale-95">
+              <button onClick={() => navigate(`/clients/${invoice.clientId}`)} className="text-sm text-accent mt-0.5 active:scale-95">
                 {invoice.clientName} →
               </button>
             </div>
@@ -213,18 +207,21 @@ export default function InvoiceDetailPage() {
         </div>
       </ScrollReveal>
 
-      {/* Explainability panel */}
+      {/* Explainability — calm, helpful tone */}
       {invoice.state === 'overdue' && (
         <ScrollReveal delay={0.1}>
-          <div className="glass-card rounded-xl p-5 space-y-3">
+          <div className="glass-card rounded-2xl p-5 space-y-3">
             <h2 className="font-semibold text-sm flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-primary" />
-              What's happening?
+              <MessageSquare className="w-4 h-4 text-accent" />
+              What's happening with this invoice?
             </h2>
-            <div className="space-y-2 text-sm">
-              <p><span className="font-medium">Last action:</span> Reminder sent — no reply received.</p>
-              <p><span className="font-medium">Why:</span> Invoice is {invoice.daysOverdue} days overdue. Standard follow-up workflow triggered.</p>
-              <p><span className="font-medium">Next:</span> {invoice.nextActionAt ? `Follow-up scheduled for ${new Date(invoice.nextActionAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No actions scheduled — needs manual attention.'}</p>
+            <div className="space-y-2 text-sm leading-relaxed">
+              <p>This invoice is <strong>{invoice.daysOverdue} days overdue</strong>. A reminder was sent but no reply has been received yet.</p>
+              <p>
+                {invoice.nextActionAt
+                  ? `We've scheduled a follow-up for ${new Date(invoice.nextActionAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — you can approve it when it's ready.`
+                  : 'No automated follow-up is scheduled. You may want to reach out manually or set up a follow-up.'}
+              </p>
             </div>
           </div>
         </ScrollReveal>
@@ -235,7 +232,7 @@ export default function InvoiceDetailPage() {
         <div className="grid grid-cols-2 gap-2">
           {!isPaid && (
             <button onClick={handleMarkPaid} disabled={isMutating}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-60">
+              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-accent text-accent-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-60">
               <CheckCircle className="w-4 h-4" /> Mark paid
             </button>
           )}
@@ -266,12 +263,12 @@ export default function InvoiceDetailPage() {
         </div>
       </ScrollReveal>
 
-      {/* Payment plan modal */}
+      {/* Payment plan */}
       <AnimatePresence>
         {showPaymentPlan && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}>
-            <div className="glass-card rounded-xl p-5 space-y-4 border-2 border-primary/30">
+            <div className="glass-card rounded-2xl p-5 space-y-4 border-2 border-accent/30">
               <h3 className="font-semibold text-sm">Create payment plan</h3>
               <p className="text-sm text-muted-foreground">Split {formatCurrency(invoice.remainingBalance)} into installments for {invoice.clientName}.</p>
               <div>
@@ -279,13 +276,13 @@ export default function InvoiceDetailPage() {
                 <div className="flex gap-2">
                   {[2, 3, 4, 6].map(n => (
                     <button key={n} onClick={() => setPlanInstallments(n)}
-                      className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors active:scale-95 ${planInstallments === n ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                      className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors active:scale-95 ${planInstallments === n ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>
                       {n}×
                     </button>
                   ))}
                 </div>
               </div>
-              <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+              <div className="bg-muted/50 rounded-xl p-3 space-y-1">
                 {Array.from({ length: planInstallments }).map((_, i) => {
                   const amount = i < planInstallments - 1
                     ? Math.floor(invoice.remainingBalance / planInstallments)
@@ -302,7 +299,7 @@ export default function InvoiceDetailPage() {
               </div>
               <div className="flex gap-2">
                 <button onClick={handleCreatePlan}
-                  className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform">
+                  className="flex-1 py-3 rounded-xl bg-accent text-accent-foreground font-medium text-sm active:scale-95 transition-transform">
                   Create plan
                 </button>
                 <button onClick={() => setShowPaymentPlan(false)}

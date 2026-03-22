@@ -25,7 +25,6 @@ export default function InvoicesPage() {
   const [activeFilter, setActiveFilter] = useState(initialFilter);
   const [search, setSearch] = useState('');
 
-  // Map Supabase data or fallback to demo
   const invoices = (dbInvoices && dbInvoices.length > 0)
     ? dbInvoices.map(inv => ({
         id: inv.invoice_id,
@@ -63,7 +62,7 @@ export default function InvoicesPage() {
   const overdueCount = invoices.filter(i => getEffectiveState(i) === 'overdue').length;
 
   return (
-    <div className="px-4 py-6 space-y-4">
+    <div className="px-4 py-6 space-y-4 max-w-screen-lg mx-auto">
       <ScrollReveal>
         <h1 className="text-xl font-bold" style={{ lineHeight: '1.1' }}>Invoices</h1>
         <p className="text-sm text-muted-foreground mt-1">{invoices.length} total · {overdueCount} overdue</p>
@@ -74,7 +73,7 @@ export default function InvoicesPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input type="text" placeholder="Search invoices or clients..."
             value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow" />
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 transition-shadow" />
         </div>
       </ScrollReveal>
 
@@ -96,11 +95,11 @@ export default function InvoicesPage() {
           return (
             <StaggerItem key={inv.id}>
               <button onClick={() => navigate(`/invoices/${inv.id}`)}
-                className="glass-card-hover rounded-xl p-4 w-full text-left active:scale-[0.97] transition-transform">
+                className="glass-card-hover rounded-2xl p-4 w-full text-left active:scale-[0.97] transition-transform">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-sm">{inv.clientName}</span>
+                      <span className="font-semibold text-sm">{inv.clientName}</span>
                     </div>
                     <p className="text-xs text-muted-foreground">{inv.invoiceNumber}</p>
                   </div>
