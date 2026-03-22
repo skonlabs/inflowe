@@ -1027,6 +1027,68 @@ export function useSaveMappingTemplate() {
   });
 }
 
+// ─── Integration sync ────────────────────────────────────────────────────────
+
+export function useTriggerSync() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      orgId,
+      integrationId,
+      syncType = 'manual',
+    }: {
+      orgId: string;
+      integrationId: string;
+      syncType?: string;
+    }) => {
+      const { data: syncRunId, error } = await supabase.rpc('trigger_integration_sync', {
+        _org_id: orgId,
+        _integration_id: integrationId,
+        _sync_type: syncType,
+      });
+      if (error) throw error;
+      // Invoke the edge function client-side
+      const { error: fnError } = await supabase.functions.invoke('sync-integration', {
+        body: { sync_run_id: syncRunId, integration_id: integrationId, organization_id: orgId },
+      });
+      if (fnError) throw fnError;
+      return syncRunId as string;
+    },
+    onSuccess: (_, { orgId }) => {
+      qc.invalidateQueries({ queryKey: ['sync-runs', orgId] });
+      qc.invalidateQueries({ queryKey: ['integrations', orgId] });
+    },
+  });
+}
+
+export function useGetSyncRuns(orgId: string | undefined, integrationId?: string) {
+  return useQuery({
+    queryKey: ['sync-runs', orgId, integrationId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_sync_runs', {
+        _org_id: orgId!,
+        _integration_id: integrationId ?? null,
+      });
+      if (error) throw error;
+      return data as Array<{
+        id: string;
+        integration_id: string;
+        provider: string;
+        sync_type: string;
+        status: string;
+        records_processed: number | null;
+        records_created: number | null;
+        records_updated: number | null;
+        records_failed: number | null;
+        error_summary: unknown;
+        started_at: string;
+        completed_at: string | null;
+      }>;
+    },
+  });
+}
+
 export function useSubmitSupportCase() {
   const qc = useQueryClient();
   return useMutation({

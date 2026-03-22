@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { useStageImport, useCommitImport } from '@/hooks/use-supabase-data';
 import { parseCsvFile } from '@/lib/csv-parser';
+import { parseExcelFile, isExcelFile } from '@/lib/excel-parser';
 import { inferMapping, buildHeaderSignature, MappingProposal, ConfirmedMapping } from '@/lib/mapping-engine';
 import FieldMappingReview from '@/components/FieldMappingReview';
 
@@ -415,7 +416,9 @@ function StepImport({
   const handleFile = async (file: File) => {
     setUploadedFile(file);
     try {
-      const parsed = await parseCsvFile(file);
+      const parsed = isExcelFile(file)
+        ? await parseExcelFile(file, { maxRows: 2000, dateFormat: 'iso' })
+        : await parseCsvFile(file);
       setRowCount(parsed.rows.length);
       setPreviewHeaders(parsed.headers);
       setPreviewRows(parsed.rows.slice(0, 3));
@@ -465,7 +468,7 @@ function StepImport({
             onClick={() => {
               const input = document.createElement('input');
               input.type = 'file';
-              input.accept = '.csv,text/csv';
+              input.accept = '.csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
               input.onchange = (e) => {
                 const f = (e.target as HTMLInputElement).files?.[0];
                 if (f) handleFile(f);

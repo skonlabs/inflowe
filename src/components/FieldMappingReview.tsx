@@ -7,8 +7,9 @@
  * Spec: §8 Mapping Review UX Requirements
  */
 
-import { useState, useMemo } from 'react';
-import { CheckCircle2, AlertTriangle, Info, ChevronDown, Save, Eye } from 'lucide-react';
+import { useState, useMemo, useCallback } from 'react';
+import { CheckCircle2, AlertTriangle, Info, ChevronDown, Save, Eye, Sparkles, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   MappingProposal,
   ConfirmedMapping,
@@ -76,6 +77,8 @@ export default function FieldMappingReview({
 
   const [currency, setCurrency] = useState(defaultCurrency || 'USD');
   const [showPreview, setShowPreview] = useState(false);
+  const [aiLoading, setAiLoading]     = useState(false);
+  const [aiReasonings, setAiReasonings] = useState<Record<string, string>>({});
   const [saveName, setSaveName]  = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
 
@@ -99,6 +102,57 @@ export default function FieldMappingReview({
     if (FIELD_META[p.suggestedField as CanonicalField]?.isCritical && p.confidence !== 'high') return true;
     return false;
   });
+
+  // AI-assisted mapping for low-confidence columns
+  const lowConfidenceCols = proposals.filter(
+    p => p.confidence === 'low' || (!fieldMap[p.sourceColumn] && p.matchReason === 'none'),
+  );
+
+  const askAI = useCallback(async () => {
+    if (lowConfidenceCols.length === 0) return;
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-map-columns', {
+        body: {
+          columns: lowConfidenceCols.map(p => ({
+            sourceColumn:       p.sourceColumn,
+            sampleValues:       p.sampleValues,
+            currentSuggestion:  fieldMap[p.sourceColumn] || null,
+          })),
+        },
+      });
+
+      if (error) throw error;
+
+      const suggestions: Array<{
+        sourceColumn: string;
+        suggestedField: CanonicalField | null;
+        confidence: string;
+        reasoning: string;
+      }> = data?.suggestions ?? [];
+
+      const newReasonings: Record<string, string> = {};
+      suggestions.forEach(s => {
+        if (s.suggestedField && !fieldMap[s.sourceColumn]) {
+          setFieldMap(prev => {
+            const updated = { ...prev };
+            // Don't overwrite if already set by user
+            if (!updated[s.sourceColumn] && s.suggestedField) {
+              updated[s.sourceColumn] = s.suggestedField;
+            }
+            return updated;
+          });
+        }
+        if (s.reasoning) newReasonings[s.sourceColumn] = s.reasoning;
+      });
+      setAiReasonings(prev => ({ ...prev, ...newReasonings }));
+    } catch (err: any) {
+      console.warn('AI mapping failed:', err.message);
+      // Non-fatal: fall back to rule-based suggestions
+    } finally {
+      setAiLoading(false);
+    }
+  }, [lowConfidenceCols, fieldMap]);
 
   function handleFieldChange(sourceCol: string, val: CanonicalField | '') {
     setFieldMap(prev => {
@@ -150,6 +204,21 @@ export default function FieldMappingReview({
           <Chip color="red">{needsAttention.length} need attention</Chip>
         )}
       </div>
+
+      {/* AI assist button for unresolved columns */}
+      {lowConfidenceCols.length > 0 && (
+        <button
+          onClick={askAI}
+          disabled={aiLoading}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-medium hover:bg-primary/10 disabled:opacity-60 transition-colors"
+        >
+          {aiLoading ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> Asking AI...</>
+          ) : (
+            <><Sparkles className="w-4 h-4" /> Ask AI to suggest {lowConfidenceCols.length} unmapped column{lowConfidenceCols.length !== 1 ? 's' : ''}</>
+          )}
+        </button>
+      )}
 
       {/* Missing critical fields warning */}
       {missingCritical.length > 0 && (
@@ -217,6 +286,12 @@ export default function FieldMappingReview({
                     <div className="flex items-start gap-1 mt-1">
                       <Info className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
                       <p className="text-xs text-amber-600">{p.validationHint}</p>
+                    </div>
+                  )}
+                  {aiReasonings[p.sourceColumn] && (
+                    <div className="flex items-start gap-1 mt-1">
+                      <Sparkles className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+                      <p className="text-xs text-primary/80">{aiReasonings[p.sourceColumn]}</p>
                     </div>
                   )}
                 </div>

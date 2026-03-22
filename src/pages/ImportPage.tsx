@@ -14,7 +14,6 @@ import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Clock,
          ChevronRight, RotateCcw, BookTemplate, X, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserOrganization } from '@/hooks/use-supabase-data';
 import {
   useUserOrganization,
   useImportBatches,
@@ -26,6 +25,7 @@ import {
   useSaveMappingTemplate,
 } from '@/hooks/use-supabase-data';
 import { parseCsvFile } from '@/lib/csv-parser';
+import { parseExcelFile, isExcelFile, getSheetNames } from '@/lib/excel-parser';
 import {
   inferMapping,
   buildHeaderSignature,
@@ -82,39 +82,53 @@ export default function ImportPage() {
 
   // ── File handling ──────────────────────────────────────────────────────────
 
-  const handleFile = useCallback(async (file: File) => {
-    if (!file.name.endsWith('.csv') && !file.type.includes('csv')) {
-      toast.error('Please upload a CSV file');
-      return;
-    }
+  const [excelSheets, setExcelSheets]   = useState<string[]>([]);
+  const [selectedSheet, setSelectedSheet] = useState<string | null>(null);
+  const [pendingExcelFile, setPendingExcelFile] = useState<File | null>(null);
+
+  const parseAndProcess = useCallback(async (file: File, sheetName?: string) => {
     try {
-      const result = await parseCsvFile(file, { maxRows: 2000 });
+      const result = isExcelFile(file)
+        ? await parseExcelFile(file, { maxRows: 2000, sheetName, dateFormat: 'iso' })
+        : await parseCsvFile(file, { maxRows: 2000 });
       if (result.headers.length === 0) {
         toast.error('Could not read column headers from this file');
         return;
       }
       setParsed({ file, headers: result.headers, rows: result.rows, warnings: result.warnings });
-
-      // Find matching saved template
       const sig = buildHeaderSignature(result.headers);
-      const matched = (templates as MappingTemplate[]).find(t =>
-        matchesTemplate(result.headers, t),
-      ) ?? null;
+      const matched = (templates as MappingTemplate[]).find(t => matchesTemplate(result.headers, t)) ?? null;
       setMatchedTemplate(matched);
-
-      // Infer mapping
       const inferred = inferMapping(result.headers, result.rows.slice(0, 10), matched);
       setProposals(inferred);
-
-      if (result.warnings.length > 0) {
-        result.warnings.forEach(w => toast.warning(w));
-      }
-
+      if (result.warnings.length > 0) result.warnings.forEach(w => toast.warning(w));
       setView('mapping');
     } catch (err: any) {
       toast.error(err.message || 'Failed to parse file');
     }
   }, [templates]);
+
+  const handleFile = useCallback(async (file: File) => {
+    const isExcel = isExcelFile(file);
+    const isCsv = file.name.endsWith('.csv') || file.type.includes('csv');
+    if (!isExcel && !isCsv) {
+      toast.error('Please upload a CSV or Excel (.xlsx, .xls) file');
+      return;
+    }
+    // For Excel: check if multi-sheet and let user pick
+    if (isExcel) {
+      try {
+        const sheets = await getSheetNames(file);
+        if (sheets.length > 1) {
+          setExcelSheets(sheets);
+          setPendingExcelFile(file);
+          return; // Wait for sheet selection
+        }
+      } catch (_) { /* fall through and let parseExcelFile handle errors */ }
+    }
+    await parseAndProcess(file);
+  }, [parseAndProcess]);
+
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -399,7 +413,7 @@ export default function ImportPage() {
             onClick={() => {
               const input = document.createElement('input');
               input.type = 'file';
-              input.accept = '.csv,text/csv';
+              input.accept = '.csv,.xlsx,.xls,.ods,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel';
               input.onchange = (e) => {
                 const f = (e.target as HTMLInputElement).files?.[0];
                 if (f) handleFile(f);
@@ -411,12 +425,34 @@ export default function ImportPage() {
             }`}
           >
             <FileSpreadsheet className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <p className="font-medium">Drag & drop your CSV file</p>
+            <p className="font-medium">Drag & drop your file</p>
             <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
             <p className="text-xs text-muted-foreground mt-3">
-              Supports any column names — we'll help you map them
+              CSV, Excel (.xlsx, .xls) · Any column names — we'll help you map them
             </p>
           </div>
+
+          {/* Excel multi-sheet selector */}
+          {excelSheets.length > 1 && pendingExcelFile && (
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+              <p className="text-sm font-medium">This workbook has multiple sheets. Which one contains your invoices?</p>
+              <div className="space-y-2">
+                {excelSheets.map(s => (
+                  <button
+                    key={s}
+                    onClick={async () => {
+                      setExcelSheets([]);
+                      await parseAndProcess(pendingExcelFile, s);
+                      setPendingExcelFile(null);
+                    }}
+                    className="w-full text-left px-3 py-2.5 rounded-lg border border-border bg-card text-sm hover:border-primary/40"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {templates.length > 0 && (
             <div className="space-y-2">
@@ -468,6 +504,15 @@ export default function ImportPage() {
                   key={exc.id}
                   exception={exc}
                   onIgnore={() => handleIgnoreException(exc.id)}
+                  onFixed={async (values) => {
+                    if (!orgId) return;
+                    try {
+                      await resolveExc.mutateAsync({ orgId, exceptionId: exc.id, action: 'fixed', fixedValues: values });
+                      toast.success('Fix applied — row ready to import');
+                    } catch (err: any) {
+                      toast.error(err.message || 'Failed to apply fix');
+                    }
+                  }}
                 />
               ))}
             </div>
@@ -577,9 +622,51 @@ function Stat({ label, value, color }: { label: string; value: number; color?: s
   );
 }
 
+/** Editable fields shown per exception type */
+const FIXABLE_FIELDS: Record<string, Array<{ key: string; label: string; type: 'text' | 'date' | 'number' | 'email' }>> = {
+  missing_critical_field: [
+    { key: 'client_name',    label: 'Client name',  type: 'text' },
+    { key: 'amount',         label: 'Amount',        type: 'number' },
+    { key: 'due_date',       label: 'Due date',      type: 'date' },
+    { key: 'contact_email',  label: 'Contact email', type: 'email' },
+  ],
+  invalid_email: [
+    { key: 'contact_email',  label: 'Contact email', type: 'email' },
+  ],
+  impossible_date: [
+    { key: 'due_date',       label: 'Due date',      type: 'date' },
+    { key: 'issue_date',     label: 'Issue date',    type: 'date' },
+  ],
+  conflicting_amounts: [
+    { key: 'amount',          label: 'Total amount',     type: 'number' },
+    { key: 'amount_paid',     label: 'Amount paid',      type: 'number' },
+    { key: 'remaining_balance', label: 'Remaining balance', type: 'number' },
+  ],
+  unmatched_client: [
+    { key: 'client_name',    label: 'Client name',   type: 'text' },
+  ],
+  source_conflict: [
+    { key: 'client_name',    label: 'Client name',   type: 'text' },
+    { key: 'amount',         label: 'Amount',         type: 'number' },
+    { key: 'due_date',       label: 'Due date',       type: 'date' },
+  ],
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  missing_critical_field: 'Missing required field',
+  duplicate_candidate:    'Duplicate invoice',
+  ambiguous_mapping:      'Ambiguous column',
+  conflicting_amounts:    'Amount conflict',
+  impossible_date:        'Invalid date',
+  invalid_email:          'Invalid email',
+  unmatched_client:       'Unknown client',
+  source_conflict:        'Data conflict',
+};
+
 function ExceptionCard({
   exception,
   onIgnore,
+  onFixed,
 }: {
   exception: {
     id: string;
@@ -592,24 +679,31 @@ function ExceptionCard({
     candidate_snapshot: Record<string, unknown> | null;
   };
   onIgnore: () => void;
+  onFixed: (values: Record<string, string>) => void;
 }) {
+  const [mode, setMode] = useState<'view' | 'fix'>('view');
   const [expanded, setExpanded] = useState(false);
 
-  const typeLabels: Record<string, string> = {
-    missing_critical_field: 'Missing required field',
-    duplicate_candidate:    'Duplicate invoice',
-    ambiguous_mapping:      'Ambiguous column',
-    conflicting_amounts:    'Amount conflict',
-    impossible_date:        'Invalid date',
-    invalid_email:          'Invalid email',
-    unmatched_client:       'Unknown client',
-    source_conflict:        'Data conflict',
-  };
+  // Initialise fix form from candidate snapshot or raw values
+  const snapshot = exception.candidate_snapshot ?? {};
+  const raw      = exception.raw_values ?? {};
+  const editableFields = FIXABLE_FIELDS[exception.exception_type] ?? FIXABLE_FIELDS.missing_critical_field;
+
+  const [fixValues, setFixValues] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    editableFields.forEach(f => {
+      init[f.key] = (snapshot[f.key] as string) ?? (raw[f.key] as string) ?? '';
+    });
+    return init;
+  });
+
+  const canSubmitFix = editableFields.some(f => fixValues[f.key]?.trim());
 
   return (
     <div className={`rounded-xl border p-4 space-y-3 ${
       exception.severity === 'error' ? 'border-destructive/30 bg-destructive/5' : 'border-amber-200 bg-amber-50'
     }`}>
+      {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2">
           <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${
@@ -617,39 +711,96 @@ function ExceptionCard({
           }`} />
           <div>
             <p className="text-sm font-medium">
-              {typeLabels[exception.exception_type] ?? exception.exception_type}
+              {TYPE_LABELS[exception.exception_type] ?? exception.exception_type}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">{exception.reason}</p>
           </div>
         </div>
-        <button onClick={() => setExpanded(v => !v)} className="text-xs text-muted-foreground underline shrink-0">
-          {expanded ? 'Less' : 'Details'}
-        </button>
+        {mode === 'view' && (
+          <button onClick={() => setExpanded(v => !v)} className="text-xs text-muted-foreground underline shrink-0">
+            {expanded ? 'Less' : 'Details'}
+          </button>
+        )}
       </div>
 
-      {expanded && (
+      {/* Details panel */}
+      {mode === 'view' && expanded && (
         <div className="space-y-2 text-xs">
           {exception.suggested_remediation && (
-            <p className="text-muted-foreground"><strong>Suggestion:</strong> {exception.suggested_remediation}</p>
+            <p className="text-muted-foreground">
+              <strong>Suggestion:</strong> {exception.suggested_remediation}
+            </p>
           )}
-          {exception.candidate_snapshot && (
+          {Object.keys(snapshot).length > 0 && (
             <div className="rounded-lg bg-background border border-border p-3 font-mono space-y-0.5">
-              {Object.entries(exception.candidate_snapshot).map(([k, v]) =>
-                v ? <div key={k}><span className="text-muted-foreground">{k}:</span> {String(v)}</div> : null,
+              {Object.entries(snapshot).map(([k, v]) =>
+                v ? (
+                  <div key={k}>
+                    <span className="text-muted-foreground">{k}:</span> {String(v)}
+                  </div>
+                ) : null,
               )}
             </div>
           )}
         </div>
       )}
 
-      <div className="flex gap-2">
-        <button
-          onClick={onIgnore}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border bg-card text-xs font-medium"
-        >
-          <X className="w-3 h-3" /> Skip row
-        </button>
-      </div>
+      {/* Inline fix form */}
+      {mode === 'fix' && (
+        <div className="space-y-3 pt-1">
+          <p className="text-xs font-medium text-muted-foreground">Edit the fields below and save to fix this row:</p>
+          {editableFields.map(f => (
+            <div key={f.key}>
+              <label className="text-xs font-medium block mb-1">{f.label}</label>
+              <input
+                type={f.type === 'number' ? 'text' : f.type}
+                value={fixValues[f.key] ?? ''}
+                onChange={e => setFixValues(prev => ({ ...prev, [f.key]: e.target.value }))}
+                placeholder={f.type === 'date' ? 'YYYY-MM-DD' : ''}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+          ))}
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={() => setMode('view')}
+              className="px-3 py-1.5 rounded-lg border border-border bg-card text-xs font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              disabled={!canSubmitFix}
+              onClick={() => {
+                onFixed(fixValues);
+                setMode('view');
+              }}
+              className="flex-1 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-40"
+            >
+              Save fix & retry import
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      {mode === 'view' && (
+        <div className="flex gap-2">
+          <button
+            onClick={onIgnore}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border bg-card text-xs font-medium"
+          >
+            <X className="w-3 h-3" /> Skip row
+          </button>
+          {exception.can_fix_in_ui && (
+            <button
+              onClick={() => setMode('fix')}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-medium"
+            >
+              <Wrench className="w-3 h-3" /> Fix this row
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
