@@ -230,7 +230,7 @@ export default function FieldMappingReview({
           variants={fadeUp}
           onClick={askAI}
           disabled={aiLoading}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-medium hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60 active:scale-[0.98] transition-all"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-accent/30 bg-accent/5 text-accent text-sm font-medium hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60 active:scale-[0.98] transition-all"
         >
           {aiLoading ? (
             <><Loader2 className="w-4 h-4 animate-spin" /> Asking AI…</>
