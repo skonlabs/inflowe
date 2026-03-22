@@ -129,7 +129,7 @@ export default function ConversationDetailPage() {
             <button
               onClick={handleSend}
               disabled={sending || !reply.trim()}
-              className="p-3 rounded-xl bg-accent text-accent-foreground active:scale-95 transition-transform disabled:opacity-50">
+              className="p-3 rounded-xl bg-success text-success-foreground active:scale-95 transition-transform disabled:opacity-50">
               <Send className="w-5 h-5" />
             </button>
           </div>

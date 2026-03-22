@@ -409,7 +409,7 @@ export default function FieldMappingReview({
         <button
           disabled={!canProceed}
           onClick={() => onConfirm(buildConfirmedMapping())}
-          className="flex-1 py-3 rounded-xl bg-accent text-accent-foreground text-sm font-semibold shadow-sm hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none active:scale-[0.97] transition-all"
+          className="flex-1 py-3 rounded-xl bg-success text-success-foreground text-sm font-semibold shadow-sm hover:bg-success/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none active:scale-[0.97] transition-all"
         >
           {canProceed
             ? `Confirm and import ${mappedCount} fields`

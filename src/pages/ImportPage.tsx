@@ -311,7 +311,7 @@ export default function ImportPage() {
                     }
                   }}
                   disabled={!templateSaveName.trim()}
-                  className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40"
+                  className="flex-1 py-3 rounded-xl bg-success text-success-foreground text-sm font-semibold disabled:opacity-40"
                 >
                   Save & import
                 </button>
@@ -376,7 +376,7 @@ export default function ImportPage() {
           <button
             onClick={handleCommit}
             disabled={stagingResult.staged === 0 || commitImport.isPending}
-            className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40"
+            className="flex-1 py-3 rounded-xl bg-success text-success-foreground text-sm font-semibold disabled:opacity-40"
           >
             {commitImport.isPending ? (
               <span className="flex items-center justify-center gap-2">
@@ -402,7 +402,7 @@ export default function ImportPage() {
         </div>
         <button
           onClick={() => setView('upload')}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-medium"
         >
           <Upload className="w-4 h-4" /> New import
         </button>
@@ -527,7 +527,7 @@ export default function ImportPage() {
               {currentBatchId ? (
                 <button
                   onClick={() => setView('summary')}
-                  className="mt-4 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
+                  className="mt-4 px-5 py-2.5 rounded-xl bg-success text-success-foreground text-sm font-semibold"
                 >
                   Continue to commit
                 </button>
@@ -570,7 +570,7 @@ export default function ImportPage() {
               <p className="text-sm text-muted-foreground mt-1">Upload a CSV to get started</p>
               <button
                 onClick={() => setView('upload')}
-                className="mt-4 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium"
+                className="mt-4 px-5 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-medium"
               >
                 Upload CSV
               </button>
@@ -812,7 +812,7 @@ function ExceptionCard({
                 onFixed(fixValues);
                 setMode('view');
               }}
-              className="flex-1 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-40"
+              className="flex-1 py-1.5 rounded-lg bg-success text-success-foreground text-xs font-semibold disabled:opacity-40"
             >
               Save fix & retry import
             </button>
