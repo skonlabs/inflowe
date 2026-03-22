@@ -47,15 +47,15 @@ export default function AppShell({ children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Top bar */}
-      <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-md border-b border-border/60">
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border/60">
         <div className="flex items-center justify-between px-4 h-14 max-w-screen-xl mx-auto">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">IF</span>
+              <span className="text-primary-foreground font-bold text-xs tracking-wider">X</span>
             </div>
-            <span className="font-semibold text-lg tracking-tight">InFlowe</span>
+            <span className="font-semibold text-base tracking-tight">Cash Ops</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 rounded-full hover:bg-muted transition-colors active:scale-95"
@@ -75,7 +75,7 @@ export default function AppShell({ children }: AppShellProps) {
               <LogOut className="w-5 h-5 text-muted-foreground" />
             </button>
             {user && (
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+              <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-xs font-semibold text-accent">
                 {(user.user_metadata?.full_name || user.email || '?')[0].toUpperCase()}
               </div>
             )}
@@ -91,7 +91,7 @@ export default function AppShell({ children }: AppShellProps) {
               className="fixed inset-0 z-40 bg-foreground/10" onClick={() => setShowNotifications(false)} />
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
-              className="fixed top-14 right-2 left-2 sm:left-auto sm:w-96 z-50 bg-card rounded-xl border border-border shadow-xl max-h-[70vh] overflow-y-auto"
+              className="fixed top-14 right-2 left-2 sm:left-auto sm:w-96 z-50 bg-card rounded-2xl border border-border shadow-xl max-h-[70vh] overflow-y-auto"
             >
               <div className="p-4 border-b border-border"><h3 className="font-semibold">Notifications</h3></div>
               {notifications.length === 0 ? (
@@ -99,7 +99,7 @@ export default function AppShell({ children }: AppShellProps) {
               ) : (
                 notifications.map(n => (
                   <button key={n.id}
-                    className={`w-full text-left p-4 border-b border-border/40 hover:bg-muted/50 transition-colors ${!n.read ? 'bg-accent/30' : ''}`}
+                    className={`w-full text-left p-4 border-b border-border/40 hover:bg-muted/50 transition-colors ${!n.read ? 'bg-accent/5' : ''}`}
                     onClick={() => { markNotificationRead(n.id); setShowNotifications(false); if (n.actionUrl) navigate(n.actionUrl); }}
                   >
                     <p className="text-sm font-medium">{n.title}</p>
@@ -121,7 +121,7 @@ export default function AppShell({ children }: AppShellProps) {
               className="fixed inset-0 z-40" onClick={() => setShowMore(false)} />
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
               transition={{ duration: 0.2 }}
-              className="fixed bottom-20 left-2 right-2 z-50 bg-card rounded-xl border border-border shadow-xl"
+              className="fixed bottom-20 left-2 right-2 z-50 bg-card rounded-2xl border border-border shadow-xl"
               style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
             >
               {moreItems.map(item => {
@@ -130,7 +130,7 @@ export default function AppShell({ children }: AppShellProps) {
                 return (
                   <button key={item.path}
                     onClick={() => { setShowMore(false); navigate(item.path); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 border-b border-border/40 last:border-0 transition-colors active:scale-[0.98] ${isActive ? 'text-primary' : 'text-foreground hover:bg-muted/50'}`}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 border-b border-border/40 last:border-0 transition-colors active:scale-[0.98] ${isActive ? 'text-accent' : 'text-foreground hover:bg-muted/50'}`}
                   >
                     <Icon className="w-5 h-5" />
                     <span className="text-sm font-medium">{item.label}</span>
@@ -142,11 +142,11 @@ export default function AppShell({ children }: AppShellProps) {
         )}
       </AnimatePresence>
 
-      {/* Demo banner — only show for demo orgs */}
+      {/* Demo banner */}
       {isDemo && (
-        <div className="bg-primary/10 border-b border-primary/20 px-4 py-2">
-          <p className="text-xs text-center text-primary font-medium">
-            🎯 Demo Mode — Explore InFlowe with sample data. No real messages will be sent.
+        <div className="bg-accent/10 border-b border-accent/20 px-4 py-2">
+          <p className="text-xs text-center text-accent font-medium">
+            🎯 Demo Mode — Explore with sample data. No real messages will be sent.
           </p>
         </div>
       )}
@@ -176,7 +176,7 @@ export default function AppShell({ children }: AppShellProps) {
                   }
                 }}
                 className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-colors active:scale-95 ${
-                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                  isActive ? 'text-accent' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <div className="relative">

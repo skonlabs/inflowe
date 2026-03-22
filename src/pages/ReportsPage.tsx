@@ -170,7 +170,7 @@ export default function ReportsPage() {
               <ScrollReveal delay={0.1}>
                 <div className="glass-card rounded-xl p-5">
                   <div className="flex items-center gap-2 mb-3">
-                    <Calendar className="w-4 h-4 text-primary" />
+                    <Calendar className="w-4 h-4 text-accent" />
                     <h2 className="font-semibold text-sm">
                       Week of {new Date(latestBrief.period_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(latestBrief.period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </h2>
@@ -206,8 +206,8 @@ export default function ReportsPage() {
                     <div className="space-y-3">
                       {(latestBrief.recommended_next_steps as string[]).map((rec, i) => (
                         <div key={i} className="flex items-start gap-3">
-                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                            <span className="text-xs font-bold text-primary">{i + 1}</span>
+                          <div className="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-xs font-bold text-accent">{i + 1}</span>
                           </div>
                           <p className="text-sm">{rec}</p>
                         </div>

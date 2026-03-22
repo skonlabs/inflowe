@@ -41,8 +41,14 @@ export default function ConversationDetailPage() {
   const subject = dbThread?.subject ?? demoThread?.subject ?? '';
   const channel = dbThread?.channel ?? demoThread?.channel ?? 'email';
 
+  const isValidUUID = (val: string | undefined) => !!val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
   const handleSend = async () => {
     if (!reply.trim() || !orgId || !id) return;
+    if (!isValidUUID(id)) {
+      toast.error('This is a demo conversation — replies are not supported.');
+      return;
+    }
     setSending(true);
     try {
       const { error } = await supabase.rpc('create_manual_thread_reply', {
@@ -64,7 +70,7 @@ export default function ConversationDetailPage() {
     return (
       <div className="px-4 py-12 text-center">
         <p className="text-muted-foreground">Thread not found</p>
-        <button onClick={() => navigate('/conversations')} className="text-primary text-sm mt-2">← Back to conversations</button>
+        <button onClick={() => navigate('/conversations')} className="text-accent text-sm mt-2">← Back to conversations</button>
       </div>
     );
   }
@@ -91,7 +97,7 @@ export default function ConversationDetailPage() {
                 <div className="max-w-[85%] space-y-1">
                   <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-line ${
                     msg.direction === 'outbound'
-                      ? 'bg-primary/10 text-foreground rounded-br-md'
+                      ? 'bg-accent/10 text-foreground rounded-br-md'
                       : 'glass-card rounded-bl-md'
                   }`}>
                     {msg.text}
@@ -122,12 +128,12 @@ export default function ConversationDetailPage() {
             value={reply}
             onChange={e => setReply(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow"
           />
           <button
             onClick={handleSend}
             disabled={sending || !reply.trim()}
-            className="p-3 rounded-xl bg-primary text-primary-foreground active:scale-95 transition-transform disabled:opacity-50">
+            className="p-3 rounded-xl bg-accent text-accent-foreground active:scale-95 transition-transform disabled:opacity-50">
             <Send className="w-5 h-5" />
           </button>
         </div>

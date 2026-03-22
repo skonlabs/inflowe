@@ -65,8 +65,8 @@ export default function SupportPage() {
         {chat.length === 0 && (
           <ScrollReveal delay={0.1}>
             <div className="glass-card rounded-xl p-5 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                <HelpCircle className="w-6 h-6 text-primary" />
+              <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-3">
+                <HelpCircle className="w-6 h-6 text-accent" />
               </div>
               <h2 className="font-semibold">How can I help?</h2>
               <p className="text-sm text-muted-foreground mt-1">I can explain any action InFlowe has taken and help you decide what to do next.</p>
@@ -128,9 +128,9 @@ export default function SupportPage() {
             type="text" placeholder="Ask a question..."
             value={question} onChange={e => setQuestion(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAsk()}
-            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow"
           />
-          <button onClick={() => handleAsk()} className="p-3 rounded-xl bg-primary text-primary-foreground active:scale-95 transition-transform">
+          <button onClick={() => handleAsk()} className="p-3 rounded-xl bg-accent text-accent-foreground active:scale-95 transition-transform">
             <Send className="w-5 h-5" />
           </button>
         </div>
@@ -160,7 +160,7 @@ export default function SupportPage() {
                     onChange={e => setCaseDescription(e.target.value)}
                     placeholder="Describe what happened and what you expected..."
                     rows={3}
-                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
                   />
                   <div className="flex gap-2">
                     <button
@@ -179,7 +179,7 @@ export default function SupportPage() {
                           setSubmittingCase(false);
                         }
                       }}
-                      className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                      className="flex-1 py-2.5 rounded-lg bg-accent text-accent-foreground font-medium text-sm active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                     >
                       {submittingCase ? 'Submitting…' : 'Submit case'}
                     </button>
