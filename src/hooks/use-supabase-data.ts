@@ -334,7 +334,8 @@ export function useConversationThreads(orgId: string | undefined) {
         .from('communication_threads')
         .select(`
           *,
-          clients(display_name)
+          clients(display_name),
+          invoices!primary_invoice_id(invoice_number)
         `)
         .eq('organization_id', orgId!)
         .order('latest_message_at', { ascending: false, nullsFirst: false });

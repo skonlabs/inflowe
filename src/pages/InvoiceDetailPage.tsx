@@ -5,6 +5,7 @@ import { ScrollReveal } from '@/components/ScrollReveal';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
 import {
   useUserOrganization,
   useInvoiceDetail,
@@ -47,6 +48,7 @@ export default function InvoiceDetailPage() {
 
   const [showPaymentPlan, setShowPaymentPlan] = useState(false);
   const [planInstallments, setPlanInstallments] = useState(3);
+  const [creatingPlan, setCreatingPlan] = useState(false);
 
   const demoInvoice = demoInvoices.find(i => i.id === id);
   const invoice = dbInvoice ? {
@@ -139,10 +141,52 @@ export default function InvoiceDetailPage() {
     }
   };
 
-  const handleCreatePlan = () => {
-    const perInstallment = Math.round(invoice.remainingBalance / planInstallments);
-    toast.success(`Payment plan created: ${planInstallments} installments of ${formatCurrency(perInstallment)}`);
-    setShowPaymentPlan(false);
+  const handleCreatePlan = async () => {
+    if (!orgId || !invoice) return;
+    setCreatingPlan(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const installments = Array.from({ length: planInstallments }).map((_, i) => {
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + (i + 1) * 30);
+        const amount = i < planInstallments - 1
+          ? Math.floor(invoice.remainingBalance / planInstallments)
+          : invoice.remainingBalance - Math.floor(invoice.remainingBalance / planInstallments) * (planInstallments - 1);
+        return { installment: i + 1, amount, due_date: dueDate.toISOString().split('T')[0], status: 'pending' };
+      });
+
+      const { data: plan, error: planError } = await supabase
+        .from('payment_plans')
+        .insert({
+          organization_id: orgId,
+          client_id: invoice.clientId,
+          invoice_id: invoice.id,
+          total_amount: invoice.remainingBalance,
+          remaining_amount: invoice.remainingBalance,
+          installments,
+          plan_status: 'active',
+          created_by_user_id: user?.id ?? null,
+        })
+        .select('id')
+        .single();
+
+      if (planError) throw planError;
+
+      const { error: invoiceError } = await supabase
+        .from('invoices')
+        .update({ payment_plan_active: true, payment_plan_id: plan.id })
+        .eq('id', invoice.id)
+        .eq('organization_id', orgId);
+
+      if (invoiceError) throw invoiceError;
+
+      toast.success(`Payment plan created: ${planInstallments} installments of ${formatCurrency(Math.floor(invoice.remainingBalance / planInstallments))}`);
+      setShowPaymentPlan(false);
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to create payment plan');
+    } finally {
+      setCreatingPlan(false);
+    }
   };
 
   const isMutating = markPaid.isPending || setHold.isPending || setDispute.isPending;
@@ -298,9 +342,9 @@ export default function InvoiceDetailPage() {
                 })}
               </div>
               <div className="flex gap-2">
-                <button onClick={handleCreatePlan}
-                  className="flex-1 py-3 rounded-xl bg-accent text-accent-foreground font-medium text-sm active:scale-95 transition-transform">
-                  Create plan
+                <button onClick={handleCreatePlan} disabled={creatingPlan}
+                  className="flex-1 py-3 rounded-xl bg-accent text-accent-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-60">
+                  {creatingPlan ? 'Creating…' : 'Create plan'}
                 </button>
                 <button onClick={() => setShowPaymentPlan(false)}
                   className="px-4 py-3 rounded-xl bg-card border border-border font-medium text-sm active:scale-95 transition-transform">

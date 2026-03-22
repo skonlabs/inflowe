@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MessageSquare } from 'lucide-react';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
+import { useUserOrganization, useConversationThreads } from '@/hooks/use-supabase-data';
 
 interface Thread {
   id: string;
@@ -32,12 +33,43 @@ const classificationBadge: Record<string, { label: string; className: string }> 
 
 const filters = ['All', 'Needs input', 'Disputes', 'Auto-handled'];
 
+function formatRelativeTime(isoString: string | null | undefined): string {
+  if (!isoString) return '';
+  const diff = Date.now() - new Date(isoString).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 60) return `${minutes || 1} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} day${days !== 1 ? 's' : ''} ago`;
+  return new Date(isoString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 export default function ConversationsPage() {
   const navigate = useNavigate();
+  const { data: membership } = useUserOrganization();
+  const orgId = membership?.organization_id;
+  const { data: dbThreads = [], isLoading } = useConversationThreads(orgId);
+
   const [activeFilter, setActiveFilter] = useState('All');
   const [search, setSearch] = useState('');
 
-  const filtered = demoThreads.filter(t => {
+  // Map DB threads to UI format, fall back to demo data if DB is empty
+  const threads: Thread[] = dbThreads.length > 0
+    ? dbThreads.map(t => ({
+        id: t.id,
+        clientName: (t.clients as any)?.display_name ?? 'Unknown Client',
+        invoiceNumber: (t.invoices as any)?.invoice_number ?? '',
+        subject: t.subject ?? '',
+        lastMessage: t.subject ?? 'View messages',
+        classification: (t.thread_classification as Thread['classification']) ?? 'auto_handled',
+        channel: (t.channel as Thread['channel']) ?? 'email',
+        latestAt: formatRelativeTime(t.latest_message_at),
+        unread: !!t.latest_reply_at && t.thread_status === 'active',
+      }))
+    : (!isLoading && !orgId ? demoThreads : isLoading ? [] : demoThreads);
+
+  const filtered = threads.filter(t => {
     if (search && !t.clientName.toLowerCase().includes(search.toLowerCase()) && !t.subject.toLowerCase().includes(search.toLowerCase())) return false;
     if (activeFilter === 'Needs input' && t.classification !== 'needs_user_input') return false;
     if (activeFilter === 'Disputes' && t.classification !== 'dispute_related') return false;
@@ -45,14 +77,14 @@ export default function ConversationsPage() {
     return true;
   });
 
-  const needsAttention = demoThreads.filter(t => t.classification === 'needs_user_input' || t.classification === 'dispute_related').length;
+  const needsAttention = threads.filter(t => t.classification === 'needs_user_input' || t.classification === 'dispute_related').length;
 
   return (
     <div className="px-4 py-6 space-y-4">
       <ScrollReveal>
         <h1 className="text-xl font-bold" style={{ lineHeight: '1.1' }}>Conversations</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {needsAttention > 0 ? `${needsAttention} needing your attention` : 'All caught up!'}
+          {isLoading ? 'Loading…' : needsAttention > 0 ? `${needsAttention} needing your attention` : 'All caught up!'}
         </p>
       </ScrollReveal>
 
@@ -77,32 +109,45 @@ export default function ConversationsPage() {
         </div>
       </ScrollReveal>
 
-      <StaggerContainer className="space-y-2">
-        {filtered.map(thread => {
-          const badge = classificationBadge[thread.classification];
-          return (
-            <StaggerItem key={thread.id}>
-              <button
-                onClick={() => navigate(`/conversations/${thread.id}`)}
-                className="glass-card-hover rounded-xl p-4 w-full text-left active:scale-[0.97] transition-transform"
-              >
-                <div className="flex items-start justify-between mb-1">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {thread.unread && <div className="w-2 h-2 rounded-full bg-accent shrink-0 animate-pulse-dot" />}
-                    <span className="font-medium text-sm truncate">{thread.clientName}</span>
-                  </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ml-2 ${badge.className}`}>{badge.label}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">{thread.invoiceNumber} · {thread.channel}</p>
-                <p className="text-sm mt-2 line-clamp-2 text-muted-foreground">{thread.lastMessage}</p>
-                <p className="text-[11px] text-muted-foreground mt-2">{thread.latestAt}</p>
-              </button>
-            </StaggerItem>
-          );
-        })}
-      </StaggerContainer>
+      {isLoading && (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground text-sm">Loading conversations…</p>
+        </div>
+      )}
 
-      {filtered.length === 0 && (
+      {!isLoading && (
+        <StaggerContainer className="space-y-2">
+          {filtered.map(thread => {
+            const badge = classificationBadge[thread.classification] ?? classificationBadge.auto_handled;
+            return (
+              <StaggerItem key={thread.id}>
+                <button
+                  onClick={() => navigate(`/conversations/${thread.id}`)}
+                  className="glass-card-hover rounded-xl p-4 w-full text-left active:scale-[0.97] transition-transform"
+                >
+                  <div className="flex items-start justify-between mb-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {thread.unread && <div className="w-2 h-2 rounded-full bg-accent shrink-0 animate-pulse-dot" />}
+                      <span className="font-medium text-sm truncate">{thread.clientName}</span>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ml-2 ${badge.className}`}>{badge.label}</span>
+                  </div>
+                  {thread.invoiceNumber && (
+                    <p className="text-xs text-muted-foreground">{thread.invoiceNumber} · {thread.channel}</p>
+                  )}
+                  {!thread.invoiceNumber && (
+                    <p className="text-xs text-muted-foreground">{thread.channel}</p>
+                  )}
+                  <p className="text-sm mt-2 line-clamp-2 text-muted-foreground">{thread.lastMessage}</p>
+                  <p className="text-[11px] text-muted-foreground mt-2">{thread.latestAt}</p>
+                </button>
+              </StaggerItem>
+            );
+          })}
+        </StaggerContainer>
+      )}
+
+      {!isLoading && filtered.length === 0 && (
         <div className="text-center py-12">
           <MessageSquare className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
           <p className="text-muted-foreground text-sm">No conversations match your filters</p>
