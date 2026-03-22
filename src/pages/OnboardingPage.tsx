@@ -281,7 +281,7 @@ function StepOrganization({ data, update }: StepProps) {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-sm font-medium block mb-1.5">Country</label>
-            <select value={data.country} onChange={e => update?.('country', e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow">
+            <select value={data.country} onChange={e => update?.('country', e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow">
               <option value="US">United States</option>
               <option value="GB">United Kingdom</option>
               <option value="CA">Canada</option>
@@ -292,7 +292,7 @@ function StepOrganization({ data, update }: StepProps) {
           </div>
           <div>
             <label className="text-sm font-medium block mb-1.5">Currency</label>
-            <select value={data.currency} onChange={e => update?.('currency', e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow">
+            <select value={data.currency} onChange={e => update?.('currency', e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow">
               <option value="USD">USD</option>
               <option value="GBP">GBP</option>
               <option value="EUR">EUR</option>
@@ -303,7 +303,7 @@ function StepOrganization({ data, update }: StepProps) {
         </div>
         <div>
           <label className="text-sm font-medium block mb-1.5">Timezone</label>
-          <select value={data.timezone} onChange={e => update?.('timezone', e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow">
+          <select value={data.timezone} onChange={e => update?.('timezone', e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow">
             <option value="America/New_York">Eastern (ET)</option>
             <option value="America/Chicago">Central (CT)</option>
             <option value="America/Denver">Mountain (MT)</option>
@@ -341,7 +341,7 @@ function StepTone({ data, update }: StepProps) {
               key={t.id}
               onClick={() => update?.('brandTone', t.id)}
               className={`w-full p-4 rounded-xl border text-left transition-all active:scale-[0.98] ${
-                data.brandTone === t.id ? 'border-primary bg-accent ring-2 ring-primary/20' : 'border-border bg-card'
+                data.brandTone === t.id ? 'border-accent bg-accent/10 ring-2 ring-accent/20' : 'border-border bg-card'
               }`}
             >
               <p className="font-medium text-sm">{t.label}</p>
@@ -376,17 +376,17 @@ function StepPath({ data, update }: StepProps) {
               key={p.id}
               onClick={() => update?.('importPath', p.id)}
               className={`w-full p-4 rounded-xl border text-left transition-all active:scale-[0.98] ${
-                data.importPath === p.id ? 'border-primary bg-accent ring-2 ring-primary/20' : 'border-border bg-card'
+                data.importPath === p.id ? 'border-accent bg-accent/10 ring-2 ring-accent/20' : 'border-border bg-card'
               }`}
             >
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Icon className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5 text-accent" />
                 </div>
                 <div>
                   <p className="font-medium text-sm">{p.label}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{p.desc}</p>
-                  <p className="text-xs text-primary mt-1">{p.rec}</p>
+                  <p className="text-xs text-accent mt-1">{p.rec}</p>
                 </div>
               </div>
             </button>
@@ -477,8 +477,8 @@ function StepImport({
             }}
             className={`glass-card rounded-xl p-6 text-center space-y-4 cursor-pointer transition-colors ${isDragging ? 'border-2 border-primary bg-accent/30' : ''}`}
           >
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-              {uploadedFile ? <Check className="w-8 h-8 text-success" /> : <Upload className="w-8 h-8 text-primary" />}
+            <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto">
+              {uploadedFile ? <Check className="w-8 h-8 text-success" /> : <Upload className="w-8 h-8 text-accent" />}
             </div>
             {uploadedFile ? (
               <div>
@@ -523,7 +523,7 @@ function StepImport({
             </div>
           )}
 
-          <button onClick={downloadTemplate} className="text-sm text-primary font-medium underline underline-offset-2">
+          <button onClick={downloadTemplate} className="text-sm text-accent font-medium underline underline-offset-2">
             Download template CSV
           </button>
         </>
@@ -589,7 +589,7 @@ function StepReview({
         </div>
       )}
       <div className="bg-accent/50 rounded-xl p-4 flex items-start gap-2">
-        <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+        <Check className="w-4 h-4 text-accent mt-0.5 shrink-0" />
         <p className="text-sm">Everything looks good. You can always change these in Settings.</p>
       </div>
     </div>
@@ -626,15 +626,15 @@ function StepTrust({ data, update }: StepProps) {
               key={m.id}
               onClick={() => update?.('trustMode', m.id)}
               className={`w-full p-4 rounded-xl border text-left transition-all active:scale-[0.98] relative ${
-                data.trustMode === m.id ? 'border-primary bg-accent ring-2 ring-primary/20' : 'border-border bg-card'
+                data.trustMode === m.id ? 'border-accent bg-accent/10 ring-2 ring-accent/20' : 'border-border bg-card'
               }`}
             >
               {m.recommended && (
                 <span className="absolute -top-2 right-3 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">Recommended</span>
               )}
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Icon className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5 text-accent" />
                 </div>
                 <div>
                   <p className="font-medium text-sm">{m.label}</p>
@@ -686,8 +686,8 @@ function StepActivate({ data }: StepProps) {
   return (
     <div className="space-y-6">
       <div className="text-center pt-4">
-        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-          <Sparkles className="w-8 h-8 text-primary" />
+        <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
+          <Sparkles className="w-8 h-8 text-accent" />
         </div>
         <h2 className="text-2xl font-bold" style={{ lineHeight: '1.1' }}>You're all set!</h2>
         <p className="text-muted-foreground text-sm mt-2 max-w-xs mx-auto">Your default follow-up workflow is ready. Here's what it will do:</p>
@@ -724,7 +724,7 @@ const Field = forwardRef<HTMLInputElement, { label: string; placeholder: string;
           placeholder={placeholder}
           value={value || ''}
           onChange={e => onChange?.(e.target.value)}
-          className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+          className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow"
         />
         {helper && <p className="text-xs text-muted-foreground mt-1">{helper}</p>}
       </div>

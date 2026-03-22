@@ -314,7 +314,7 @@ export default function SettingsPage() {
         {editing && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}>
-            <div className="glass-card rounded-xl p-4 space-y-3 border-2 border-primary/30">
+            <div className="glass-card rounded-xl p-4 space-y-3 border-2 border-accent/30">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">Edit: {editing.itemName}</p>
                 <button onClick={() => setEditing(null)} className="p-1 rounded-full hover:bg-muted active:scale-95">
@@ -324,7 +324,7 @@ export default function SettingsPage() {
               <input
                 value={editing.value}
                 onChange={e => setEditing(prev => prev ? { ...prev, value: e.target.value } : null)}
-                className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
                 autoFocus
                 onKeyDown={e => e.key === 'Enter' && saveEdit()}
               />
@@ -361,8 +361,8 @@ export default function SettingsPage() {
         <button onClick={() => navigate('/admin')}
           className="w-full glass-card-hover rounded-xl p-4 flex items-center gap-3 active:scale-[0.98] transition-transform"
         >
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-primary" />
+          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+            <Shield className="w-5 h-5 text-accent" />
           </div>
           <div className="text-left flex-1">
             <p className="font-medium text-sm">Admin Console</p>
@@ -390,7 +390,7 @@ export default function SettingsPage() {
                   <span>{item.name}</span>
                   <div className="flex items-center gap-2">
                     {displayVal && (
-                      <span className={`text-xs ${item.highlight ? 'text-primary font-medium' : 'text-muted-foreground'}`}>{displayVal}</span>
+                      <span className={`text-xs ${item.highlight ? 'text-accent font-medium' : 'text-muted-foreground'}`}>{displayVal}</span>
                     )}
                     {item.editable && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                   </div>
@@ -432,7 +432,7 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-2 shrink-0 ml-3">
                     {isActive ? (
                       <>
-                        <span className="text-xs text-primary font-medium">● Active</span>
+                        <span className="text-xs text-accent font-medium">● Active</span>
                         <button
                           onClick={() => handleDeactivateModule(mod.id, mod.name)}
                           disabled={togglingModule === mod.id}
@@ -456,7 +456,7 @@ export default function SettingsPage() {
                       <button
                         onClick={() => handleStartTrial(mod.id)}
                         disabled={togglingModule === mod.id}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors active:scale-95 disabled:opacity-50"
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent hover:bg-accent/20 transition-colors active:scale-95 disabled:opacity-50"
                       >
                         {togglingModule === mod.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
                         Start trial
@@ -497,7 +497,7 @@ export default function SettingsPage() {
                         <p className="text-sm font-medium">{providerInfo?.name || integration.provider}</p>
                         <p className="text-xs text-muted-foreground">
                           {integration.connection_status === 'connected' ? (
-                            <span className="text-primary">● Connected</span>
+                            <span className="text-accent">● Connected</span>
                           ) : (
                             <span className="text-warning">● {integration.connection_status}</span>
                           )}
@@ -512,7 +512,7 @@ export default function SettingsPage() {
                         <button
                           onClick={() => handleSyncNow(integration.id, providerInfo?.name || integration.provider)}
                           disabled={syncingId === integration.id}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors active:scale-95 disabled:opacity-50"
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-accent/10 hover:text-accent hover:border-accent/30 transition-colors active:scale-95 disabled:opacity-50"
                         >
                           {syncingId === integration.id ? (
                             <Loader2 className="w-3 h-3 animate-spin" />
@@ -553,7 +553,7 @@ export default function SettingsPage() {
                       <p className="text-xs text-muted-foreground">{provider.description}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-primary font-medium shrink-0">
+                  <div className="flex items-center gap-1 text-xs text-accent font-medium shrink-0">
                     <Plug className="w-3.5 h-3.5" /> Connect
                   </div>
                 </button>
@@ -591,7 +591,7 @@ export default function SettingsPage() {
                   <div className="space-y-3">
                     <div className="rounded-xl bg-muted/40 p-4 space-y-2">
                       <p className="text-sm font-medium flex items-center gap-2">
-                        <ExternalLink className="w-4 h-4 text-primary" /> OAuth Authorization
+                        <ExternalLink className="w-4 h-4 text-accent" /> OAuth Authorization
                       </p>
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         Clicking "Connect" will register {connectingProvider.name} as a pending integration. 
@@ -603,7 +603,7 @@ export default function SettingsPage() {
                   <div className="space-y-3">
                     <div className="rounded-xl bg-muted/40 p-4 space-y-2">
                       <p className="text-sm font-medium flex items-center gap-2">
-                        <Key className="w-4 h-4 text-primary" /> API Key
+                        <Key className="w-4 h-4 text-accent" /> API Key
                       </p>
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         Enter your {connectingProvider.name} API key. Find it in your {connectingProvider.name} dashboard under Developer settings.
@@ -614,7 +614,7 @@ export default function SettingsPage() {
                       value={apiKeyInput}
                       onChange={e => setApiKeyInput(e.target.value)}
                       placeholder={`sk_live_...`}
-                      className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/30"
                       autoFocus
                     />
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
@@ -666,7 +666,7 @@ export default function SettingsPage() {
             );
           })}
           <button onClick={() => setShowInvite(!showInvite)}
-            className="w-full text-left px-4 py-3 border-t border-border/40 text-sm hover:bg-muted/30 transition-colors active:scale-[0.99] text-primary font-medium">
+            className="w-full text-left px-4 py-3 border-t border-border/40 text-sm hover:bg-muted/30 transition-colors active:scale-[0.99] text-accent font-medium">
             + Invite team member
           </button>
           <AnimatePresence>
@@ -676,10 +676,10 @@ export default function SettingsPage() {
                 <div className="px-4 py-4 border-t border-border/40 space-y-3">
                   <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
                     placeholder="colleague@company.com" type="email"
-                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
                     autoFocus />
                   <select value={inviteRole} onChange={e => setInviteRole(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
                     <option value="member">Member</option>
                     <option value="admin">Admin</option>
                     <option value="viewer">Viewer</option>

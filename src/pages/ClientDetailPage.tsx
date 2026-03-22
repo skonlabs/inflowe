@@ -104,7 +104,7 @@ export default function ClientDetailPage() {
     return (
       <div className="px-4 py-12 text-center">
         <p className="text-muted-foreground">Client not found</p>
-        <button onClick={() => navigate('/clients')} className="text-primary text-sm mt-2">← Back to clients</button>
+        <button onClick={() => navigate('/clients')} className="text-accent text-sm mt-2">← Back to clients</button>
       </div>
     );
   }
@@ -160,8 +160,8 @@ export default function ClientDetailPage() {
       <ScrollReveal>
         <div className="glass-card rounded-xl p-5">
           <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="text-primary font-bold text-lg">{client.displayName.split(' ').map(w => w[0]).join('').slice(0, 2)}</span>
+            <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+              <span className="text-accent font-bold text-lg">{client.displayName.split(' ').map(w => w[0]).join('').slice(0, 2)}</span>
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-bold truncate">{client.displayName}</h1>
@@ -217,12 +217,12 @@ export default function ClientDetailPage() {
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Display name</label>
                 <input value={editForm.displayName} onChange={e => setEditForm(f => ({ ...f, displayName: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Sensitivity level</label>
                 <select value={editForm.sensitivityLevel} onChange={e => setEditForm(f => ({ ...f, sensitivityLevel: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
                   <option value="standard">Standard</option>
                   <option value="sensitive">Sensitive</option>
                   <option value="vip">VIP</option>
@@ -232,7 +232,7 @@ export default function ClientDetailPage() {
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Preferred channel</label>
                 <select value={editForm.preferredChannel} onChange={e => setEditForm(f => ({ ...f, preferredChannel: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
                   <option value="email">Email</option>
                   <option value="whatsapp">WhatsApp</option>
                 </select>
@@ -241,7 +241,7 @@ export default function ClientDetailPage() {
                 <label className="text-xs text-muted-foreground block mb-1">Notes</label>
                 <textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
                   placeholder="Add internal notes..."
-                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-accent/30" />
               </div>
               <div className="flex gap-2">
                 <button onClick={handleSaveEdit} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-accent text-accent-foreground font-medium text-sm active:scale-95 transition-transform">

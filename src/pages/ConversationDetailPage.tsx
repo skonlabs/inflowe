@@ -64,7 +64,7 @@ export default function ConversationDetailPage() {
     return (
       <div className="px-4 py-12 text-center">
         <p className="text-muted-foreground">Thread not found</p>
-        <button onClick={() => navigate('/conversations')} className="text-primary text-sm mt-2">← Back to conversations</button>
+        <button onClick={() => navigate('/conversations')} className="text-accent text-sm mt-2">← Back to conversations</button>
       </div>
     );
   }
@@ -91,7 +91,7 @@ export default function ConversationDetailPage() {
                 <div className="max-w-[85%] space-y-1">
                   <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-line ${
                     msg.direction === 'outbound'
-                      ? 'bg-primary/10 text-foreground rounded-br-md'
+                      ? 'bg-accent/10 text-foreground rounded-br-md'
                       : 'glass-card rounded-bl-md'
                   }`}>
                     {msg.text}
@@ -122,7 +122,7 @@ export default function ConversationDetailPage() {
             value={reply}
             onChange={e => setReply(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow"
           />
           <button
             onClick={handleSend}

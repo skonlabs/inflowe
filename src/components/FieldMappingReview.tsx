@@ -210,7 +210,7 @@ export default function FieldMappingReview({
         <p className="text-sm text-muted-foreground mt-1">
           We found {headers.length} columns — {mappedCount} mapped so far.
           {hasSavedTemplate && (
-            <span className="ml-1 text-primary font-medium">Saved template applied.</span>
+            <span className="ml-1 text-accent font-medium">Saved template applied.</span>
           )}
         </p>
       </motion.div>
@@ -230,7 +230,7 @@ export default function FieldMappingReview({
           variants={fadeUp}
           onClick={askAI}
           disabled={aiLoading}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-medium hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60 active:scale-[0.98] transition-all"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-accent/30 bg-accent/5 text-accent text-sm font-medium hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60 active:scale-[0.98] transition-all"
         >
           {aiLoading ? (
             <><Loader2 className="w-4 h-4 animate-spin" /> Asking AI…</>
@@ -326,8 +326,8 @@ export default function FieldMappingReview({
                   )}
                   {aiReasonings[p.sourceColumn] && (
                     <div className="flex items-start gap-1 mt-1.5">
-                      <Sparkles className="w-3 h-3 text-primary shrink-0 mt-0.5" />
-                      <p className="text-xs text-primary/80">{aiReasonings[p.sourceColumn]}</p>
+                      <Sparkles className="w-3 h-3 text-accent shrink-0 mt-0.5" />
+                      <p className="text-xs text-accent/80">{aiReasonings[p.sourceColumn]}</p>
                     </div>
                   )}
                 </div>
@@ -379,7 +379,7 @@ export default function FieldMappingReview({
         <motion.button
           variants={fadeUp}
           onClick={() => setShowPreview(v => !v)}
-          className="flex items-center gap-2 text-sm text-primary font-medium hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg px-2 py-1 -mx-2 active:scale-[0.97] transition-all"
+          className="flex items-center gap-2 text-sm text-accent font-medium hover:text-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg px-2 py-1 -mx-2 active:scale-[0.97] transition-all"
         >
           {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           {showPreview ? 'Hide preview' : `Preview mapped data (first 3 rows)`}
@@ -409,7 +409,7 @@ export default function FieldMappingReview({
         <button
           disabled={!canProceed}
           onClick={() => onConfirm(buildConfirmedMapping())}
-          className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none active:scale-[0.97] transition-all"
+          className="flex-1 py-3 rounded-xl bg-accent text-accent-foreground text-sm font-semibold shadow-sm hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none active:scale-[0.97] transition-all"
         >
           {canProceed
             ? `Confirm and import ${mappedCount} fields`

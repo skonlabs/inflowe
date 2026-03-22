@@ -100,7 +100,7 @@ export default function AdminPage() {
 
       <ScrollReveal>
         <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-primary" />
+          <Shield className="w-5 h-5 text-accent" />
           <h1 className="text-xl font-bold" style={{ lineHeight: '1.1' }}>Admin Console</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1">Internal operations and tenant management</p>

@@ -196,11 +196,11 @@ export default function ApprovalsPage() {
                               <Edit3 className="w-3 h-3" /> {isEditing ? 'Editing message' : 'Message preview'}
                             </p>
                             {!isEditing ? (
-                              <button onClick={() => startEditing(approval.id, displayText)} className="text-xs text-primary font-medium flex items-center gap-1 active:scale-95">
+                              <button onClick={() => startEditing(approval.id, displayText)} className="text-xs text-accent font-medium flex items-center gap-1 active:scale-95">
                                 <Edit3 className="w-3 h-3" /> Edit
                               </button>
                             ) : (
-                              <button onClick={() => saveEdit(approval)} className="text-xs text-primary font-medium flex items-center gap-1 active:scale-95">
+                              <button onClick={() => saveEdit(approval)} className="text-xs text-accent font-medium flex items-center gap-1 active:scale-95">
                                 <Save className="w-3 h-3" /> Save
                               </button>
                             )}
@@ -209,7 +209,7 @@ export default function ApprovalsPage() {
                             <textarea
                               value={editedMessages[approval.id] || ''}
                               onChange={e => setEditedMessages(prev => ({ ...prev, [approval.id]: e.target.value }))}
-                              className="w-full text-sm leading-relaxed bg-card border border-border rounded-lg p-3 min-h-[160px] resize-y focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+                              className="w-full text-sm leading-relaxed bg-card border border-border rounded-lg p-3 min-h-[160px] resize-y focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow"
                             />
                           ) : (
                             <p className="text-sm whitespace-pre-line leading-relaxed">{displayText}</p>

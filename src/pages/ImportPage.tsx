@@ -66,7 +66,7 @@ const scaleIn = {
 
 const STATUS_ICON: Record<string, { icon: React.FC<{ className?: string }>; color: string; label: string }> = {
   pending:    { icon: Clock,         color: 'text-muted-foreground', label: 'Pending' },
-  processing: { icon: RotateCcw,     color: 'text-primary',          label: 'Processing' },
+  processing: { icon: RotateCcw,     color: 'text-accent',          label: 'Processing' },
   staged:     { icon: Clock,         color: 'text-warning',          label: 'Awaiting commit' },
   completed:  { icon: CheckCircle2,  color: 'text-success',          label: 'Completed' },
   partial:    { icon: AlertTriangle, color: 'text-warning',          label: 'Partial' },
@@ -296,8 +296,8 @@ export default function ImportPage() {
           <span className="text-sm font-medium truncate">{parsed.file.name}</span>
         </motion.div>
         {matchedTemplate && (
-          <motion.div variants={fadeUp} className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm flex items-center gap-2">
-            <BookTemplate className="w-4 h-4 text-primary shrink-0" />
+          <motion.div variants={fadeUp} className="rounded-xl border border-accent/30 bg-accent/5 p-3 text-sm flex items-center gap-2">
+            <BookTemplate className="w-4 h-4 text-accent shrink-0" />
             <span>Saved template <strong>{matchedTemplate.templateName}</strong> applied. Review and confirm.</span>
           </motion.div>
         )}
@@ -327,8 +327,8 @@ export default function ImportPage() {
                 className="w-full max-w-md bg-card rounded-2xl p-6 space-y-4 shadow-xl border border-border"
               >
                 <div className="w-10 h-1 rounded-full bg-border mx-auto sm:hidden" />
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-                  <BookTemplate className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto">
+                  <BookTemplate className="w-6 h-6 text-accent" />
                 </div>
                 <div className="text-center">
                   <h3 className="font-semibold text-lg">Save this mapping?</h3>
@@ -377,8 +377,8 @@ export default function ImportPage() {
         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
         className="p-8 flex flex-col items-center justify-center gap-4 min-h-[40vh]"
       >
-        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-accent animate-spin" />
         </div>
         <div className="text-center">
           <p className="text-base font-semibold">Analysing your file…</p>
@@ -568,14 +568,14 @@ export default function ImportPage() {
               }}
               className={`group rounded-xl border-2 border-dashed p-10 text-center cursor-pointer transition-all active:scale-[0.99] ${
                 isDragging
-                  ? 'border-primary bg-primary/5 shadow-md'
+                  ? 'border-accent bg-accent/5 shadow-md'
                   : 'border-border bg-card hover:border-primary/40 hover:shadow-md hover:bg-muted/30'
               }`}
             >
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors ${
-                isDragging ? 'bg-primary/10' : 'bg-muted group-hover:bg-primary/10'
+                isDragging ? 'bg-accent/10' : 'bg-muted group-hover:bg-accent/10'
               }`}>
-                <FileSpreadsheet className={`w-7 h-7 transition-colors ${isDragging ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
+                <FileSpreadsheet className={`w-7 h-7 transition-colors ${isDragging ? 'text-accent' : 'text-muted-foreground group-hover:text-accent'}`} />
               </div>
               <p className="font-medium">Drag & drop your file</p>
               <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
@@ -586,7 +586,7 @@ export default function ImportPage() {
 
             {/* Excel multi-sheet selector */}
             {excelSheets.length > 1 && pendingExcelFile && (
-              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+              <div className="rounded-xl border border-accent/30 bg-accent/5 p-4 space-y-3">
                 <p className="text-sm font-medium">This workbook has multiple sheets. Which one contains your invoices?</p>
                 <div className="space-y-2">
                   {excelSheets.map(s => (
@@ -931,7 +931,7 @@ function ExceptionCard({
           >
             {exception.suggested_remediation && (
               <p className="text-muted-foreground">
-                <Sparkles className="w-3 h-3 inline mr-1 text-primary" />
+                <Sparkles className="w-3 h-3 inline mr-1 text-accent" />
                 <strong>Suggestion:</strong> {exception.suggested_remediation}
               </p>
             )}
@@ -1005,7 +1005,7 @@ function ExceptionCard({
           {exception.can_fix_in_ui && (
             <button
               onClick={() => setMode('fix')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-medium hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-accent/10 border border-accent/20 text-accent text-xs font-medium hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] transition-all"
             >
               <Wrench className="w-3.5 h-3.5" /> Fix this row
             </button>
