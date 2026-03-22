@@ -261,7 +261,7 @@ export function useClientDetail(clientId: string | undefined, orgId: string | un
 export function useClientInvoices(clientId: string | undefined, orgId: string | undefined) {
   return useQuery({
     queryKey: ['client-invoices', clientId],
-    enabled: !!clientId && !!orgId,
+    enabled: isUUID(clientId) && !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('invoices')
