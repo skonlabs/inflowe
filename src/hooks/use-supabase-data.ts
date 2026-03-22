@@ -571,26 +571,12 @@ export function useTeamMembers(orgId: string | undefined) {
 
 // ─── Mutations ────────────────────────────────────────────────────────────────
 
-function getInvoiceStateForDate(dueDate: string, remainingBalance: number) {
-  if (remainingBalance <= 0) return 'paid';
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(dueDate);
-  due.setHours(0, 0, 0, 0);
-  const diffDays = Math.ceil((due.getTime() - today.getTime()) / 86400000);
-
-  if (diffDays < 0) return 'overdue';
-  if (diffDays === 0) return 'due_today';
-  if (diffDays <= 7) return 'due_soon';
-  return 'sent';
-}
-
 export function useRefreshReadModels() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (orgId: string) => {
-      return orgId;
+      const { error } = await supabase.rpc('refresh_org_read_models', { _org_id: orgId });
+      if (error) throw error;
     },
     onSuccess: (_, orgId) => {
       qc.invalidateQueries({ queryKey: ['home-summary', orgId] });
@@ -692,15 +678,21 @@ export function useUpdateOrgFields() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ orgId, fields }: { orgId: string; fields: Record<string, string> }) => {
-      const { error } = await supabase
-        .from('organizations')
-        .update(fields)
-        .eq('id', orgId);
+      const { error } = await supabase.rpc('update_org_fields', {
+        _org_id: orgId,
+        _display_name: fields.display_name ?? null,
+        _timezone: fields.timezone ?? null,
+        _default_currency: fields.default_currency ?? null,
+        _sender_email: fields.sender_email ?? null,
+        _sender_display_name: fields.sender_display_name ?? null,
+        _reply_to_address: fields.reply_to_address ?? null,
+        _brand_tone: fields.brand_tone ?? null,
+        _custom_tone_instructions: fields.custom_tone_instructions ?? null,
+      });
       if (error) throw error;
     },
     onSuccess: (_, { orgId }) => {
       qc.invalidateQueries({ queryKey: ['user-organization'] });
-      qc.invalidateQueries({ queryKey: ['org-settings', orgId] });
     },
   });
 }
@@ -730,28 +722,18 @@ export function useCreateInvoice() {
       orgId: string; clientId: string; invoiceNumber: string; amount: number;
       currency?: string; dueDate?: string; issueDate?: string; notes?: string;
     }) => {
-      const resolvedIssueDate = issueDate ?? new Date().toISOString().split('T')[0];
-      const resolvedDueDate = dueDate ?? new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
-      const { data, error } = await supabase
-        .from('invoices')
-        .insert({
-          organization_id: orgId,
-          client_id: clientId,
-          invoice_number: invoiceNumber,
-          amount,
-          amount_paid: 0,
-          remaining_balance: amount,
-          currency: currency ?? 'USD',
-          due_date: resolvedDueDate,
-          issue_date: resolvedIssueDate,
-          state: getInvoiceStateForDate(resolvedDueDate, amount),
-          collection_priority: 'medium',
-          dispute_reason: notes ?? null,
-        })
-        .select('id')
-        .single();
+      const { data, error } = await supabase.rpc('create_invoice_manual', {
+        _org_id: orgId,
+        _client_id: clientId,
+        _invoice_number: invoiceNumber,
+        _amount: amount,
+        _currency: currency ?? 'USD',
+        _due_date: dueDate ?? null,
+        _issue_date: issueDate ?? null,
+        _notes: notes ?? null,
+      });
       if (error) throw error;
-      return data.id;
+      return data as string;
     },
     onSuccess: (_, { orgId }) => {
       qc.invalidateQueries({ queryKey: ['invoice-list', orgId] });
@@ -767,35 +749,19 @@ export function useCreateClient() {
       orgId: string; displayName: string; legalName?: string; sensitivityLevel?: string;
       preferredChannel?: string; contactName?: string; contactEmail?: string; contactPhone?: string; notes?: string;
     }) => {
-      const { data, error } = await supabase
-        .from('clients')
-        .insert({
-          organization_id: orgId,
-          display_name: displayName,
-          legal_name: legalName ?? null,
-          sensitivity_level: sensitivityLevel ?? 'standard',
-          preferred_channel: preferredChannel ?? 'email',
-          notes: notes ?? null,
-        })
-        .select('id')
-        .single();
+      const { data, error } = await supabase.rpc('create_client_manual', {
+        _org_id: orgId,
+        _display_name: displayName,
+        _legal_name: legalName ?? null,
+        _sensitivity_level: sensitivityLevel ?? 'standard',
+        _preferred_channel: preferredChannel ?? 'email',
+        _contact_full_name: contactName ?? null,
+        _contact_email: contactEmail ?? null,
+        _contact_phone: contactPhone ?? null,
+        _notes: notes ?? null,
+      });
       if (error) throw error;
-
-      if (contactName || contactEmail || contactPhone) {
-        const { error: contactError } = await supabase
-          .from('client_contacts')
-          .insert({
-            organization_id: orgId,
-            client_id: data.id,
-            full_name: contactName || contactEmail || displayName,
-            email: contactEmail ?? null,
-            phone: contactPhone ?? null,
-            is_primary: true,
-          });
-        if (contactError) throw contactError;
-      }
-
-      return data.id;
+      return data as string;
     },
     onSuccess: (_, { orgId }) => {
       qc.invalidateQueries({ queryKey: ['client-summaries', orgId] });
@@ -827,141 +793,316 @@ export function useUpdateClient() {
   });
 }
 
-export function useProcessCsvImport() {
+// ─── Ingestion Pipeline ──────────────────────────────────────────────────────
+
+export function useImportBatches(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ['import-batches', orgId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_import_batches', { _org_id: orgId! });
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        import_type: string;
+        original_filename: string | null;
+        status: string;
+        total_rows: number;
+        successful_rows: number;
+        failed_rows: number;
+        duplicate_rows: number;
+        created_at: string;
+        open_exceptions: number;
+      }>;
+    },
+  });
+}
+
+export function useImportCandidates(orgId: string | undefined, batchId: string | undefined) {
+  return useQuery({
+    queryKey: ['import-candidates', batchId],
+    enabled: !!orgId && !!batchId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_import_candidates', {
+        _org_id: orgId!,
+        _batch_id: batchId!,
+      });
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        invoice_number: string | null;
+        client_name: string | null;
+        billing_contact_email: string | null;
+        due_date: string | null;
+        total_amount: number | null;
+        currency: string | null;
+        mapping_confidence: string;
+        validation_status: string;
+        validation_messages: Array<{ severity: string; field: string; msg: string }>;
+        commit_status: string;
+      }>;
+    },
+  });
+}
+
+export function useImportExceptions(orgId: string | undefined, batchId?: string) {
+  return useQuery({
+    queryKey: ['import-exceptions', orgId, batchId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_import_exceptions', {
+        _org_id: orgId!,
+        _batch_id: batchId ?? null,
+      });
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        import_batch_id: string;
+        exception_type: string;
+        severity: string;
+        field_name: string | null;
+        reason: string;
+        suggested_remediation: string | null;
+        can_fix_in_ui: boolean;
+        status: string;
+        raw_values: Record<string, string> | null;
+        candidate_snapshot: Record<string, unknown> | null;
+        created_at: string;
+      }>;
+    },
+  });
+}
+
+export function useMappingTemplates(orgId: string | undefined, sourceType = 'csv') {
+  return useQuery({
+    queryKey: ['mapping-templates', orgId, sourceType],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_mapping_templates', {
+        _org_id: orgId!,
+        _source_type: sourceType,
+      });
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        template_name: string;
+        header_signature: string;
+        column_mappings: Array<{ sourceCol: string; canonicalField: string }>;
+        date_format_hint: string | null;
+        default_currency: string | null;
+        ignored_columns: string[];
+        times_used: number;
+        last_used_at: string | null;
+      }>;
+    },
+  });
+}
+
+export function useStageImport() {
   const qc = useQueryClient();
-  const { user } = useAuth();
   return useMutation({
-    mutationFn: async ({ orgId, importBatchId, rows }: {
+    mutationFn: async ({
+      orgId,
+      importBatchId,
+      rows,
+      columnMapping,
+      dateFormatHint,
+      defaultCurrency,
+    }: {
       orgId: string;
       importBatchId: string;
       rows: Array<Record<string, string>>;
+      columnMapping: Record<string, string>;
+      dateFormatHint?: string | null;
+      defaultCurrency?: string;
     }) => {
-      if (!user) throw new Error('Not authenticated');
-
-      await supabase.from('import_batches').insert({
-        id: importBatchId,
-        organization_id: orgId,
-        created_by_user_id: user.id,
-        import_type: 'csv',
-        status: 'processing',
-        total_rows: rows.length,
-        successful_rows: 0,
-        failed_rows: 0,
-        duplicate_rows: 0,
-        validation_errors: [],
+      const { data, error } = await supabase.rpc('stage_csv_import', {
+        _org_id: orgId,
+        _import_batch_id: importBatchId,
+        _rows: rows,
+        _column_mapping: columnMapping,
+        _date_format_hint: dateFormatHint ?? null,
+        _default_currency: defaultCurrency ?? 'USD',
       });
+      if (error) throw error;
+      return data as { staged: number; excepted: number; skipped: number; errors: unknown[] };
+    },
+    onSuccess: (_, { orgId, importBatchId }) => {
+      qc.invalidateQueries({ queryKey: ['import-batches', orgId] });
+      qc.invalidateQueries({ queryKey: ['import-candidates', importBatchId] });
+      qc.invalidateQueries({ queryKey: ['import-exceptions', orgId] });
+    },
+  });
+}
 
-      const clientIds = new Map<string, string>();
-      const errors: string[] = [];
-      let successful = 0;
-      let failed = 0;
-
-      for (const row of rows) {
-        try {
-          const clientKey = `${row.client_name || row.client || 'Unknown'}::${row.contact_email || ''}`.toLowerCase();
-          let clientId = clientIds.get(clientKey);
-
-          if (!clientId) {
-            const { data: client, error: clientError } = await supabase
-              .from('clients')
-              .insert({
-                organization_id: orgId,
-                display_name: row.client_name || row.client || 'Unknown Client',
-                preferred_channel: 'email',
-                sensitivity_level: 'standard',
-              })
-              .select('id')
-              .single();
-
-            if (clientError) throw clientError;
-            clientId = client.id;
-            clientIds.set(clientKey, clientId);
-
-            if (row.contact_email || row.contact_name) {
-              const { error: contactError } = await supabase.from('client_contacts').insert({
-                organization_id: orgId,
-                client_id: clientId,
-                full_name: row.contact_name || row.client_name || 'Billing Contact',
-                email: row.contact_email ?? null,
-                is_primary: true,
-              });
-              if (contactError) throw contactError;
-            }
-          }
-
-          const parsedAmount = Number(row.amount ?? 0);
-          const resolvedDueDate = row.due_date || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
-          const resolvedIssueDate = row.issue_date || new Date().toISOString().split('T')[0];
-
-          const { error: invoiceError } = await supabase.from('invoices').insert({
-            organization_id: orgId,
-            client_id: clientId,
-            invoice_number: row.invoice_number || `INV-${Math.random().toString().slice(2, 8)}`,
-            amount: parsedAmount,
-            amount_paid: 0,
-            remaining_balance: parsedAmount,
-            currency: row.currency || 'USD',
-            due_date: resolvedDueDate,
-            issue_date: resolvedIssueDate,
-            state: getInvoiceStateForDate(resolvedDueDate, parsedAmount),
-            collection_priority: 'medium',
-            import_batch_id: importBatchId,
-          });
-
-          if (invoiceError) throw invoiceError;
-          successful += 1;
-        } catch (error: any) {
-          failed += 1;
-          errors.push(error?.message ?? 'Unknown import error');
-        }
-      }
-
-      await supabase
-        .from('import_batches')
-        .update({
-          status: failed > 0 ? 'completed_with_errors' : 'completed',
-          successful_rows: successful,
-          failed_rows: failed,
-          duplicate_rows: 0,
-          validation_errors: errors,
-        })
-        .eq('id', importBatchId);
-
-      return { successful, failed, duplicates: 0, errors };
+export function useCommitImport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ orgId, importBatchId }: { orgId: string; importBatchId: string }) => {
+      const { data, error } = await supabase.rpc('commit_staged_import', {
+        _org_id: orgId,
+        _import_batch_id: importBatchId,
+      });
+      if (error) throw error;
+      return data as { committed: number; skipped: number; conflicts: number };
     },
     onSuccess: (_, { orgId }) => {
       qc.invalidateQueries({ queryKey: ['invoice-list', orgId] });
       qc.invalidateQueries({ queryKey: ['client-summaries', orgId] });
       qc.invalidateQueries({ queryKey: ['home-summary', orgId] });
+      qc.invalidateQueries({ queryKey: ['import-batches', orgId] });
+    },
+  });
+}
+
+export function useResolveException() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      orgId,
+      exceptionId,
+      action,
+      fixedValues,
+    }: {
+      orgId: string;
+      exceptionId: string;
+      action: 'fixed' | 'ignored' | 'skipped';
+      fixedValues?: Record<string, string>;
+    }) => {
+      const { data, error } = await supabase.rpc('resolve_import_exception', {
+        _org_id: orgId,
+        _exception_id: exceptionId,
+        _action: action,
+        _fixed_values: fixedValues ?? null,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, { orgId }) => {
+      qc.invalidateQueries({ queryKey: ['import-exceptions', orgId] });
+      qc.invalidateQueries({ queryKey: ['import-batches', orgId] });
+    },
+  });
+}
+
+export function useSaveMappingTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      orgId,
+      sourceType,
+      templateName,
+      headerSignature,
+      columnMappings,
+      dateFormatHint,
+      defaultCurrency,
+      ignoredColumns,
+    }: {
+      orgId: string;
+      sourceType: string;
+      templateName: string;
+      headerSignature: string;
+      columnMappings: Array<{ sourceCol: string; canonicalField: string }>;
+      dateFormatHint?: string | null;
+      defaultCurrency?: string | null;
+      ignoredColumns?: string[];
+    }) => {
+      const { data, error } = await supabase.rpc('save_mapping_template', {
+        _org_id: orgId,
+        _source_type: sourceType,
+        _template_name: templateName,
+        _header_signature: headerSignature,
+        _column_mappings: columnMappings,
+        _date_format_hint: dateFormatHint ?? null,
+        _default_currency: defaultCurrency ?? null,
+        _ignored_columns: ignoredColumns ?? [],
+      });
+      if (error) throw error;
+      return data as string;
+    },
+    onSuccess: (_, { orgId, sourceType }) => {
+      qc.invalidateQueries({ queryKey: ['mapping-templates', orgId, sourceType] });
+    },
+  });
+}
+
+// ─── Integration sync ────────────────────────────────────────────────────────
+
+export function useTriggerSync() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      orgId,
+      integrationId,
+      syncType = 'manual',
+    }: {
+      orgId: string;
+      integrationId: string;
+      syncType?: string;
+    }) => {
+      const { data: syncRunId, error } = await supabase.rpc('trigger_integration_sync', {
+        _org_id: orgId,
+        _integration_id: integrationId,
+        _sync_type: syncType,
+      });
+      if (error) throw error;
+      // Invoke the edge function client-side
+      const { error: fnError } = await supabase.functions.invoke('sync-integration', {
+        body: { sync_run_id: syncRunId, integration_id: integrationId, organization_id: orgId },
+      });
+      if (fnError) throw fnError;
+      return syncRunId as string;
+    },
+    onSuccess: (_, { orgId }) => {
+      qc.invalidateQueries({ queryKey: ['sync-runs', orgId] });
+      qc.invalidateQueries({ queryKey: ['integrations', orgId] });
+    },
+  });
+}
+
+export function useGetSyncRuns(orgId: string | undefined, integrationId?: string) {
+  return useQuery({
+    queryKey: ['sync-runs', orgId, integrationId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_sync_runs', {
+        _org_id: orgId!,
+        _integration_id: integrationId ?? null,
+      });
+      if (error) throw error;
+      return data as Array<{
+        id: string;
+        integration_id: string;
+        provider: string;
+        sync_type: string;
+        status: string;
+        records_processed: number | null;
+        records_created: number | null;
+        records_updated: number | null;
+        records_failed: number | null;
+        error_summary: unknown;
+        started_at: string;
+        completed_at: string | null;
+      }>;
     },
   });
 }
 
 export function useSubmitSupportCase() {
   const qc = useQueryClient();
-  const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ orgId, description, caseType, entityType, entityId }: {
       orgId: string; description: string; caseType?: string; entityType?: string; entityId?: string;
     }) => {
-      if (!user) throw new Error('Not authenticated');
-
-      const { data, error } = await supabase
-        .from('support_cases')
-        .insert({
-          organization_id: orgId,
-          created_by_user_id: user.id,
-          case_type: caseType ?? null,
-          description,
-          auto_attached_context: {
-            entity_type: entityType ?? null,
-            entity_id: entityId ?? null,
-          },
-        })
-        .select('id')
-        .single();
+      const { data, error } = await supabase.rpc('submit_support_case', {
+        _org_id: orgId,
+        _description: description,
+        _case_type: caseType ?? null,
+        _entity_type: entityType ?? null,
+        _entity_id: entityId ?? null,
+      });
       if (error) throw error;
-      return data.id;
+      return data as string;
     },
     onSuccess: (_, { orgId }) => {
       qc.invalidateQueries({ queryKey: ['support-cases', orgId] });

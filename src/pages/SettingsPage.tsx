@@ -14,6 +14,7 @@ import {
   useTeamMembers,
   useUpdateOrgFields,
   useInviteMember,
+  useTriggerSync,
 } from '@/hooks/use-supabase-data';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -66,6 +67,8 @@ export default function SettingsPage() {
   const [submittingIntegration, setSubmittingIntegration] = useState(false);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [togglingModule, setTogglingModule] = useState<string | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const triggerSync = useTriggerSync();
 
   const handleEmergencyStop = () => {
     if (!emergencyStop) {
@@ -190,6 +193,19 @@ export default function SettingsPage() {
       toast.error(err.message || 'Failed to disconnect');
     } finally {
       setDisconnectingId(null);
+    }
+  };
+
+  const handleSyncNow = async (integrationId: string, providerName: string) => {
+    if (!orgId) return;
+    setSyncingId(integrationId);
+    try {
+      await triggerSync.mutateAsync({ orgId, integrationId });
+      toast.success(`${providerName} sync completed`);
+    } catch (err: any) {
+      toast.error(err.message || 'Sync failed');
+    } finally {
+      setSyncingId(null);
     }
   };
 
@@ -491,18 +507,34 @@ export default function SettingsPage() {
                         </p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDisconnect(integration.id, providerInfo?.name || integration.provider)}
-                      disabled={disconnectingId === integration.id}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors active:scale-95 disabled:opacity-50"
-                    >
-                      {disconnectingId === integration.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <Unplug className="w-3 h-3" />
+                    <div className="flex items-center gap-2">
+                      {integration.connection_status === 'connected' && (
+                        <button
+                          onClick={() => handleSyncNow(integration.id, providerInfo?.name || integration.provider)}
+                          disabled={syncingId === integration.id}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors active:scale-95 disabled:opacity-50"
+                        >
+                          {syncingId === integration.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Play className="w-3 h-3" />
+                          )}
+                          Sync now
+                        </button>
                       )}
-                      Disconnect
-                    </button>
+                      <button
+                        onClick={() => handleDisconnect(integration.id, providerInfo?.name || integration.provider)}
+                        disabled={disconnectingId === integration.id}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors active:scale-95 disabled:opacity-50"
+                      >
+                        {disconnectingId === integration.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Unplug className="w-3 h-3" />
+                        )}
+                        Disconnect
+                      </button>
+                    </div>
                   </div>
                 );
               })}
