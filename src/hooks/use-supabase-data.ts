@@ -1078,13 +1078,13 @@ export function useStageImport() {
           batch_id: importBatchId,
           organization_id: orgId,
           candidate_type: 'invoice',
-          normalized_data: normalized,
+          normalized_data: normalized as any,
           mapping_confidence: mappingConfidence,
           normalization_status: 'normalized',
           validation_status: validationStatus,
-          validation_errors: errors,
+          validation_errors: errors as any,
           write_status: validationStatus === 'invalid' ? 'blocked' : 'pending',
-        });
+        } as any);
 
         // 5. Create exceptions for critical errors
         if (criticalErrors.length > 0) {
