@@ -88,7 +88,7 @@ export default function ConversationsPage() {
               >
                 <div className="flex items-start justify-between mb-1">
                   <div className="flex items-center gap-2 min-w-0">
-                    {thread.unread && <div className="w-2 h-2 rounded-full bg-primary shrink-0 animate-pulse-dot" />}
+                    {thread.unread && <div className="w-2 h-2 rounded-full bg-accent shrink-0 animate-pulse-dot" />}
                     <span className="font-medium text-sm truncate">{thread.clientName}</span>
                   </div>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ml-2 ${badge.className}`}>{badge.label}</span>
