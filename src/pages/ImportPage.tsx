@@ -213,6 +213,7 @@ export default function ImportPage() {
         columnMapping: mapping.fieldToColumn,
         dateFormatHint: mapping.dateFormatHint,
         defaultCurrency: mapping.defaultCurrency,
+        importType,
       });
 
       setStagingResult(result);
