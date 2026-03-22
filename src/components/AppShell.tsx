@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, FileText, Users, CheckCircle, Bell, Settings, MessageSquare, BarChart3, HelpCircle, MoreHorizontal, LogOut } from 'lucide-react';
+import { Home, FileText, Users, CheckCircle, Bell, Settings, MessageSquare, BarChart3, HelpCircle, MoreHorizontal, LogOut, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppState } from '@/contexts/AppStateContext';
