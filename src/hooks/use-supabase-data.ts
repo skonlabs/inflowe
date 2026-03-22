@@ -1312,7 +1312,7 @@ export function useResolveException() {
           if (cand) {
             const updated = { ...(cand.normalized_data as Record<string, unknown>), ...fixedValues };
             await supabase.from('ingestion_candidates').update({
-              normalized_data: updated,
+              normalized_data: updated as any,
               validation_status: 'valid',
               write_status: 'pending',
             }).eq('id', exc.candidate_id);

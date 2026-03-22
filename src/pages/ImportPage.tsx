@@ -269,7 +269,7 @@ export default function ImportPage() {
         {matchedTemplate && (
           <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm flex items-center gap-2">
             <BookTemplate className="w-4 h-4 text-primary shrink-0" />
-            <span>Saved template <strong>{matchedTemplate.template_name}</strong> applied. Review and confirm.</span>
+            <span>Saved template <strong>{matchedTemplate.templateName}</strong> applied. Review and confirm.</span>
           </div>
         )}
         <FieldMappingReview
