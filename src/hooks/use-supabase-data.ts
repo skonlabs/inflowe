@@ -1134,7 +1134,7 @@ export function useStageImport() {
 export function useCommitImport() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ orgId, importBatchId }: { orgId: string; importBatchId: string }) => {
+    mutationFn: async ({ orgId, importBatchId, importType = 'invoice' }: { orgId: string; importBatchId: string; importType?: 'invoice' | 'client' }) => {
       // Read valid candidates
       const { data: candidates, error: candErr } = await supabase
         .from('ingestion_candidates')
