@@ -165,8 +165,8 @@
   }
   .glass-card-hover:hover {
     box-shadow:
-      0 2px 8px hsl(224 30% 14% / 0.06),
-      0 8px 24px hsl(224 30% 14% / 0.06);
+      0 2px 8px hsl(270 15% 14% / 0.06),
+      0 8px 24px hsl(270 15% 14% / 0.06);
   }
 
   .status-overdue {
