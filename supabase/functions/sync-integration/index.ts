@@ -44,13 +44,13 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { sync_run_id, integration_id, organization_id, provider } = body;
+    const { sync_run_id, integration_id, organization_id } = body;
 
-    if (!sync_run_id || !integration_id || !organization_id || !provider) {
-      return jsonResponse({ error: 'Missing required fields' }, 400);
+    if (!sync_run_id || !integration_id || !organization_id) {
+      return jsonResponse({ error: 'Missing required fields: sync_run_id, integration_id, organization_id' }, 400);
     }
 
-    // Load integration record
+    // Load integration record — provider is authoritative from DB, not request body
     const { data: integration, error: intErr } = await admin
       .from('integrations')
       .select('*')
@@ -66,10 +66,20 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Integration is not connected' }, 400);
     }
 
+    const provider: string = integration.provider;
+
     // Load credentials from environment / Vault
     // In production: fetch from Supabase Vault using integration.credential_reference
     // Here we load from env vars scoped by provider (e.g. STRIPE_SECRET_KEY)
     const credentials = resolveCredentials(provider, integration.credential_reference);
+
+    // Validate that at least one credential key is present for this provider
+    if (Object.keys(credentials).length === 0) {
+      return jsonResponse({
+        error: `No credentials configured for provider '${provider}'. ` +
+               `Set the required environment variables (e.g. ${provider.toUpperCase()}_SECRET_KEY).`,
+      }, 400);
+    }
 
     // Build adapter context
     const ctx: AdapterContext = {

@@ -142,8 +142,10 @@ function formatCell(value: unknown): string {
   }
   if (typeof value === 'boolean') return value ? 'true' : 'false';
   if (typeof value === 'number') {
-    // Avoid scientific notation for large numbers
-    return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, '');
+    // Avoid scientific notation; preserve up to 10 significant digits for financial data
+    if (Number.isInteger(value)) return String(value);
+    // parseFloat(toPrecision) strips trailing zeros without capping at 2dp
+    return parseFloat(value.toPrecision(10)).toString();
   }
   return String(value).trim();
 }

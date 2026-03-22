@@ -8,6 +8,7 @@
  */
 
 import { useState, useMemo, useCallback } from 'react';
+import { toast } from 'sonner';
 import { CheckCircle2, AlertTriangle, Info, ChevronDown, Save, Eye, Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -147,8 +148,7 @@ export default function FieldMappingReview({
       });
       setAiReasonings(prev => ({ ...prev, ...newReasonings }));
     } catch (err: any) {
-      console.warn('AI mapping failed:', err.message);
-      // Non-fatal: fall back to rule-based suggestions
+      toast.error('AI suggestions unavailable — please map columns manually');
     } finally {
       setAiLoading(false);
     }

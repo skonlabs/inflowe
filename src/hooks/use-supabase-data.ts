@@ -770,30 +770,6 @@ export function useCreateClient() {
   });
 }
 
-export function useProcessCsvImport() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ orgId, importBatchId, rows }: {
-      orgId: string;
-      importBatchId: string;
-      rows: Array<Record<string, string>>;
-    }) => {
-      const { data, error } = await supabase.rpc('process_csv_import', {
-        _org_id: orgId,
-        _import_batch_id: importBatchId,
-        _rows: rows,
-      });
-      if (error) throw error;
-      return data as { successful: number; failed: number; duplicates: number; errors: unknown[] };
-    },
-    onSuccess: (_, { orgId }) => {
-      qc.invalidateQueries({ queryKey: ['invoice-list', orgId] });
-      qc.invalidateQueries({ queryKey: ['client-summaries', orgId] });
-      qc.invalidateQueries({ queryKey: ['home-summary', orgId] });
-    },
-  });
-}
-
 // ─── Ingestion Pipeline ──────────────────────────────────────────────────────
 
 export function useImportBatches(orgId: string | undefined) {
@@ -945,7 +921,7 @@ export function useCommitImport() {
         _import_batch_id: importBatchId,
       });
       if (error) throw error;
-      return data as { committed: number; skipped: number };
+      return data as { committed: number; skipped: number; conflicts: number };
     },
     onSuccess: (_, { orgId }) => {
       qc.invalidateQueries({ queryKey: ['invoice-list', orgId] });

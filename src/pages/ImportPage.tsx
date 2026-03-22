@@ -11,7 +11,7 @@
 
 import { useState, useCallback } from 'react';
 import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Clock,
-         ChevronRight, RotateCcw, BookTemplate, X, Wrench } from 'lucide-react';
+         ChevronRight, RotateCcw, BookTemplate, X, Wrench, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -212,7 +212,9 @@ export default function ImportPage() {
     if (!orgId || !currentBatchId) return;
     try {
       const result = await commitImport.mutateAsync({ orgId, importBatchId: currentBatchId });
-      toast.success(`${result.committed} invoice${result.committed !== 1 ? 's' : ''} imported successfully`);
+      const parts = [`${result.committed} invoice${result.committed !== 1 ? 's' : ''} imported`];
+      if (result.conflicts > 0) parts.push(`${result.conflicts} conflict${result.conflicts !== 1 ? 's' : ''} queued for review`);
+      toast.success(parts.join(' · '));
       setView('list');
       resetState();
     } catch (err: any) {
@@ -305,6 +307,16 @@ export default function ImportPage() {
             </div>
           </div>
         )}
+      </div>
+    );
+  }
+
+  if (view === 'staging') {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center gap-4 min-h-[40vh]">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        <p className="text-base font-medium">Analysing your file…</p>
+        <p className="text-sm text-muted-foreground">Normalising rows and checking for issues</p>
       </div>
     );
   }
@@ -484,7 +496,12 @@ export default function ImportPage() {
       {view === 'exceptions' && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <button onClick={() => setView('list')} className="text-sm text-muted-foreground hover:text-foreground">← Back</button>
+            <button
+              onClick={() => setView(currentBatchId ? 'summary' : 'list')}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              ← {currentBatchId ? 'Back to summary' : 'Back'}
+            </button>
             <span className="text-muted-foreground">/</span>
             <span className="text-sm font-medium">Exception queue ({openExceptions.length})</span>
           </div>
@@ -494,8 +511,17 @@ export default function ImportPage() {
           ) : openExceptions.length === 0 ? (
             <div className="text-center py-10">
               <CheckCircle2 className="w-10 h-10 text-success mx-auto mb-2" />
-              <p className="font-medium">No exceptions</p>
-              <p className="text-sm text-muted-foreground mt-1">All rows imported successfully</p>
+              <p className="font-medium">All exceptions resolved</p>
+              {currentBatchId ? (
+                <button
+                  onClick={() => setView('summary')}
+                  className="mt-4 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
+                >
+                  Continue to commit
+                </button>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-1">All rows imported successfully</p>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
