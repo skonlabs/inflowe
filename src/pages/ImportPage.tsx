@@ -573,9 +573,9 @@ export default function ImportPage() {
               }`}
             >
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors ${
-                isDragging ? 'bg-primary/10' : 'bg-muted group-hover:bg-primary/10'
+                isDragging ? 'bg-accent/10' : 'bg-muted group-hover:bg-accent/10'
               }`}>
-                <FileSpreadsheet className={`w-7 h-7 transition-colors ${isDragging ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
+                <FileSpreadsheet className={`w-7 h-7 transition-colors ${isDragging ? 'text-accent' : 'text-muted-foreground group-hover:text-accent'}`} />
               </div>
               <p className="font-medium">Drag & drop your file</p>
               <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
