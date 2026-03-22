@@ -330,18 +330,20 @@ export default function ImportPage() {
       // Store exceptions for error rows
       for (const parsed of errorRows) {
         for (const exc of parsed.exceptions) {
-          await supabase.from('ingestion_exceptions').insert({
-            batch_id: batchId,
-            organization_id: orgId,
-            exception_type: exc.type,
-            severity: exc.severity,
-            reason: exc.reason,
-            suggested_fix: exc.suggestedFix || null,
-            field_name: exc.fieldName || null,
-            raw_value: exc.rawValue || null,
-            can_fix_in_ui: exc.canFixInUi,
-            requires_reprocessing: exc.requiresReprocessing,
-          }).catch(() => {});
+          try {
+            await supabase.from('ingestion_exceptions').insert({
+              batch_id: batchId,
+              organization_id: orgId,
+              exception_type: exc.type,
+              severity: exc.severity,
+              reason: exc.reason,
+              suggested_fix: exc.suggestedFix || null,
+              field_name: exc.fieldName || null,
+              raw_value: exc.rawValue || null,
+              can_fix_in_ui: exc.canFixInUi,
+              requires_reprocessing: exc.requiresReprocessing,
+            });
+          } catch { /* best-effort */ }
         }
       }
 
