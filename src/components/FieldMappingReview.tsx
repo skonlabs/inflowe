@@ -8,8 +8,9 @@
  */
 
 import { useState, useMemo, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { CheckCircle2, AlertTriangle, Info, ChevronDown, Save, Eye, Sparkles, Loader2 } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Info, ChevronDown, Eye, EyeOff, Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   MappingProposal,
@@ -32,7 +33,7 @@ interface Props {
 
 const CONFIDENCE_COLORS = {
   high:   'text-success bg-success/10 border-success/30',
-  medium: 'text-amber-600 bg-amber-50 border-amber-200',
+  medium: 'text-warning bg-warning/10 border-warning/30',
   low:    'text-muted-foreground bg-muted border-border',
 };
 
@@ -49,6 +50,16 @@ const DATE_FORMAT_OPTIONS = [
   { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY (UK/EU)' },
 ];
 
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 12, filter: 'blur(4px)' },
+  show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
+};
+
 export default function FieldMappingReview({
   headers,
   sampleRows,
@@ -58,7 +69,6 @@ export default function FieldMappingReview({
   onCancel,
   hasSavedTemplate,
 }: Props) {
-  // User-editable state: sourceColumn → canonicalField
   const [fieldMap, setFieldMap] = useState<Record<string, CanonicalField | ''>>(() => {
     const init: Record<string, CanonicalField | ''> = {};
     proposals.forEach(p => {
@@ -68,7 +78,6 @@ export default function FieldMappingReview({
   });
 
   const [dateFormat, setDateFormat] = useState<string>(() => {
-    // Auto-detect from proposals
     const dateCols = proposals.filter(p =>
       p.suggestedField === 'due_date' || p.suggestedField === 'issue_date',
     );
@@ -78,18 +87,14 @@ export default function FieldMappingReview({
 
   const [currency, setCurrency] = useState(defaultCurrency || 'USD');
   const [showPreview, setShowPreview] = useState(false);
-  const [aiLoading, setAiLoading]     = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [aiReasonings, setAiReasonings] = useState<Record<string, string>>({});
-  const [saveName, setSaveName]  = useState('');
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
 
-  // Which canonical fields are already assigned?
   const usedFields = useMemo(
     () => new Set(Object.values(fieldMap).filter(Boolean)),
     [fieldMap],
   );
 
-  // Identify critical fields that are still unassigned
   const missingCritical = useMemo(() => {
     const criticals: CanonicalField[] = ['client_name', 'amount', 'due_date'];
     return criticals.filter(f => !usedFields.has(f));
@@ -97,14 +102,12 @@ export default function FieldMappingReview({
 
   const canProceed = missingCritical.length === 0;
 
-  // Rows needing attention: low confidence or unset for critical fields
   const needsAttention = proposals.filter(p => {
     if (p.confidence === 'low' && !fieldMap[p.sourceColumn]) return true;
     if (FIELD_META[p.suggestedField as CanonicalField]?.isCritical && p.confidence !== 'high') return true;
     return false;
   });
 
-  // AI-assisted mapping for low-confidence columns
   const lowConfidenceCols = proposals.filter(
     p => p.confidence === 'low' || (!fieldMap[p.sourceColumn] && p.matchReason === 'none'),
   );
@@ -116,9 +119,9 @@ export default function FieldMappingReview({
       const { data, error } = await supabase.functions.invoke('ai-map-columns', {
         body: {
           columns: lowConfidenceCols.map(p => ({
-            sourceColumn:       p.sourceColumn,
-            sampleValues:       p.sampleValues,
-            currentSuggestion:  fieldMap[p.sourceColumn] || null,
+            sourceColumn: p.sourceColumn,
+            sampleValues: p.sampleValues,
+            currentSuggestion: fieldMap[p.sourceColumn] || null,
           })),
         },
       });
@@ -137,7 +140,6 @@ export default function FieldMappingReview({
         if (s.suggestedField && !fieldMap[s.sourceColumn]) {
           setFieldMap(prev => {
             const updated = { ...prev };
-            // Don't overwrite if already set by user
             if (!updated[s.sourceColumn] && s.suggestedField) {
               updated[s.sourceColumn] = s.suggestedField;
             }
@@ -147,7 +149,7 @@ export default function FieldMappingReview({
         if (s.reasoning) newReasonings[s.sourceColumn] = s.reasoning;
       });
       setAiReasonings(prev => ({ ...prev, ...newReasonings }));
-    } catch (err: any) {
+    } catch {
       toast.error('AI suggestions unavailable — please map columns manually');
     } finally {
       setAiLoading(false);
@@ -156,7 +158,6 @@ export default function FieldMappingReview({
 
   function handleFieldChange(sourceCol: string, val: CanonicalField | '') {
     setFieldMap(prev => {
-      // If another column already has this value, clear it
       const updated = { ...prev };
       if (val && val !== 'ignore') {
         Object.keys(updated).forEach(k => {
@@ -183,99 +184,119 @@ export default function FieldMappingReview({
     return { fieldToColumn, dateFormatHint: dateFormat || null, defaultCurrency: currency, ignoredColumns };
   }
 
+  const mappedCount = Object.values(fieldMap).filter(v => v && v !== 'ignore').length;
+
   return (
-    <div className="space-y-5">
+    <motion.div
+      initial="hidden" animate="show" variants={stagger}
+      className="space-y-5"
+    >
       {/* Header */}
-      <div>
-        <h3 className="text-lg font-semibold">Review column mapping</h3>
+      <motion.div variants={fadeUp}>
+        <h3 className="text-lg font-semibold leading-tight">Review column mapping</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          We found {headers.length} columns. Check that each one maps to the right field.
+          We found {headers.length} columns — {mappedCount} mapped so far.
           {hasSavedTemplate && (
-            <span className="ml-1 text-primary font-medium">Using your saved template.</span>
+            <span className="ml-1 text-primary font-medium">Saved template applied.</span>
           )}
         </p>
-      </div>
+      </motion.div>
 
       {/* Summary chips */}
-      <div className="flex flex-wrap gap-2">
+      <motion.div variants={fadeUp} className="flex flex-wrap gap-2">
         <Chip color="success">{proposals.filter(p => p.confidence === 'high').length} confident</Chip>
-        <Chip color="amber">{proposals.filter(p => p.confidence === 'medium').length} to check</Chip>
+        <Chip color="warning">{proposals.filter(p => p.confidence === 'medium').length} to check</Chip>
         {needsAttention.length > 0 && (
-          <Chip color="red">{needsAttention.length} need attention</Chip>
+          <Chip color="destructive">{needsAttention.length} need attention</Chip>
         )}
-      </div>
+      </motion.div>
 
-      {/* AI assist button for unresolved columns */}
+      {/* AI assist button */}
       {lowConfidenceCols.length > 0 && (
-        <button
+        <motion.button
+          variants={fadeUp}
           onClick={askAI}
           disabled={aiLoading}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-medium hover:bg-primary/10 disabled:opacity-60 transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-medium hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60 active:scale-[0.98] transition-all"
         >
           {aiLoading ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Asking AI...</>
+            <><Loader2 className="w-4 h-4 animate-spin" /> Asking AI…</>
           ) : (
             <><Sparkles className="w-4 h-4" /> Ask AI to suggest {lowConfidenceCols.length} unmapped column{lowConfidenceCols.length !== 1 ? 's' : ''}</>
           )}
-        </button>
+        </motion.button>
       )}
 
       {/* Missing critical fields warning */}
       {missingCritical.length > 0 && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex gap-3">
+        <motion.div variants={fadeUp} className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex gap-3">
           <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
           <div className="text-sm">
             <span className="font-medium text-destructive">Required fields not mapped: </span>
             {missingCritical.map(f => FIELD_META[f].label).join(', ')}.
             Please assign these before continuing.
           </div>
-        </div>
+        </motion.div>
       )}
 
-      {/* Date format selector */}
-      <div className="flex gap-4 items-center rounded-xl border border-border bg-card p-4">
+      {/* Date format & currency */}
+      <motion.div variants={fadeUp} className="flex gap-4 items-start rounded-xl border border-border bg-card p-4">
         <div className="flex-1">
-          <label className="text-sm font-medium block mb-1">Date format</label>
-          <select
-            value={dateFormat}
-            onChange={e => setDateFormat(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-          >
-            {DATE_FORMAT_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <label className="text-sm font-medium block mb-1.5">Date format</label>
+          <div className="relative">
+            <select
+              value={dateFormat}
+              onChange={e => setDateFormat(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 pr-8"
+            >
+              {DATE_FORMAT_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-3 w-4 h-4 text-muted-foreground pointer-events-none" />
+          </div>
         </div>
         <div className="flex-1">
-          <label className="text-sm font-medium block mb-1">Default currency</label>
-          <select
-            value={currency}
-            onChange={e => setCurrency(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-          >
-            {['USD','GBP','EUR','CAD','AUD','CHF','NZD','SGD'].map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+          <label className="text-sm font-medium block mb-1.5">Default currency</label>
+          <div className="relative">
+            <select
+              value={currency}
+              onChange={e => setCurrency(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 pr-8"
+            >
+              {['USD','GBP','EUR','CAD','AUD','CHF','NZD','SGD'].map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-3 w-4 h-4 text-muted-foreground pointer-events-none" />
+          </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Column mapping table */}
-      <div className="rounded-xl border border-border overflow-hidden">
+      <motion.div variants={fadeUp} className="rounded-xl border border-border overflow-hidden shadow-sm">
         <div className="grid grid-cols-[1fr_1fr_auto] gap-0 text-xs font-medium text-muted-foreground bg-muted/40 px-4 py-2.5 border-b border-border">
           <span>Your column</span>
           <span>Maps to</span>
           <span className="w-24 text-center">Confidence</span>
         </div>
         <div className="divide-y divide-border">
-          {proposals.map(p => {
+          {proposals.map((p, i) => {
             const current = fieldMap[p.sourceColumn] ?? '';
-            const meta    = current && current !== 'ignore' ? FIELD_META[current as CanonicalField] : null;
-            const isError = meta?.isCritical && !current && missingCritical.includes(p.sourceColumn as CanonicalField);
+            const meta = current && current !== 'ignore' ? FIELD_META[current as CanonicalField] : null;
+            const isMissing = !current && FIELD_META[p.suggestedField as CanonicalField]?.isCritical;
             return (
-              <div key={p.sourceColumn} className={`px-4 py-3 grid grid-cols-[1fr_1fr_auto] gap-3 items-start ${isError ? 'bg-destructive/5' : ''}`}>
+              <motion.div
+                key={p.sourceColumn}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                className={`px-4 py-3.5 grid grid-cols-[1fr_1fr_auto] gap-3 items-start transition-colors ${
+                  isMissing ? 'bg-destructive/5' : 'hover:bg-muted/30'
+                }`}
+              >
                 {/* Source column */}
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{p.sourceColumn}</p>
                   {p.sampleValues.length > 0 && (
                     <p className="text-xs text-muted-foreground truncate mt-0.5">
@@ -283,13 +304,13 @@ export default function FieldMappingReview({
                     </p>
                   )}
                   {p.validationHint && (
-                    <div className="flex items-start gap-1 mt-1">
-                      <Info className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
-                      <p className="text-xs text-amber-600">{p.validationHint}</p>
+                    <div className="flex items-start gap-1 mt-1.5">
+                      <Info className="w-3 h-3 text-warning shrink-0 mt-0.5" />
+                      <p className="text-xs text-warning">{p.validationHint}</p>
                     </div>
                   )}
                   {aiReasonings[p.sourceColumn] && (
-                    <div className="flex items-start gap-1 mt-1">
+                    <div className="flex items-start gap-1 mt-1.5">
                       <Sparkles className="w-3 h-3 text-primary shrink-0 mt-0.5" />
                       <p className="text-xs text-primary/80">{aiReasonings[p.sourceColumn]}</p>
                     </div>
@@ -297,13 +318,13 @@ export default function FieldMappingReview({
                 </div>
 
                 {/* Canonical field selector */}
-                <div>
+                <div className="min-w-0">
                   <div className="relative">
                     <select
                       value={current}
                       onChange={e => handleFieldChange(p.sourceColumn, e.target.value as CanonicalField | '')}
-                      className={`w-full px-3 py-2 rounded-lg border text-sm appearance-none bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 pr-8 ${
-                        !current ? 'border-amber-300 text-muted-foreground' : 'border-border'
+                      className={`w-full px-3 py-2.5 rounded-xl border text-sm appearance-none bg-card focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 pr-8 transition-colors ${
+                        !current ? 'border-warning/50 text-muted-foreground' : 'border-border'
                       }`}
                     >
                       <option value="">— Not mapped —</option>
@@ -318,7 +339,7 @@ export default function FieldMappingReview({
                       })}
                       <option value="ignore">— Ignore this column —</option>
                     </select>
-                    <ChevronDown className="absolute right-2 top-2.5 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    <ChevronDown className="absolute right-2.5 top-3 w-4 h-4 text-muted-foreground pointer-events-none" />
                   </div>
                   {meta && (
                     <p className="text-xs text-muted-foreground mt-1">{meta.description}</p>
@@ -326,92 +347,60 @@ export default function FieldMappingReview({
                 </div>
 
                 {/* Confidence badge */}
-                <div className="w-24 flex items-start justify-center pt-1">
-                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${CONFIDENCE_COLORS[p.confidence]}`}>
+                <div className="w-24 flex items-start justify-center pt-1.5">
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${CONFIDENCE_COLORS[p.confidence]}`}>
                     {CONFIDENCE_LABELS[p.confidence]}
                   </span>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
       {/* Preview toggle */}
       {sampleRows.length > 0 && (
-        <button
+        <motion.button
+          variants={fadeUp}
           onClick={() => setShowPreview(v => !v)}
-          className="flex items-center gap-2 text-sm text-primary font-medium"
+          className="flex items-center gap-2 text-sm text-primary font-medium hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg px-2 py-1 -mx-2 active:scale-[0.97] transition-all"
         >
-          <Eye className="w-4 h-4" />
+          {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           {showPreview ? 'Hide preview' : 'Preview mapped data (first 3 rows)'}
-        </button>
+        </motion.button>
       )}
 
       {showPreview && (
-        <MappedPreview
-          rows={sampleRows.slice(0, 3)}
-          fieldMap={fieldMap}
-        />
-      )}
-
-      {/* Save template dialog */}
-      {showSaveDialog && (
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-          <p className="text-sm font-medium">Save as template</p>
-          <input
-            type="text"
-            placeholder="Template name (e.g. QuickBooks export)"
-            value={saveName}
-            onChange={e => setSaveName(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-          <div className="flex gap-2">
-            <button
-              disabled={!saveName.trim()}
-              onClick={() => {
-                // Template saving is handled by parent via onConfirm + save flag
-                setShowSaveDialog(false);
-              }}
-              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40"
-            >
-              Save template
-            </button>
-            <button
-              onClick={() => setShowSaveDialog(false)}
-              className="px-4 py-2 rounded-lg border border-border text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <MappedPreview rows={sampleRows.slice(0, 3)} fieldMap={fieldMap} />
+        </motion.div>
       )}
 
       {/* Actions */}
-      <div className="flex gap-3 pt-2">
+      <motion.div variants={fadeUp} className="flex gap-3 pt-2">
         {onCancel && (
           <button
             onClick={onCancel}
-            className="px-5 py-3 rounded-xl border border-border text-sm font-medium"
+            className="px-5 py-3 rounded-xl border border-border text-sm font-medium hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.97] transition-all"
           >
             Back
           </button>
         )}
         <button
-          onClick={() => setShowSaveDialog(true)}
-          className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-border text-sm font-medium"
-        >
-          <Save className="w-4 h-4" /> Save template
-        </button>
-        <button
           disabled={!canProceed}
           onClick={() => onConfirm(buildConfirmedMapping())}
-          className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 disabled:pointer-events-none"
+          className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none active:scale-[0.97] transition-all"
         >
-          {canProceed ? 'Confirm and import' : `Fix ${missingCritical.length} required field${missingCritical.length > 1 ? 's' : ''} first`}
+          {canProceed
+            ? `Confirm and import ${mappedCount} fields`
+            : `Fix ${missingCritical.length} required field${missingCritical.length > 1 ? 's' : ''} first`}
         </button>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -422,7 +411,6 @@ function MappedPreview({
   rows: Record<string, string>[];
   fieldMap: Record<string, CanonicalField | ''>;
 }) {
-  // Build reverse map: canonicalField → sourceColumn
   const mapped = Object.entries(fieldMap)
     .filter(([, f]) => f && f !== 'ignore')
     .map(([src, can]) => ({ src, can: can as CanonicalField }));
@@ -430,8 +418,9 @@ function MappedPreview({
   if (mapped.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-border overflow-hidden">
-      <div className="px-4 py-2 bg-muted/30 text-xs font-medium text-muted-foreground border-b border-border">
+    <div className="rounded-xl border border-border overflow-hidden shadow-sm">
+      <div className="px-4 py-2.5 bg-muted/30 text-xs font-medium text-muted-foreground border-b border-border flex items-center gap-2">
+        <CheckCircle2 className="w-3.5 h-3.5 text-success" />
         Preview — how your data will be imported
       </div>
       <div className="overflow-x-auto">
@@ -439,7 +428,7 @@ function MappedPreview({
           <thead>
             <tr className="border-b border-border bg-muted/20">
               {mapped.map(({ can }) => (
-                <th key={can} className="text-left px-3 py-2 font-medium text-muted-foreground">
+                <th key={can} className="text-left px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">
                   {FIELD_META[can].label}
                 </th>
               ))}
@@ -447,10 +436,10 @@ function MappedPreview({
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={i} className="border-b border-border/40">
+              <tr key={i} className="border-b border-border/40 hover:bg-muted/20 transition-colors">
                 {mapped.map(({ src, can }) => (
-                  <td key={can} className="px-3 py-2 truncate max-w-[160px]">
-                    {row[src] ?? ''}
+                  <td key={can} className="px-3 py-2.5 truncate max-w-[180px] tabular-nums">
+                    {row[src] ?? <span className="text-muted-foreground italic">empty</span>}
                   </td>
                 ))}
               </tr>
@@ -462,11 +451,11 @@ function MappedPreview({
   );
 }
 
-function Chip({ children, color }: { children: React.ReactNode; color: 'success' | 'amber' | 'red' }) {
+function Chip({ children, color }: { children: React.ReactNode; color: 'success' | 'warning' | 'destructive' }) {
   const cls = {
-    success: 'bg-success/10 text-success border-success/30',
-    amber:   'bg-amber-50 text-amber-700 border-amber-200',
-    red:     'bg-destructive/10 text-destructive border-destructive/30',
+    success:     'bg-success/10 text-success border-success/30',
+    warning:     'bg-warning/10 text-warning border-warning/30',
+    destructive: 'bg-destructive/10 text-destructive border-destructive/30',
   }[color];
   return (
     <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${cls}`}>
