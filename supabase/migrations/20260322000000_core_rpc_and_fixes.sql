@@ -860,25 +860,32 @@ CREATE POLICY "Members can manage read_client_summary" ON public.read_client_sum
 CREATE POLICY "Members can manage read_home_summary" ON public.read_home_summary
   FOR ALL USING (organization_id IN (SELECT public.get_user_org_ids(auth.uid())));
 
--- Allow org members to insert payments and payment_allocations
+-- Allow org members to insert payments and payment_allocations (drop-and-recreate to avoid duplicates)
+DROP POLICY IF EXISTS "Members can insert org payments" ON public.payments;
 CREATE POLICY "Members can insert org payments" ON public.payments FOR INSERT
   WITH CHECK (organization_id IN (SELECT public.get_user_org_ids(auth.uid())));
+DROP POLICY IF EXISTS "Members can insert org payment_allocations" ON public.payment_allocations;
 CREATE POLICY "Members can insert org payment_allocations" ON public.payment_allocations FOR INSERT
   WITH CHECK (organization_id IN (SELECT public.get_user_org_ids(auth.uid())));
 
--- Allow members to create invoices
+-- Allow members to create invoices (drop-and-recreate to avoid duplicate policy errors)
+DROP POLICY IF EXISTS "Members can insert org invoices" ON public.invoices;
 CREATE POLICY "Members can insert org invoices" ON public.invoices FOR INSERT
   WITH CHECK (organization_id IN (SELECT public.get_user_org_ids(auth.uid())));
 
--- Allow members to create clients and contacts
+-- Allow members to create clients and contacts (drop-and-recreate to avoid duplicates)
+DROP POLICY IF EXISTS "Members can insert org clients" ON public.clients;
 CREATE POLICY "Members can insert org clients" ON public.clients FOR INSERT
   WITH CHECK (organization_id IN (SELECT public.get_user_org_ids(auth.uid())));
+DROP POLICY IF EXISTS "Members can insert org client_contacts" ON public.client_contacts;
 CREATE POLICY "Members can insert org client_contacts" ON public.client_contacts FOR INSERT
   WITH CHECK (organization_id IN (SELECT public.get_user_org_ids(auth.uid())));
 
--- Allow members to insert import_batches
+-- Allow members to insert and update import_batches (drop-and-recreate to avoid duplicates)
+DROP POLICY IF EXISTS "Members can insert org import_batches" ON public.import_batches;
 CREATE POLICY "Members can insert org import_batches" ON public.import_batches FOR INSERT
   WITH CHECK (organization_id IN (SELECT public.get_user_org_ids(auth.uid())));
+DROP POLICY IF EXISTS "Members can update own import_batches" ON public.import_batches;
 CREATE POLICY "Members can update own import_batches" ON public.import_batches FOR UPDATE
   USING (organization_id IN (SELECT public.get_user_org_ids(auth.uid())));
 
