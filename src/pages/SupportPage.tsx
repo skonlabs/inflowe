@@ -128,7 +128,7 @@ export default function SupportPage() {
             type="text" placeholder="Ask a question..."
             value={question} onChange={e => setQuestion(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAsk()}
-            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow"
           />
           <button onClick={() => handleAsk()} className="p-3 rounded-xl bg-accent text-accent-foreground active:scale-95 transition-transform">
             <Send className="w-5 h-5" />
@@ -160,7 +160,7 @@ export default function SupportPage() {
                     onChange={e => setCaseDescription(e.target.value)}
                     placeholder="Describe what happened and what you expected..."
                     rows={3}
-                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
                   />
                   <div className="flex gap-2">
                     <button

@@ -324,7 +324,7 @@ export default function SettingsPage() {
               <input
                 value={editing.value}
                 onChange={e => setEditing(prev => prev ? { ...prev, value: e.target.value } : null)}
-                className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
                 autoFocus
                 onKeyDown={e => e.key === 'Enter' && saveEdit()}
               />
@@ -614,7 +614,7 @@ export default function SettingsPage() {
                       value={apiKeyInput}
                       onChange={e => setApiKeyInput(e.target.value)}
                       placeholder={`sk_live_...`}
-                      className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/30"
                       autoFocus
                     />
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
@@ -676,10 +676,10 @@ export default function SettingsPage() {
                 <div className="px-4 py-4 border-t border-border/40 space-y-3">
                   <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
                     placeholder="colleague@company.com" type="email"
-                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
                     autoFocus />
                   <select value={inviteRole} onChange={e => setInviteRole(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
                     <option value="member">Member</option>
                     <option value="admin">Admin</option>
                     <option value="viewer">Viewer</option>
