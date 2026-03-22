@@ -141,13 +141,14 @@ export default function SettingsPage() {
     setSubmittingIntegration(true);
     try {
       if (connectingProvider.method === 'oauth') {
-        // For OAuth providers, create a pending integration record
-        const { error } = await supabase.from('integrations').insert({
+        // For OAuth providers, create a pending integration record (upsert to handle reconnects)
+        const { error } = await supabase.from('integrations').upsert({
           organization_id: orgId,
           provider: connectingProvider.id,
           connection_status: 'pending',
           connected_by_user_id: user.id,
-        });
+          disconnected_at: null,
+        }, { onConflict: 'organization_id,provider' });
         if (error) throw error;
         toast.info(`${connectingProvider.name} integration created. OAuth setup will be available soon — for now it's registered as pending.`);
       } else {
@@ -157,14 +158,15 @@ export default function SettingsPage() {
           setSubmittingIntegration(false);
           return;
         }
-        const { error } = await supabase.from('integrations').insert({
+        const { error } = await supabase.from('integrations').upsert({
           organization_id: orgId,
           provider: connectingProvider.id,
           connection_status: 'connected',
           connected_by_user_id: user.id,
           connected_at: new Date().toISOString(),
           credential_reference: `vault:${connectingProvider.id}_${orgId}`,
-        });
+          disconnected_at: null,
+        }, { onConflict: 'organization_id,provider' });
         if (error) throw error;
         toast.success(`${connectingProvider.name} connected successfully`);
       }
