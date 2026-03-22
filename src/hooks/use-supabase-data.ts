@@ -347,7 +347,7 @@ export function useConversationThreads(orgId: string | undefined) {
 export function useThreadMessages(threadId: string | undefined, orgId: string | undefined) {
   return useQuery({
     queryKey: ['thread-messages', threadId],
-    enabled: !!threadId && !!orgId,
+    enabled: isUUID(threadId) && !!orgId,
     queryFn: async () => {
       const [outboundRes, inboundRes] = await Promise.all([
         supabase
