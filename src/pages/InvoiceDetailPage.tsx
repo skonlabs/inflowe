@@ -281,7 +281,7 @@ export default function InvoiceDetailPage() {
         <div className="grid grid-cols-2 gap-2">
           {!isPaid && (
             <button onClick={handleMarkPaid} disabled={isMutating}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-accent text-accent-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-60">
+              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-success text-success-foreground font-medium text-sm active:scale-95 transition-transform disabled:opacity-60">
               <CheckCircle className="w-4 h-4" /> Mark paid
             </button>
           )}
