@@ -1074,7 +1074,7 @@ export function useStageImport() {
 
         // 4. Insert candidate
         const mappingConfidence = criticalErrors.length > 0 ? 0.3 : errors.length > 0 ? 0.6 : 0.9;
-        await supabase.from('ingestion_candidates').insert({
+        const { data: candRecord } = await supabase.from('ingestion_candidates').insert({
           batch_id: importBatchId,
           organization_id: orgId,
           candidate_type: 'invoice',
@@ -1084,7 +1084,9 @@ export function useStageImport() {
           validation_status: validationStatus,
           validation_errors: errors as any,
           write_status: validationStatus === 'invalid' ? 'blocked' : 'pending',
-        } as any);
+        } as any).select('id').single();
+
+        const candidateId = candRecord?.id ?? null;
 
         // 5. Create exceptions for critical errors
         if (criticalErrors.length > 0) {
@@ -1092,6 +1094,7 @@ export function useStageImport() {
             await supabase.from('ingestion_exceptions').insert({
               batch_id: importBatchId,
               organization_id: orgId,
+              candidate_id: candidateId,
               exception_type: ce.type,
               severity: 'error',
               field_name: ce.field,
