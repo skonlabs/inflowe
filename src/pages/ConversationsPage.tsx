@@ -54,8 +54,9 @@ export default function ConversationsPage() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [search, setSearch] = useState('');
 
-  // Map DB threads to UI format, fall back to demo data if DB is empty
-  const threads: Thread[] = dbThreads.length > 0
+  // When user has an org, show only real data (empty while loading).
+  // Only show demo threads for users without an org.
+  const threads: Thread[] = orgId
     ? dbThreads.map(t => ({
         id: t.id,
         clientName: (t.clients as any)?.display_name ?? 'Unknown Client',
@@ -67,7 +68,7 @@ export default function ConversationsPage() {
         latestAt: formatRelativeTime(t.latest_message_at),
         unread: !!t.latest_reply_at && t.thread_status === 'active',
       }))
-    : (!isLoading && !orgId ? demoThreads : isLoading ? [] : demoThreads);
+    : demoThreads;
 
   const filtered = threads.filter(t => {
     if (search && !t.clientName.toLowerCase().includes(search.toLowerCase()) && !t.subject.toLowerCase().includes(search.toLowerCase())) return false;

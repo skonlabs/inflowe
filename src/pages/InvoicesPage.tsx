@@ -25,8 +25,8 @@ export default function InvoicesPage() {
   const [activeFilter, setActiveFilter] = useState(initialFilter);
   const [search, setSearch] = useState('');
 
-  const invoices = (dbInvoices && dbInvoices.length > 0)
-    ? dbInvoices.map(inv => ({
+  const invoices = orgId
+    ? (dbInvoices ?? []).map(inv => ({
         id: inv.invoice_id,
         invoiceNumber: inv.invoice_number ?? '',
         clientName: inv.client_display_name ?? 'Unknown',

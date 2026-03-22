@@ -52,7 +52,8 @@ export default function InvoiceDetailPage() {
   const [planInstallments, setPlanInstallments] = useState(3);
   const [creatingPlan, setCreatingPlan] = useState(false);
 
-  const demoInvoice = demoInvoices.find(i => i.id === id);
+  // Only fall back to demo when no orgId (demo / unauthenticated mode).
+  const demoInvoice = orgId ? null : demoInvoices.find(i => i.id === id);
   const invoice = dbInvoice ? {
     id: dbInvoice.id,
     invoiceNumber: dbInvoice.invoice_number ?? '',
@@ -83,7 +84,7 @@ export default function InvoiceDetailPage() {
     contactEmail: demoInvoice.contactEmail,
   } : null;
 
-  if (isLoading && !demoInvoice) {
+  if (isLoading) {
     return <div className="px-4 py-12 text-center"><p className="text-muted-foreground text-sm">Loading invoice…</p></div>;
   }
 

@@ -35,20 +35,15 @@ export default function ConversationDetailPage() {
   const { data: messages = [] } = useThreadMessages(id, orgId);
 
   const dbThread = dbThreads.find(t => t.id === id);
-  const demoThread = demoThreadData[id || ''];
+  // Only show demo threads for users without an org (demo / unauthenticated mode).
+  const demoThread = orgId ? null : demoThreadData[id || ''];
 
   const clientName = dbThread ? (dbThread.clients as any)?.display_name ?? 'Unknown' : demoThread?.clientName ?? '';
   const subject = dbThread?.subject ?? demoThread?.subject ?? '';
   const channel = dbThread?.channel ?? demoThread?.channel ?? 'email';
 
-  const isValidUUID = (val: string | undefined) => !!val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
-
   const handleSend = async () => {
     if (!reply.trim() || !orgId || !id) return;
-    if (!isValidUUID(id)) {
-      toast.error('This is a demo conversation — replies are not supported.');
-      return;
-    }
     setSending(true);
     try {
       const { error } = await supabase.rpc('create_manual_thread_reply', {
@@ -119,26 +114,28 @@ export default function ConversationDetailPage() {
         )}
       </div>
 
-      {/* Reply input */}
-      <div className="sticky bottom-20 bg-background border-t border-border px-4 py-3">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Type a reply…"
-            value={reply}
-            onChange={e => setReply(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow"
-          />
-          <button
-            onClick={handleSend}
-            disabled={sending || !reply.trim()}
-            className="p-3 rounded-xl bg-accent text-accent-foreground active:scale-95 transition-transform disabled:opacity-50">
-            <Send className="w-5 h-5" />
-          </button>
+      {/* Reply input — only shown for real DB threads */}
+      {dbThread && (
+        <div className="sticky bottom-20 bg-background border-t border-border px-4 py-3">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Type a reply…"
+              value={reply}
+              onChange={e => setReply(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
+              className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow"
+            />
+            <button
+              onClick={handleSend}
+              disabled={sending || !reply.trim()}
+              className="p-3 rounded-xl bg-accent text-accent-foreground active:scale-95 transition-transform disabled:opacity-50">
+              <Send className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1.5 text-center">Replies are saved as drafts and require manual sending from your email client</p>
         </div>
-        <p className="text-[10px] text-muted-foreground mt-1.5 text-center">Replies are saved as drafts and require manual sending from your email client</p>
-      </div>
+      )}
     </div>
   );
 }

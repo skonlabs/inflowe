@@ -12,9 +12,10 @@ export default function ClientsPage() {
   const orgId = membership?.organization_id;
   const { data: dbClients } = useClientSummaries(orgId);
 
-  // Map Supabase data to display format, fallback to demo
-  const clients = (dbClients && dbClients.length > 0)
-    ? dbClients.map(c => ({
+  // When user has an org, show only real data (empty while loading).
+  // Only show demo data for users without an org (unauthenticated / demo mode).
+  const clients = orgId
+    ? (dbClients ?? []).map(c => ({
         id: c.client_id,
         displayName: c.display_name ?? 'Unnamed',
         contactName: c.account_owner_name ?? '',

@@ -25,11 +25,13 @@ export default function ClientDetailPage() {
   const { data: dbClientInvoices } = useClientInvoices(id, orgId);
   const updateClient = useUpdateClient();
 
-  // Use Supabase client or fallback to demo
-  const demoClient = demoClients.find(c => c.id === id);
   const primaryContact = dbClient?.client_contacts
     ? ((dbClient.client_contacts as any[]).find((c: any) => c.is_primary) || (dbClient.client_contacts as any[])[0])
     : null;
+
+  // When user has an org, only use real data — never fall back to demo.
+  // Demo data is only shown for unauthenticated / demo-mode users.
+  const demoClient = orgId ? null : demoClients.find(c => c.id === id);
 
   const client = dbClient ? {
     id: dbClient.id,
@@ -55,9 +57,9 @@ export default function ClientDetailPage() {
     riskScore: demoClient.riskScore,
   } : null;
 
-  // Map invoices
-  const clientInvoices = dbClientInvoices && dbClientInvoices.length > 0
-    ? dbClientInvoices.map(inv => ({
+  // Map invoices — only fall back to demo when no orgId (demo mode)
+  const clientInvoices = orgId
+    ? (dbClientInvoices ?? []).map(inv => ({
         id: inv.id,
         invoiceNumber: inv.invoice_number ?? '',
         amount: Number(inv.amount),
