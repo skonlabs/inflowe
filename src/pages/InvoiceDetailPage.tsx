@@ -103,7 +103,7 @@ export default function InvoiceDetailPage() {
   const currentState = invoice.state;
 
   const handleMarkPaid = async () => {
-    if (!orgId) return;
+    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
     try {
       await markPaid.mutateAsync({ invoiceId: invoice.id, orgId, method: 'manual' });
       toast.success(`${invoice.invoiceNumber} marked as paid`);
@@ -113,7 +113,7 @@ export default function InvoiceDetailPage() {
   };
 
   const handleTogglePause = async () => {
-    if (!orgId) return;
+    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
     try {
       await setHold.mutateAsync({ invoiceId: invoice.id, orgId, onHold: !isPaused });
       toast(isPaused ? 'Automation resumed for this invoice' : 'Automation paused for this invoice', {
@@ -125,7 +125,7 @@ export default function InvoiceDetailPage() {
   };
 
   const handleDispute = async () => {
-    if (!orgId) return;
+    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
     try {
       await setDispute.mutateAsync({ invoiceId: invoice.id, orgId, disputeActive: true });
       toast('Invoice flagged as disputed — automation paused', { icon: '🚩' });
@@ -135,7 +135,7 @@ export default function InvoiceDetailPage() {
   };
 
   const handleClearDispute = async () => {
-    if (!orgId) return;
+    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
     try {
       await setDispute.mutateAsync({ invoiceId: invoice.id, orgId, disputeActive: false });
       toast.success('Dispute cleared');
