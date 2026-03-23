@@ -118,7 +118,10 @@ export default function ClientDetailPage() {
   const sensitivity = sensitivityLabels[client.sensitivityLevel] || sensitivityLabels.standard;
 
   const handleTogglePause = async () => {
-    if (!orgId) return;
+    if (!orgId) {
+      toast.info('Sign up to manage client automation');
+      return;
+    }
     const nextPaused = !(dbClient?.do_not_automate || actions.isPaused);
     try {
       await updateClient.mutateAsync({
@@ -136,7 +139,10 @@ export default function ClientDetailPage() {
   };
 
   const handleSaveEdit = async () => {
-    if (!orgId) return;
+    if (!orgId) {
+      toast.info('Sign up to edit client details');
+      return;
+    }
     try {
       await updateClient.mutateAsync({
         clientId: client.id,
