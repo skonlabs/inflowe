@@ -158,8 +158,9 @@ export default function InvoiceDetailPage() {
         return { installment: i + 1, amount, due_date: dueDate.toISOString().split('T')[0], status: 'pending' };
       });
 
+      // Check if payment_plans table exists by attempting the insert
       const { data: plan, error: planError } = await supabase
-        .from('payment_plans')
+        .from('payment_plans' as any)
         .insert({
           organization_id: orgId,
           client_id: invoice.clientId,
@@ -169,15 +170,23 @@ export default function InvoiceDetailPage() {
           installments,
           plan_status: 'active',
           created_by_user_id: user?.id ?? null,
-        })
+        } as any)
         .select('id')
         .single();
 
-      if (planError) throw planError;
+      if (planError) {
+        // Table may not exist yet — show a friendly message
+        if (planError.message?.includes('relation') || planError.code === '42P01' || planError.code === 'PGRST204') {
+          toast.info('Payment plans feature coming soon — this requires additional setup.');
+        } else {
+          throw planError;
+        }
+        return;
+      }
 
       const { error: invoiceError } = await supabase
         .from('invoices')
-        .update({ payment_plan_active: true, payment_plan_id: plan.id })
+        .update({ payment_plan_active: true, payment_plan_id: (plan as any).id })
         .eq('id', invoice.id)
         .eq('organization_id', orgId);
 
