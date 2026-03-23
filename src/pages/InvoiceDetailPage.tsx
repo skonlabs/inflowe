@@ -103,7 +103,7 @@ export default function InvoiceDetailPage() {
   const currentState = invoice.state;
 
   const handleMarkPaid = async () => {
-    if (!orgId) return;
+    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
     try {
       await markPaid.mutateAsync({ invoiceId: invoice.id, orgId, method: 'manual' });
       toast.success(`${invoice.invoiceNumber} marked as paid`);
@@ -113,7 +113,7 @@ export default function InvoiceDetailPage() {
   };
 
   const handleTogglePause = async () => {
-    if (!orgId) return;
+    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
     try {
       await setHold.mutateAsync({ invoiceId: invoice.id, orgId, onHold: !isPaused });
       toast(isPaused ? 'Automation resumed for this invoice' : 'Automation paused for this invoice', {
@@ -125,7 +125,7 @@ export default function InvoiceDetailPage() {
   };
 
   const handleDispute = async () => {
-    if (!orgId) return;
+    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
     try {
       await setDispute.mutateAsync({ invoiceId: invoice.id, orgId, disputeActive: true });
       toast('Invoice flagged as disputed — automation paused', { icon: '🚩' });
@@ -135,7 +135,7 @@ export default function InvoiceDetailPage() {
   };
 
   const handleClearDispute = async () => {
-    if (!orgId) return;
+    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
     try {
       await setDispute.mutateAsync({ invoiceId: invoice.id, orgId, disputeActive: false });
       toast.success('Dispute cleared');
@@ -158,8 +158,9 @@ export default function InvoiceDetailPage() {
         return { installment: i + 1, amount, due_date: dueDate.toISOString().split('T')[0], status: 'pending' };
       });
 
+      // Check if payment_plans table exists by attempting the insert
       const { data: plan, error: planError } = await supabase
-        .from('payment_plans')
+        .from('payment_plans' as any)
         .insert({
           organization_id: orgId,
           client_id: invoice.clientId,
@@ -169,15 +170,23 @@ export default function InvoiceDetailPage() {
           installments,
           plan_status: 'active',
           created_by_user_id: user?.id ?? null,
-        })
+        } as any)
         .select('id')
         .single();
 
-      if (planError) throw planError;
+      if (planError) {
+        // Table may not exist yet — show a friendly message
+        if (planError.message?.includes('relation') || planError.code === '42P01' || planError.code === 'PGRST204') {
+          toast.info('Payment plans feature coming soon — this requires additional setup.');
+        } else {
+          throw planError;
+        }
+        return;
+      }
 
       const { error: invoiceError } = await supabase
         .from('invoices')
-        .update({ payment_plan_active: true, payment_plan_id: plan.id })
+        .update({ payment_plan_active: true, payment_plan_id: (plan as any).id })
         .eq('id', invoice.id)
         .eq('organization_id', orgId);
 

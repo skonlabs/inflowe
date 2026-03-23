@@ -93,14 +93,16 @@ export default function ClientDetailPage() {
   });
 
   useEffect(() => {
-    if (!client) return;
-    setEditForm({
-      displayName: client.displayName,
-      sensitivityLevel: client.sensitivityLevel,
-      preferredChannel: client.preferredChannel,
-      notes: dbClient?.notes ?? '',
+    if (!dbClient && !demoClient) return;
+    const name = dbClient?.display_name ?? demoClient?.displayName ?? '';
+    const sens = dbClient?.sensitivity_level ?? demoClient?.sensitivityLevel ?? 'standard';
+    const chan = dbClient?.preferred_channel ?? demoClient?.preferredChannel ?? 'email';
+    const notes = dbClient?.notes ?? '';
+    setEditForm(prev => {
+      if (prev.displayName === name && prev.sensitivityLevel === sens && prev.preferredChannel === chan && prev.notes === notes) return prev;
+      return { displayName: name, sensitivityLevel: sens, preferredChannel: chan, notes };
     });
-  }, [client, dbClient?.notes]);
+  }, [dbClient?.display_name, dbClient?.sensitivity_level, dbClient?.preferred_channel, dbClient?.notes, demoClient]);
 
   if (!client) {
     return (
@@ -116,7 +118,10 @@ export default function ClientDetailPage() {
   const sensitivity = sensitivityLabels[client.sensitivityLevel] || sensitivityLabels.standard;
 
   const handleTogglePause = async () => {
-    if (!orgId) return;
+    if (!orgId) {
+      toast.info('Sign up to manage client automation');
+      return;
+    }
     const nextPaused = !(dbClient?.do_not_automate || actions.isPaused);
     try {
       await updateClient.mutateAsync({
@@ -134,7 +139,10 @@ export default function ClientDetailPage() {
   };
 
   const handleSaveEdit = async () => {
-    if (!orgId) return;
+    if (!orgId) {
+      toast.info('Sign up to edit client details');
+      return;
+    }
     try {
       await updateClient.mutateAsync({
         clientId: client.id,

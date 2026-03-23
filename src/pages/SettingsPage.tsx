@@ -140,34 +140,58 @@ export default function SettingsPage() {
     if (!connectingProvider || !orgId || !user) return;
     setSubmittingIntegration(true);
     try {
+      // Check if integration already exists (reconnect case)
+      const existing = integrations.find(
+        i => i.provider === connectingProvider.id && i.connection_status !== 'disconnected'
+      );
+
       if (connectingProvider.method === 'oauth') {
-        // For OAuth providers, create a pending integration record (upsert to handle reconnects)
-        const { error } = await supabase.from('integrations').upsert({
-          organization_id: orgId,
-          provider: connectingProvider.id,
-          connection_status: 'pending',
-          connected_by_user_id: user.id,
-          disconnected_at: null,
-        }, { onConflict: 'organization_id,provider' });
-        if (error) throw error;
+        if (existing) {
+          // Update existing record
+          const { error } = await supabase.from('integrations')
+            .update({ connection_status: 'pending', connected_by_user_id: user.id, disconnected_at: null })
+            .eq('id', existing.id)
+            .eq('organization_id', orgId);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from('integrations').insert({
+            organization_id: orgId,
+            provider: connectingProvider.id,
+            connection_status: 'pending',
+            connected_by_user_id: user.id,
+          });
+          if (error) throw error;
+        }
         toast.info(`${connectingProvider.name} integration created. OAuth setup will be available soon — for now it's registered as pending.`);
       } else {
-        // For API key providers, validate input and save
         if (!apiKeyInput.trim()) {
           toast.error('Please enter an API key');
           setSubmittingIntegration(false);
           return;
         }
-        const { error } = await supabase.from('integrations').upsert({
-          organization_id: orgId,
-          provider: connectingProvider.id,
-          connection_status: 'connected',
-          connected_by_user_id: user.id,
-          connected_at: new Date().toISOString(),
-          credential_reference: `vault:${connectingProvider.id}_${orgId}`,
-          disconnected_at: null,
-        }, { onConflict: 'organization_id,provider' });
-        if (error) throw error;
+        if (existing) {
+          const { error } = await supabase.from('integrations')
+            .update({
+              connection_status: 'connected',
+              connected_by_user_id: user.id,
+              connected_at: new Date().toISOString(),
+              credential_reference: `vault:${connectingProvider.id}_${orgId}`,
+              disconnected_at: null,
+            })
+            .eq('id', existing.id)
+            .eq('organization_id', orgId);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from('integrations').insert({
+            organization_id: orgId,
+            provider: connectingProvider.id,
+            connection_status: 'connected',
+            connected_by_user_id: user.id,
+            connected_at: new Date().toISOString(),
+            credential_reference: `vault:${connectingProvider.id}_${orgId}`,
+          });
+          if (error) throw error;
+        }
         toast.success(`${connectingProvider.name} connected successfully`);
       }
       queryClient.invalidateQueries({ queryKey: ['integrations'] });
