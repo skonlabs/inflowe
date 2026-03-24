@@ -58,8 +58,8 @@ export default function InvoiceDetailPage() {
   const [creatingPlan, setCreatingPlan] = useState(false);
 
   // Fall back to demo when no orgId OR when org is demo and DB returned nothing.
-  // Fall back to demo when no orgId OR when org is demo and DB returned nothing.
   const demoInvoice = (!orgId || (isDemo && !dbInvoice)) ? demoInvoices.find(i => i.id === id) : null;
+  const isDemoRecord = !!demoInvoice;
   const invoice = dbInvoice ? {
     id: dbInvoice.id,
     invoiceNumber: dbInvoice.invoice_number ?? '',
