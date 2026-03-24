@@ -97,8 +97,12 @@ export default function ClientsPage() {
       </StaggerContainer>
 
       {filtered.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground text-sm">No clients found</p>
+        <div className="text-center py-16 space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-muted/60 flex items-center justify-center mx-auto">
+            <Users className="w-7 h-7 text-muted-foreground/50" />
+          </div>
+          <p className="font-medium text-sm">No clients found</p>
+          <p className="text-sm text-muted-foreground">Try a different search term</p>
         </div>
       )}
     </div>
