@@ -22,7 +22,7 @@ export default function HomePage() {
     approvalsPending: dbSummary.approvals_pending ?? 0,
     repliesNeedingAttention: dbSummary.replies_needing_attention ?? 0,
     recoveredThisWeek,
-    totalOutstanding: Number(dbSummary.total_outstanding ?? dbSummary.overdue_total ?? 0) + Number(dbSummary.due_soon_total ?? 0),
+    totalOutstanding: Number(dbSummary.overdue_total ?? 0) + Number(dbSummary.due_soon_total ?? 0),
   } : demoHomeSummary;
 
   const approvals = (dbApprovals && dbApprovals.length > 0)
