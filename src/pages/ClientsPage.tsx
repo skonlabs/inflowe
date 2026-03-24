@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Search, AlertCircle } from 'lucide-react';
+import { Search, AlertCircle, Users } from 'lucide-react';
 import { useState } from 'react';
 import { demoClients, formatCurrency } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';

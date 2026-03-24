@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, FileText } from 'lucide-react';
 import { demoInvoices, formatCurrency, getStateLabel, getStateClass } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
 import { useAppState } from '@/contexts/AppStateContext';
