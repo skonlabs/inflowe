@@ -1553,12 +1553,47 @@ export function useSubmitSupportCase() {
         if (error) throw error;
         return (data as any).id as string;
       } catch {
-        // Fallback: just return success
+      // Fallback: just return success
         return 'submitted';
       }
     },
     onSuccess: (_, { orgId }) => {
       qc.invalidateQueries({ queryKey: ['support-cases', orgId] });
+    },
+  });
+}
+
+// ─── Payment Plans ──────────────────────────────────────────────────────────
+
+export function usePaymentPlans(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ['payment-plans', orgId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payment_plans' as any)
+        .select('*, clients(display_name), invoices(invoice_number, amount, remaining_balance, currency)')
+        .eq('organization_id', orgId!)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+}
+
+export function useClientPaymentPlans(clientId: string | undefined, orgId: string | undefined) {
+  return useQuery({
+    queryKey: ['client-payment-plans', clientId, orgId],
+    enabled: !!clientId && !!orgId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payment_plans' as any)
+        .select('*, invoices(invoice_number, amount, remaining_balance, currency)')
+        .eq('organization_id', orgId!)
+        .eq('client_id', clientId!)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as any[];
     },
   });
 }
