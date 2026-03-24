@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, forwardRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, FileText, Users, CheckCircle, Bell, Settings, MessageSquare, BarChart3, HelpCircle, MoreHorizontal, LogOut, Upload } from 'lucide-react';
 import { useState } from 'react';
@@ -11,7 +11,7 @@ interface AppShellProps {
   children: ReactNode;
 }
 
-export default function AppShell({ children }: AppShellProps) {
+const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppShell({ children }, ref) {
   const location = useLocation();
   const navigate = useNavigate();
   const { notifications, markNotificationRead } = useAppState();
@@ -45,7 +45,7 @@ export default function AppShell({ children }: AppShellProps) {
   const isMoreActive = moreItems.some(item => location.pathname.startsWith(item.path));
 
   return (
-    <div className="min-h-screen bg-background">
+    <div ref={ref} className="min-h-screen bg-background">
       {/* Top bar */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border/60">
         <div className="flex items-center justify-between px-4 h-14 max-w-screen-xl mx-auto">
@@ -193,4 +193,6 @@ export default function AppShell({ children }: AppShellProps) {
       </nav>
     </div>
   );
-}
+});
+
+export default AppShell;

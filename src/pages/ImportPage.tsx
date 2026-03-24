@@ -59,6 +59,7 @@ export default function ImportPage() {
   const orgId = membership?.organization_id;
   const org   = membership?.organizations as { default_currency?: string } | undefined;
   const [view, setView] = useState<View>('list');
+  const [importType, setImportType] = useState<'invoice' | 'client'>('invoice');
   const [parsed, setParsed] = useState<ParsedFile | null>(null);
   const [proposals, setProposals] = useState<MappingProposal[]>([]);
   const [matchedTemplate, setMatchedTemplate] = useState<MappingTemplate | null>(null);
@@ -188,6 +189,7 @@ export default function ImportPage() {
         columnMapping: mapping.fieldToColumn,
         dateFormatHint: mapping.dateFormatHint,
         defaultCurrency: mapping.defaultCurrency,
+        importType,
       });
 
       setStagingResult(result);
@@ -221,8 +223,9 @@ export default function ImportPage() {
   const handleCommit = async () => {
     if (!orgId || !currentBatchId) return;
     try {
-      const result = await commitImport.mutateAsync({ orgId, importBatchId: currentBatchId });
-      const parts = [`${result.committed} invoice${result.committed !== 1 ? 's' : ''} imported`];
+      const result = await commitImport.mutateAsync({ orgId, importBatchId: currentBatchId, importType });
+      const itemLabel = importType === 'client' ? 'client' : 'invoice';
+      const parts = [`${result.committed} ${itemLabel}${result.committed !== 1 ? 's' : ''} imported`];
       if (result.conflicts > 0) parts.push(`${result.conflicts} conflict${result.conflicts !== 1 ? 's' : ''} queued for review`);
       toast.success(parts.join(' · '));
       setView('list');
@@ -241,6 +244,7 @@ export default function ImportPage() {
     setPendingMapping(null);
     setTemplateSaveName('');
     setShowTemplateSave(false);
+    setImportType('invoice');
   };
 
   // ── Exception resolution ───────────────────────────────────────────────────
@@ -384,7 +388,7 @@ export default function ImportPage() {
                 Importing...
               </span>
             ) : (
-              `Commit ${stagingResult.staged} invoice${stagingResult.staged !== 1 ? 's' : ''}`
+              `Commit ${stagingResult.staged} ${importType === 'client' ? 'client' : 'invoice'}${stagingResult.staged !== 1 ? 's' : ''}`
             )}
           </button>
         </div>
@@ -398,7 +402,7 @@ export default function ImportPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">Import</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Upload invoices from a spreadsheet or connected source</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Upload invoices or clients from a spreadsheet</p>
         </div>
         <button
           onClick={() => setView('upload')}
@@ -430,6 +434,14 @@ export default function ImportPage() {
       {/* Upload area (when view=upload) */}
       {view === 'upload' && (
         <div className="space-y-4">
+          {/* Import type toggle */}
+          <div className="flex bg-muted rounded-xl p-1">
+            {(['invoice', 'client'] as const).map(type => (
+              <button key={type} onClick={() => setImportType(type)}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${importType === type ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}
+              >{type === 'invoice' ? '🧾 Invoices' : '👥 Clients'}</button>
+            ))}
+          </div>
           <div
             onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
@@ -449,7 +461,7 @@ export default function ImportPage() {
             }`}
           >
             <FileSpreadsheet className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <p className="font-medium">Drag & drop your file</p>
+            <p className="font-medium">Drag & drop your {importType === 'client' ? 'client' : 'invoice'} file</p>
             <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
             <p className="text-xs text-muted-foreground mt-3">
               CSV, Excel (.xlsx, .xls) · Any column names — we'll help you map them
