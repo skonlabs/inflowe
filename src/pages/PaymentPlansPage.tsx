@@ -60,7 +60,7 @@ export default function PaymentPlansPage() {
       <div className="flex gap-2 overflow-x-auto pb-1">
         {filters.map(f => (
           <button key={f} onClick={() => setStatusFilter(f)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${statusFilter === f ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>
+            className={`px-3.5 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors active:scale-95 ${statusFilter === f ? 'bg-primary text-primary-foreground' : 'bg-card border border-border text-muted-foreground hover:text-foreground'}`}>
             {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
         ))}
