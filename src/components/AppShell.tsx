@@ -51,8 +51,8 @@ const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppShell({ c
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border/60">
         <div className="flex items-center justify-between px-4 h-14 max-w-screen-xl mx-auto">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xs tracking-wider">X</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-sm">
+              <span className="text-white font-bold text-xs tracking-wider">X</span>
             </div>
             <span className="font-semibold text-base tracking-tight">Cash Ops</span>
           </div>
