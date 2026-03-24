@@ -229,7 +229,7 @@ export default function ClientDetailPage() {
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Display name</label>
                 <input value={editForm.displayName} onChange={e => setEditForm(f => ({ ...f, displayName: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-ring/30" />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Sensitivity level</label>
