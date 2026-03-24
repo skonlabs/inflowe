@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Check, X, Edit3, Clock, ChevronDown, ChevronUp, Save } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Check, X, Edit3, Clock, ChevronDown, ChevronUp, Save, Search } from 'lucide-react';
 import { demoApprovals, formatCurrency } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -62,8 +62,18 @@ export default function ApprovalsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState('');
 
-  const pending = supabaseApprovals.filter(a => !localApprovals[a.id] && a.status === 'pending');
+  const pending = useMemo(() => {
+    return supabaseApprovals.filter(a => {
+      if (localApprovals[a.id] || a.status !== 'pending') return false;
+      if (search) {
+        const q = search.toLowerCase();
+        if (!a.clientName.toLowerCase().includes(q) && !a.invoiceNumber.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+  }, [supabaseApprovals, localApprovals, search]);
 
   const persistEditedBody = async (approval: DisplayApproval) => {
     const edited = editedMessages[approval.id];
@@ -142,6 +152,15 @@ export default function ApprovalsPage() {
         <p className="text-sm text-muted-foreground mt-1">
           {pending.length > 0 ? `${pending.length} messages waiting for your review` : 'All caught up! 🎉'}
         </p>
+      </ScrollReveal>
+
+      <ScrollReveal delay={0.05}>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input type="text" placeholder="Search approvals..."
+            value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 transition-shadow" />
+        </div>
       </ScrollReveal>
 
       {pending.length === 0 && (

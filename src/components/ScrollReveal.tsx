@@ -31,9 +31,9 @@ export const StaggerContainer = forwardRef<HTMLDivElement, { children: ReactNode
       <motion.div
         ref={ref}
         initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.1 }}
+        animate="visible"
         variants={{
+          hidden: {},
           visible: { transition: { staggerChildren: 0.08 } },
         }}
         className={className}
