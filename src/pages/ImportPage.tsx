@@ -244,6 +244,7 @@ export default function ImportPage() {
     setPendingMapping(null);
     setTemplateSaveName('');
     setShowTemplateSave(false);
+    setImportType('invoice');
   };
 
   // ── Exception resolution ───────────────────────────────────────────────────
