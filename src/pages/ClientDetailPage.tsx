@@ -253,7 +253,7 @@ export default function ClientDetailPage() {
                 <label className="text-xs text-muted-foreground block mb-1">Notes</label>
                 <textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
                   placeholder="Add internal notes..."
-                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-ring/30" />
               </div>
               <div className="flex gap-2">
                 <button onClick={handleSaveEdit} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-success text-success-foreground font-medium text-sm active:scale-95 transition-transform">

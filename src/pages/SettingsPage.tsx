@@ -348,7 +348,7 @@ export default function SettingsPage() {
               <input
                 value={editing.value}
                 onChange={e => setEditing(prev => prev ? { ...prev, value: e.target.value } : null)}
-                className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                 autoFocus
                 onKeyDown={e => e.key === 'Enter' && saveEdit()}
               />
