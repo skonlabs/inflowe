@@ -402,7 +402,7 @@ export default function ImportPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">Import</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Upload invoices from a spreadsheet or connected source</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Upload invoices or clients from a spreadsheet</p>
         </div>
         <button
           onClick={() => setView('upload')}
