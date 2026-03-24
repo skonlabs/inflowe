@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, forwardRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, FileText, Users, CheckCircle, Bell, Settings, MessageSquare, BarChart3, HelpCircle, MoreHorizontal, LogOut, Upload } from 'lucide-react';
 import { useState } from 'react';
@@ -11,7 +11,7 @@ interface AppShellProps {
   children: ReactNode;
 }
 
-export default function AppShell({ children }: AppShellProps) {
+const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppShell({ children }, ref) {
   const location = useLocation();
   const navigate = useNavigate();
   const { notifications, markNotificationRead } = useAppState();
