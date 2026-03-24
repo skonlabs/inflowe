@@ -62,8 +62,18 @@ export default function ApprovalsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState('');
 
-  const pending = supabaseApprovals.filter(a => !localApprovals[a.id] && a.status === 'pending');
+  const pending = useMemo(() => {
+    return supabaseApprovals.filter(a => {
+      if (localApprovals[a.id] || a.status !== 'pending') return false;
+      if (search) {
+        const q = search.toLowerCase();
+        if (!a.clientName.toLowerCase().includes(q) && !a.invoiceNumber.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+  }, [supabaseApprovals, localApprovals, search]);
 
   const persistEditedBody = async (approval: DisplayApproval) => {
     const edited = editedMessages[approval.id];
