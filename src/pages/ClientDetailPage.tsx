@@ -6,7 +6,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useUserOrganization, useClientDetail, useClientInvoices, useUpdateClient } from '@/hooks/use-supabase-data';
+import { useUserOrganization, useClientDetail, useClientInvoices, useUpdateClient, useClientPaymentPlans } from '@/hooks/use-supabase-data';
 
 const sensitivityLabels: Record<string, { label: string; className: string }> = {
   standard: { label: 'Standard', className: 'status-paid' },
@@ -24,6 +24,7 @@ export default function ClientDetailPage() {
   const { data: dbClient } = useClientDetail(id, orgId);
   const { data: dbClientInvoices } = useClientInvoices(id, orgId);
   const updateClient = useUpdateClient();
+  const { data: clientPlans = [] } = useClientPaymentPlans(id, orgId);
 
   const primaryContact = dbClient?.client_contacts
     ? ((dbClient.client_contacts as any[]).find((c: any) => c.is_primary) || (dbClient.client_contacts as any[])[0])
@@ -339,6 +340,42 @@ export default function ClientDetailPage() {
           )}
         </div>
       </ScrollReveal>
+
+      {/* Payment Plans */}
+      {clientPlans.length > 0 && (
+        <ScrollReveal delay={0.22}>
+          <div className="space-y-2">
+            <h2 className="font-semibold text-base">Payment Plans</h2>
+            <StaggerContainer className="space-y-2">
+              {clientPlans.map((plan: any) => {
+                const installments = Array.isArray(plan.installments) ? plan.installments : [];
+                const paidCount = installments.filter((i: any) => i.status === 'paid').length;
+                const progress = installments.length > 0 ? Math.round((paidCount / installments.length) * 100) : 0;
+                return (
+                  <StaggerItem key={plan.id}>
+                    <button onClick={() => navigate(`/invoices/${plan.invoice_id}`)}
+                      className="glass-card-hover rounded-xl p-4 w-full text-left active:scale-[0.97] transition-transform">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-medium text-sm">{plan.invoices?.invoice_number ?? 'Invoice'}</p>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${plan.plan_status === 'active' ? 'status-due-soon' : plan.plan_status === 'completed' ? 'status-paid' : 'status-overdue'}`}>
+                          {plan.plan_status}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                        <span>{formatCurrency(plan.total_amount)} total</span>
+                        <span>{paidCount}/{installments.length} paid</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-success rounded-full transition-all" style={{ width: `${progress}%` }} />
+                      </div>
+                    </button>
+                  </StaggerItem>
+                );
+              })}
+            </StaggerContainer>
+          </div>
+        </ScrollReveal>
+      )}
 
       {/* Activity */}
       <ScrollReveal delay={0.25}>

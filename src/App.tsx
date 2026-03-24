@@ -22,6 +22,7 @@ import AdminPage from "@/pages/AdminPage";
 import OnboardingPage from "@/pages/OnboardingPage";
 import SettingsPage from "@/pages/SettingsPage";
 import ImportPage from "@/pages/ImportPage";
+import PaymentPlansPage from "@/pages/PaymentPlansPage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
               <Route path="/admin" element={<ProtectedShell><AdminPage /></ProtectedShell>} />
               <Route path="/settings" element={<ProtectedShell><SettingsPage /></ProtectedShell>} />
               <Route path="/import" element={<ProtectedShell><ImportPage /></ProtectedShell>} />
+              <Route path="/payment-plans" element={<ProtectedShell><PaymentPlansPage /></ProtectedShell>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
