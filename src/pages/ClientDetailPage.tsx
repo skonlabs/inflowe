@@ -24,6 +24,7 @@ export default function ClientDetailPage() {
   const { data: dbClient } = useClientDetail(id, orgId);
   const { data: dbClientInvoices } = useClientInvoices(id, orgId);
   const updateClient = useUpdateClient();
+  const { data: clientPlans = [] } = useClientPaymentPlans(id, orgId);
 
   const primaryContact = dbClient?.client_contacts
     ? ((dbClient.client_contacts as any[]).find((c: any) => c.is_primary) || (dbClient.client_contacts as any[])[0])
