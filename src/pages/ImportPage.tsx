@@ -285,6 +285,7 @@ export default function ImportPage() {
           onConfirm={handleMappingConfirm}
           onCancel={() => { setView('upload'); setParsed(null); }}
           hasSavedTemplate={!!matchedTemplate}
+          importType={importType}
         />
         {showTemplateSave && pendingMapping && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4">
