@@ -155,18 +155,19 @@
   .glass-card {
     @apply bg-card border border-border;
     box-shadow:
-      0 1px 2px hsl(270 15% 14% / 0.03),
-      0 4px 12px hsl(270 15% 14% / 0.04);
+      0 1px 3px hsl(270 15% 14% / 0.04),
+      0 4px 16px hsl(270 15% 14% / 0.03);
     border-radius: var(--radius);
   }
 
   .glass-card-hover {
-    @apply glass-card transition-shadow duration-200;
+    @apply glass-card transition-all duration-200;
   }
   .glass-card-hover:hover {
     box-shadow:
       0 2px 8px hsl(270 15% 14% / 0.06),
-      0 8px 24px hsl(270 15% 14% / 0.06);
+      0 8px 28px hsl(270 15% 14% / 0.05);
+    border-color: hsl(var(--border) / 0.8);
   }
 
   .status-overdue {
@@ -187,5 +188,13 @@
 
   .pb-safe {
     padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
