@@ -84,7 +84,7 @@ export const demoClients: Client[] = [
   {
     id: 'c1', displayName: 'Meridian Creative Co.', sensitivityLevel: 'standard', status: 'active',
     preferredChannel: 'email', contactName: 'Sarah Chen', contactEmail: 'sarah@meridiancreative.co',
-    overdueTotal: 12500, outstandingTotal: 28400, invoiceCount: 5, riskScore: 0.72, lastActivity: '2 hours ago',
+    overdueTotal: 12500, outstandingTotal: 12500, invoiceCount: 2, riskScore: 0.72, lastActivity: '2 hours ago',
   },
   {
     id: 'c2', displayName: 'Bright Pixel Studios', sensitivityLevel: 'vip', status: 'active',
@@ -94,17 +94,17 @@ export const demoClients: Client[] = [
   {
     id: 'c3', displayName: 'Volta Brand Agency', sensitivityLevel: 'sensitive', status: 'active',
     preferredChannel: 'email', contactName: 'Priya Patel', contactEmail: 'priya@voltabrand.com',
-    overdueTotal: 8750, outstandingTotal: 8750, invoiceCount: 1, riskScore: 0.85, lastActivity: '5 days ago',
+    overdueTotal: 8750, outstandingTotal: 13250, invoiceCount: 2, riskScore: 0.85, lastActivity: '5 days ago',
   },
   {
     id: 'c4', displayName: 'Northstar Digital', sensitivityLevel: 'standard', status: 'active',
     preferredChannel: 'email', contactName: 'Jake Morrison', contactEmail: 'jake@northstardigital.com',
-    overdueTotal: 3200, outstandingTotal: 9600, invoiceCount: 3, riskScore: 0.45, lastActivity: '3 days ago',
+    overdueTotal: 3200, outstandingTotal: 6400, invoiceCount: 2, riskScore: 0.45, lastActivity: '3 days ago',
   },
   {
     id: 'c5', displayName: 'Harbor & Co.', sensitivityLevel: 'high_value', status: 'active',
     preferredChannel: 'email', contactName: 'Lisa Nakamura', contactEmail: 'lisa@harborandco.com',
-    overdueTotal: 0, outstandingTotal: 42000, invoiceCount: 4, riskScore: 0.08, lastActivity: '6 hours ago',
+    overdueTotal: 0, outstandingTotal: 42000, invoiceCount: 2, riskScore: 0.08, lastActivity: '6 hours ago',
   },
   {
     id: 'c6', displayName: 'Fern & Bloom Marketing', sensitivityLevel: 'standard', status: 'active',
@@ -114,7 +114,7 @@ export const demoClients: Client[] = [
   {
     id: 'c7', displayName: 'Redline Productions', sensitivityLevel: 'standard', status: 'active',
     preferredChannel: 'email', contactName: 'Tanya Brooks', contactEmail: 'tanya@redlineproductions.com',
-    overdueTotal: 0, outstandingTotal: 7200, invoiceCount: 2, riskScore: 0.22, lastActivity: '4 days ago',
+    overdueTotal: 0, outstandingTotal: 7200, invoiceCount: 1, riskScore: 0.22, lastActivity: '4 days ago',
   },
   {
     id: 'c8', displayName: 'Summit Group', sensitivityLevel: 'standard', status: 'archived',
