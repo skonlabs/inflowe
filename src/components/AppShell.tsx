@@ -176,10 +176,13 @@ const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppShell({ c
                     navigate(item.path);
                   }
                 }}
-                className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-colors active:scale-95 ${
+                className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all active:scale-95 relative ${
                   isActive ? 'text-accent' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
+                {isActive && (
+                  <div className="absolute -top-1 w-5 h-0.5 rounded-full bg-accent" />
+                )}
                 <div className="relative">
                   <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
                   {item.badge && (
