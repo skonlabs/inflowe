@@ -55,8 +55,9 @@ export default function InvoiceDetailPage() {
   const [planInstallments, setPlanInstallments] = useState(3);
   const [creatingPlan, setCreatingPlan] = useState(false);
 
-  // Only fall back to demo when no orgId (demo / unauthenticated mode).
-  const demoInvoice = orgId ? null : demoInvoices.find(i => i.id === id);
+  const isDemo = !!(membership?.organizations as any)?.is_demo;
+  // Fall back to demo when no orgId OR when org is demo and DB returned nothing.
+  const demoInvoice = (!orgId || (isDemo && !dbInvoice)) ? demoInvoices.find(i => i.id === id) : null;
   const invoice = dbInvoice ? {
     id: dbInvoice.id,
     invoiceNumber: dbInvoice.invoice_number ?? '',
