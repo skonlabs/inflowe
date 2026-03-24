@@ -131,7 +131,7 @@ export default function InvoiceDetailPage() {
   };
 
   const handleDispute = async () => {
-    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
+    if (!orgId || isDemoRecord) { toast.info('This is demo data — sign up or import real invoices to take actions'); return; }
     try {
       await setDispute.mutateAsync({ invoiceId: invoice.id, orgId, disputeActive: true });
       toast('Invoice flagged as disputed — automation paused', { icon: '🚩' });
