@@ -322,7 +322,7 @@ export const homeSummary = {
   approvalsPending: 3,
   repliesNeedingAttention: 1,
   recoveredThisWeek: 12000,
-  totalOutstanding: 129850,
+  totalOutstanding: 136450,
 };
 
 // ─── AI recommendations ───────────────────────────────────────────────────────
