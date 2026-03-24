@@ -12,27 +12,27 @@ export default function ClientsPage() {
   const orgId = membership?.organization_id;
   const { data: dbClients } = useClientSummaries(orgId);
 
-  // When user has an org, show only real data (empty while loading).
-  // Only show demo data for users without an org (unauthenticated / demo mode).
-  const clients = orgId
-    ? (dbClients ?? []).map(c => ({
-        id: c.client_id,
-        displayName: c.display_name ?? 'Unnamed',
-        contactName: c.account_owner_name ?? '',
-        outstandingTotal: Number(c.outstanding_total ?? 0),
-        overdueTotal: Number(c.overdue_total ?? 0),
-        riskScore: Number(c.risk_score ?? 0),
-        sensitivityLevel: c.sensitivity_level ?? 'standard',
-      }))
-    : demoClients.filter(c => c.status === 'active').map(c => ({
-        id: c.id,
-        displayName: c.displayName,
-        contactName: c.contactName,
-        outstandingTotal: c.outstandingTotal,
-        overdueTotal: c.overdueTotal,
-        riskScore: c.riskScore,
-        sensitivityLevel: c.sensitivityLevel,
-      }));
+  const isDemo = !!(membership?.organizations as any)?.is_demo;
+  const dbMapped = (dbClients ?? []).map(c => ({
+      id: c.client_id,
+      displayName: c.display_name ?? 'Unnamed',
+      contactName: c.account_owner_name ?? '',
+      outstandingTotal: Number(c.outstanding_total ?? 0),
+      overdueTotal: Number(c.overdue_total ?? 0),
+      riskScore: Number(c.risk_score ?? 0),
+      sensitivityLevel: c.sensitivity_level ?? 'standard',
+    }));
+  const demoMapped = demoClients.filter(c => c.status === 'active').map(c => ({
+      id: c.id,
+      displayName: c.displayName,
+      contactName: c.contactName,
+      outstandingTotal: c.outstandingTotal,
+      overdueTotal: c.overdueTotal,
+      riskScore: c.riskScore,
+      sensitivityLevel: c.sensitivityLevel,
+    }));
+  const clients = (orgId && dbMapped.length > 0) ? dbMapped
+    : (!orgId || isDemo) ? demoMapped : dbMapped;
 
   const filtered = clients.filter(c => {
     if (search && !c.displayName.toLowerCase().includes(search.toLowerCase())) return false;
