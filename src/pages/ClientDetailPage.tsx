@@ -29,9 +29,9 @@ export default function ClientDetailPage() {
     ? ((dbClient.client_contacts as any[]).find((c: any) => c.is_primary) || (dbClient.client_contacts as any[])[0])
     : null;
 
-  // When user has an org, only use real data — never fall back to demo.
-  // Demo data is only shown for unauthenticated / demo-mode users.
-  const demoClient = orgId ? null : demoClients.find(c => c.id === id);
+  const isDemo = !!(membership?.organizations as any)?.is_demo;
+  // Fall back to demo when no orgId OR when org is demo and DB returned nothing.
+  const demoClient = (!orgId || (isDemo && !dbClient)) ? demoClients.find(c => c.id === id) : null;
 
   const client = dbClient ? {
     id: dbClient.id,
@@ -57,8 +57,8 @@ export default function ClientDetailPage() {
     riskScore: demoClient.riskScore,
   } : null;
 
-  // Map invoices — only fall back to demo when no orgId (demo mode)
-  const clientInvoices = orgId
+  // Map invoices — fall back to demo when no orgId or demo org with no data
+  const clientInvoices = (orgId && (dbClientInvoices ?? []).length > 0)
     ? (dbClientInvoices ?? []).map(inv => ({
         id: inv.id,
         invoiceNumber: inv.invoice_number ?? '',

@@ -44,8 +44,10 @@ export default function InvoiceDetailPage() {
   const { data: dbInvoice, isLoading } = useInvoiceDetail(id, orgId);
   const { data: dbTimelineEvents = [] } = useInvoiceTimeline(id, orgId);
 
+  const isDemo = !!(membership?.organizations as any)?.is_demo;
   // Use real timeline for authenticated users; demo timeline for demo mode
-  const timelineEvents = orgId ? dbTimelineEvents : (demoInvoiceTimelines[id || ''] ?? []);
+  const timelineEvents = (orgId && dbTimelineEvents.length > 0) ? dbTimelineEvents
+    : (!orgId || isDemo) ? (demoInvoiceTimelines[id || ''] ?? []) : dbTimelineEvents;
 
   const markPaid = useMarkInvoicePaid();
   const setHold = useSetInvoiceHold();
@@ -55,8 +57,9 @@ export default function InvoiceDetailPage() {
   const [planInstallments, setPlanInstallments] = useState(3);
   const [creatingPlan, setCreatingPlan] = useState(false);
 
-  // Only fall back to demo when no orgId (demo / unauthenticated mode).
-  const demoInvoice = orgId ? null : demoInvoices.find(i => i.id === id);
+  // Fall back to demo when no orgId OR when org is demo and DB returned nothing.
+  // Fall back to demo when no orgId OR when org is demo and DB returned nothing.
+  const demoInvoice = (!orgId || (isDemo && !dbInvoice)) ? demoInvoices.find(i => i.id === id) : null;
   const invoice = dbInvoice ? {
     id: dbInvoice.id,
     invoiceNumber: dbInvoice.invoice_number ?? '',
