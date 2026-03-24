@@ -59,6 +59,7 @@ export default function ImportPage() {
   const orgId = membership?.organization_id;
   const org   = membership?.organizations as { default_currency?: string } | undefined;
   const [view, setView] = useState<View>('list');
+  const [importType, setImportType] = useState<'invoice' | 'client'>('invoice');
   const [parsed, setParsed] = useState<ParsedFile | null>(null);
   const [proposals, setProposals] = useState<MappingProposal[]>([]);
   const [matchedTemplate, setMatchedTemplate] = useState<MappingTemplate | null>(null);
