@@ -224,7 +224,8 @@ export default function ImportPage() {
     if (!orgId || !currentBatchId) return;
     try {
       const result = await commitImport.mutateAsync({ orgId, importBatchId: currentBatchId, importType });
-      const parts = [`${result.committed} invoice${result.committed !== 1 ? 's' : ''} imported`];
+      const itemLabel = importType === 'client' ? 'client' : 'invoice';
+      const parts = [`${result.committed} ${itemLabel}${result.committed !== 1 ? 's' : ''} imported`];
       if (result.conflicts > 0) parts.push(`${result.conflicts} conflict${result.conflicts !== 1 ? 's' : ''} queued for review`);
       toast.success(parts.join(' · '));
       setView('list');
