@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Check, X, Edit3, Clock, ChevronDown, ChevronUp, Save } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Check, X, Edit3, Clock, ChevronDown, ChevronUp, Save, Search } from 'lucide-react';
 import { demoApprovals, formatCurrency } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
 import { motion, AnimatePresence } from 'framer-motion';
