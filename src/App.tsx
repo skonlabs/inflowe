@@ -57,6 +57,7 @@ const App = () => (
               <Route path="/admin" element={<ProtectedShell><AdminPage /></ProtectedShell>} />
               <Route path="/settings" element={<ProtectedShell><SettingsPage /></ProtectedShell>} />
               <Route path="/import" element={<ProtectedShell><ImportPage /></ProtectedShell>} />
+              <Route path="/payment-plans" element={<ProtectedShell><PaymentPlansPage /></ProtectedShell>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

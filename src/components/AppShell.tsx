@@ -36,6 +36,7 @@ const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppShell({ c
 
   const moreItems = [
     { path: '/import', icon: Upload, label: 'Import Data' },
+    { path: '/payment-plans', icon: CreditCard, label: 'Payment Plans' },
     { path: '/conversations', icon: MessageSquare, label: 'Conversations' },
     { path: '/reports', icon: BarChart3, label: 'Reports' },
     { path: '/support', icon: HelpCircle, label: 'Support' },
