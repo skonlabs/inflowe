@@ -461,7 +461,7 @@ export default function ImportPage() {
             }`}
           >
             <FileSpreadsheet className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <p className="font-medium">Drag & drop your file</p>
+            <p className="font-medium">Drag & drop your {importType === 'client' ? 'client' : 'invoice'} file</p>
             <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
             <p className="text-xs text-muted-foreground mt-3">
               CSV, Excel (.xlsx, .xls) · Any column names — we'll help you map them
