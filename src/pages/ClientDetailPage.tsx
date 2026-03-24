@@ -140,8 +140,8 @@ export default function ClientDetailPage() {
   };
 
   const handleSaveEdit = async () => {
-    if (!orgId) {
-      toast.info('Sign up to edit client details');
+    if (!orgId || isDemoRecord) {
+      toast.info('This is demo data — import real clients to take actions');
       return;
     }
     try {
