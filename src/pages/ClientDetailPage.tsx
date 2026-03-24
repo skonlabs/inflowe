@@ -32,6 +32,7 @@ export default function ClientDetailPage() {
   const isDemo = !!(membership?.organizations as any)?.is_demo;
   // Fall back to demo when no orgId OR when org is demo and DB returned nothing.
   const demoClient = (!orgId || (isDemo && !dbClient)) ? demoClients.find(c => c.id === id) : null;
+  const isDemoRecord = !!demoClient;
 
   const client = dbClient ? {
     id: dbClient.id,
