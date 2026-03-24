@@ -151,7 +151,7 @@ export default function InvoiceDetailPage() {
   };
 
   const handleCreatePlan = async () => {
-    if (!orgId || !invoice) return;
+    if (!orgId || !invoice || isDemoRecord) { toast.info('This is demo data — sign up or import real invoices to take actions'); return; }
     setCreatingPlan(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
