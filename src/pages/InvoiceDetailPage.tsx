@@ -44,8 +44,10 @@ export default function InvoiceDetailPage() {
   const { data: dbInvoice, isLoading } = useInvoiceDetail(id, orgId);
   const { data: dbTimelineEvents = [] } = useInvoiceTimeline(id, orgId);
 
+  const isDemo_ = !!(membership?.organizations as any)?.is_demo;
   // Use real timeline for authenticated users; demo timeline for demo mode
-  const timelineEvents = orgId ? dbTimelineEvents : (demoInvoiceTimelines[id || ''] ?? []);
+  const timelineEvents = (orgId && dbTimelineEvents.length > 0) ? dbTimelineEvents
+    : (!orgId || isDemo_) ? (demoInvoiceTimelines[id || ''] ?? []) : dbTimelineEvents;
 
   const markPaid = useMarkInvoicePaid();
   const setHold = useSetInvoiceHold();

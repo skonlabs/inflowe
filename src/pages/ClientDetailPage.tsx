@@ -57,8 +57,8 @@ export default function ClientDetailPage() {
     riskScore: demoClient.riskScore,
   } : null;
 
-  // Map invoices — only fall back to demo when no orgId (demo mode)
-  const clientInvoices = orgId
+  // Map invoices — fall back to demo when no orgId or demo org with no data
+  const clientInvoices = (orgId && (dbClientInvoices ?? []).length > 0)
     ? (dbClientInvoices ?? []).map(inv => ({
         id: inv.id,
         invoiceNumber: inv.invoice_number ?? '',

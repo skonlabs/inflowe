@@ -37,12 +37,14 @@ export default function ConversationDetailPage() {
   const { data: dbThreads = [] } = useConversationThreads(orgId);
   const { data: dbMessages = [] } = useThreadMessages(id, orgId);
 
+  const isDemo = !!(membership?.organizations as any)?.is_demo;
   const dbThread = dbThreads.find(t => t.id === id);
-  // Only show demo threads for users without an org (demo / unauthenticated mode).
-  const demoThread = orgId ? null : demoThreadData[id || ''];
+  // Fall back to demo when no orgId OR when org is demo and DB returned nothing.
+  const demoThread = (!orgId || (isDemo && !dbThread)) ? demoThreadData[id || ''] : null;
 
   // Use real messages for DB threads; demo messages for demo threads
-  const messages = orgId ? dbMessages : (demoThreadMessages[id || ''] ?? []);
+  const messages = (orgId && dbMessages.length > 0) ? dbMessages
+    : (!orgId || isDemo) ? (demoThreadMessages[id || ''] ?? []) : dbMessages;
 
   const clientName = dbThread ? (dbThread.clients as any)?.display_name ?? 'Unknown' : demoThread?.clientName ?? '';
   const subject = dbThread?.subject ?? demoThread?.subject ?? '';
