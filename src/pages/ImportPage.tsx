@@ -110,7 +110,7 @@ export default function ImportPage() {
       }));
       const matched = mapped.find(t => matchesTemplate(result.headers, t)) ?? null;
       setMatchedTemplate(matched);
-      const inferred = inferMapping(result.headers, result.rows.slice(0, 10), matched);
+      const inferred = inferMapping(result.headers, result.rows.slice(0, 10), matched, importType);
       setProposals(inferred);
       if (result.warnings.length > 0) result.warnings.forEach(w => toast.warning(w));
       setView('mapping');
@@ -285,6 +285,7 @@ export default function ImportPage() {
           onConfirm={handleMappingConfirm}
           onCancel={() => { setView('upload'); setParsed(null); }}
           hasSavedTemplate={!!matchedTemplate}
+          importType={importType}
         />
         {showTemplateSave && pendingMapping && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4">
@@ -471,7 +472,7 @@ export default function ImportPage() {
           {/* Excel multi-sheet selector */}
           {excelSheets.length > 1 && pendingExcelFile && (
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
-              <p className="text-sm font-medium">This workbook has multiple sheets. Which one contains your invoices?</p>
+              <p className="text-sm font-medium">This workbook has multiple sheets. Which one contains your {importType === 'client' ? 'clients' : 'invoices'}?</p>
               <div className="space-y-2">
                 {excelSheets.map(s => (
                   <button
