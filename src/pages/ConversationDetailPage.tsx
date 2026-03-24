@@ -53,8 +53,8 @@ export default function ConversationDetailPage() {
 
   const handleSend = async () => {
     if (!reply.trim() || !id) return;
-    if (!orgId) {
-      toast.info('Sign in to send replies');
+    if (!orgId || isDemoRecord) {
+      toast.info('This is demo data — connect real conversations to send replies');
       setReply('');
       return;
     }
