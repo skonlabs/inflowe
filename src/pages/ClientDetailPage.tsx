@@ -6,7 +6,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useUserOrganization, useClientDetail, useClientInvoices, useUpdateClient } from '@/hooks/use-supabase-data';
+import { useUserOrganization, useClientDetail, useClientInvoices, useUpdateClient, useClientPaymentPlans } from '@/hooks/use-supabase-data';
 
 const sensitivityLabels: Record<string, { label: string; className: string }> = {
   standard: { label: 'Standard', className: 'status-paid' },
