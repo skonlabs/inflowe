@@ -472,7 +472,7 @@ export default function ImportPage() {
           {/* Excel multi-sheet selector */}
           {excelSheets.length > 1 && pendingExcelFile && (
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
-              <p className="text-sm font-medium">This workbook has multiple sheets. Which one contains your invoices?</p>
+              <p className="text-sm font-medium">This workbook has multiple sheets. Which one contains your {importType === 'client' ? 'clients' : 'invoices'}?</p>
               <div className="space-y-2">
                 {excelSheets.map(s => (
                   <button
