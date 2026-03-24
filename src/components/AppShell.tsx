@@ -45,7 +45,7 @@ const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppShell({ c
   const isMoreActive = moreItems.some(item => location.pathname.startsWith(item.path));
 
   return (
-    <div className="min-h-screen bg-background">
+    <div ref={ref} className="min-h-screen bg-background">
       {/* Top bar */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border/60">
         <div className="flex items-center justify-between px-4 h-14 max-w-screen-xl mx-auto">
