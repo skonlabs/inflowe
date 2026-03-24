@@ -160,7 +160,7 @@ export default function SupportPage() {
                     onChange={e => setCaseDescription(e.target.value)}
                     placeholder="Describe what happened and what you expected..."
                     rows={3}
-                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 resize-none"
                   />
                   <div className="flex gap-2">
                     <button

@@ -138,7 +138,7 @@ export default function ConversationDetailPage() {
               value={reply}
               onChange={e => setReply(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-              className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow"
+              className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 transition-shadow"
             />
             <button
               onClick={handleSend}
