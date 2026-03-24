@@ -109,7 +109,7 @@ export default function InvoiceDetailPage() {
   const currentState = invoice.state;
 
   const handleMarkPaid = async () => {
-    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
+    if (!orgId || isDemoRecord) { toast.info('This is demo data — sign up or import real invoices to take actions'); return; }
     try {
       await markPaid.mutateAsync({ invoiceId: invoice.id, orgId, method: 'manual' });
       toast.success(`${invoice.invoiceNumber} marked as paid`);
