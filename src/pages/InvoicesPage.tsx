@@ -25,24 +25,25 @@ export default function InvoicesPage() {
   const [activeFilter, setActiveFilter] = useState(initialFilter);
   const [search, setSearch] = useState('');
 
-  const invoices = orgId
-    ? (dbInvoices ?? []).map(inv => ({
-        id: inv.invoice_id,
-        invoiceNumber: inv.invoice_number ?? '',
-        clientName: inv.client_display_name ?? 'Unknown',
-        amount: Number(inv.amount ?? 0),
-        remainingBalance: Number(inv.remaining_balance ?? 0),
-        currency: inv.currency ?? 'USD',
-        dueDate: inv.due_date ?? '',
-        state: (inv.state ?? 'sent') as string,
-        daysOverdue: inv.days_overdue ?? 0,
-        agingBucket: inv.aging_bucket ?? 'current',
-        collectionPriority: inv.collection_priority ?? 'medium',
-        lastActionAt: inv.last_action_taken_at,
-        nextActionAt: inv.next_action_planned_at,
-        riskScore: Number(inv.risk_score ?? 0),
-      }))
-    : demoInvoices;
+  const isDemo = !!(membership?.organizations as any)?.is_demo;
+  const dbMapped = (dbInvoices ?? []).map(inv => ({
+      id: inv.invoice_id,
+      invoiceNumber: inv.invoice_number ?? '',
+      clientName: inv.client_display_name ?? 'Unknown',
+      amount: Number(inv.amount ?? 0),
+      remainingBalance: Number(inv.remaining_balance ?? 0),
+      currency: inv.currency ?? 'USD',
+      dueDate: inv.due_date ?? '',
+      state: (inv.state ?? 'sent') as string,
+      daysOverdue: inv.days_overdue ?? 0,
+      agingBucket: inv.aging_bucket ?? 'current',
+      collectionPriority: inv.collection_priority ?? 'medium',
+      lastActionAt: inv.last_action_taken_at,
+      nextActionAt: inv.next_action_planned_at,
+      riskScore: Number(inv.risk_score ?? 0),
+    }));
+  const invoices = (orgId && dbMapped.length > 0) ? dbMapped
+    : (!orgId || isDemo) ? demoInvoices : dbMapped;
 
   const getEffectiveState = (inv: typeof invoices[0]) => {
     const actions = invoiceActions[inv.id] || {};

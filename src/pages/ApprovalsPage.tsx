@@ -28,35 +28,35 @@ export default function ApprovalsPage() {
   const { data: dbApprovals } = useApprovals(orgId);
   const queryClient = useQueryClient();
 
-  // When user has an org, only show real approvals (empty while loading).
-  // Only show demo approvals for unauthenticated / demo-mode users.
-  const supabaseApprovals: DisplayApproval[] = orgId
-    ? (dbApprovals ?? []).map(a => ({
-        id: a.id,
-        outboundMessageId: (a as any).outbound_message_id ?? null,
-        clientName: (a.clients as any)?.display_name ?? 'Unknown',
-        invoiceNumber: (a.invoices as any)?.invoice_number ?? '',
-        amount: Number((a.invoices as any)?.amount ?? 0),
-        daysOverdue: (a.invoices as any)?.days_overdue ?? 0,
-        stage: a.approval_type,
-        rationale: a.rationale_shown,
-        messagePreview: (a.outbound_messages as any)?.body_text ?? '',
-        status: a.status,
-        isSupabase: true,
-      }))
-    : demoApprovals.map(a => ({
-        id: a.id,
-        outboundMessageId: null,
-        clientName: a.clientName,
-        invoiceNumber: a.invoiceNumber,
-        amount: a.amount,
-        daysOverdue: a.daysOverdue,
-        stage: a.stage,
-        rationale: a.rationale,
-        messagePreview: a.messagePreview,
-        status: a.status,
-        isSupabase: false,
-      }));
+  const isDemo = !!(membership?.organizations as any)?.is_demo;
+  const dbMapped: DisplayApproval[] = (dbApprovals ?? []).map(a => ({
+      id: a.id,
+      outboundMessageId: (a as any).outbound_message_id ?? null,
+      clientName: (a.clients as any)?.display_name ?? 'Unknown',
+      invoiceNumber: (a.invoices as any)?.invoice_number ?? '',
+      amount: Number((a.invoices as any)?.amount ?? 0),
+      daysOverdue: (a.invoices as any)?.days_overdue ?? 0,
+      stage: a.approval_type,
+      rationale: a.rationale_shown,
+      messagePreview: (a.outbound_messages as any)?.body_text ?? '',
+      status: a.status,
+      isSupabase: true,
+    }));
+  const demoMapped: DisplayApproval[] = demoApprovals.map(a => ({
+      id: a.id,
+      outboundMessageId: null,
+      clientName: a.clientName,
+      invoiceNumber: a.invoiceNumber,
+      amount: a.amount,
+      daysOverdue: a.daysOverdue,
+      stage: a.stage,
+      rationale: a.rationale,
+      messagePreview: a.messagePreview,
+      status: a.status,
+      isSupabase: false,
+    }));
+  const supabaseApprovals = (orgId && dbMapped.length > 0) ? dbMapped
+    : (!orgId || isDemo) ? demoMapped : dbMapped;
 
   const [localApprovals, setLocalApprovals] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);

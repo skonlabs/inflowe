@@ -12,7 +12,9 @@ export default function HomePage() {
   const { data: dbApprovals } = useApprovals(orgId);
   const { data: recoveredThisWeek = 0 } = useRecoveredThisWeek(orgId);
 
-  const s = dbSummary ? {
+  const isDemo = !!(membership?.organizations as any)?.is_demo;
+  const hasRealSummary = dbSummary && (Number(dbSummary.overdue_total ?? 0) > 0 || Number(dbSummary.due_soon_total ?? 0) > 0 || (dbSummary.approvals_pending ?? 0) > 0);
+  const s = hasRealSummary ? {
     overdueTotal: Number(dbSummary.overdue_total ?? 0),
     overdueCount: dbSummary.overdue_count ?? 0,
     dueSoonTotal: Number(dbSummary.due_soon_total ?? 0),
