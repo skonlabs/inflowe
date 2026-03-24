@@ -41,6 +41,7 @@ export default function ConversationDetailPage() {
   const dbThread = dbThreads.find(t => t.id === id);
   // Fall back to demo when no orgId OR when org is demo and DB returned nothing.
   const demoThread = (!orgId || (isDemo && !dbThread)) ? demoThreadData[id || ''] : null;
+  const isDemoRecord = !!demoThread;
 
   // Use real messages for DB threads; demo messages for demo threads
   const messages = (orgId && dbMessages.length > 0) ? dbMessages
@@ -52,8 +53,8 @@ export default function ConversationDetailPage() {
 
   const handleSend = async () => {
     if (!reply.trim() || !id) return;
-    if (!orgId) {
-      toast.info('Sign in to send replies');
+    if (!orgId || isDemoRecord) {
+      toast.info('This is demo data — connect real conversations to send replies');
       setReply('');
       return;
     }

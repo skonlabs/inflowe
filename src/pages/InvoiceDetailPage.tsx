@@ -58,8 +58,8 @@ export default function InvoiceDetailPage() {
   const [creatingPlan, setCreatingPlan] = useState(false);
 
   // Fall back to demo when no orgId OR when org is demo and DB returned nothing.
-  // Fall back to demo when no orgId OR when org is demo and DB returned nothing.
   const demoInvoice = (!orgId || (isDemo && !dbInvoice)) ? demoInvoices.find(i => i.id === id) : null;
+  const isDemoRecord = !!demoInvoice;
   const invoice = dbInvoice ? {
     id: dbInvoice.id,
     invoiceNumber: dbInvoice.invoice_number ?? '',
@@ -109,7 +109,7 @@ export default function InvoiceDetailPage() {
   const currentState = invoice.state;
 
   const handleMarkPaid = async () => {
-    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
+    if (!orgId || isDemoRecord) { toast.info('This is demo data — sign up or import real invoices to take actions'); return; }
     try {
       await markPaid.mutateAsync({ invoiceId: invoice.id, orgId, method: 'manual' });
       toast.success(`${invoice.invoiceNumber} marked as paid`);
@@ -119,7 +119,7 @@ export default function InvoiceDetailPage() {
   };
 
   const handleTogglePause = async () => {
-    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
+    if (!orgId || isDemoRecord) { toast.info('This is demo data — sign up or import real invoices to take actions'); return; }
     try {
       await setHold.mutateAsync({ invoiceId: invoice.id, orgId, onHold: !isPaused });
       toast(isPaused ? 'Automation resumed for this invoice' : 'Automation paused for this invoice', {
@@ -131,7 +131,7 @@ export default function InvoiceDetailPage() {
   };
 
   const handleDispute = async () => {
-    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
+    if (!orgId || isDemoRecord) { toast.info('This is demo data — sign up or import real invoices to take actions'); return; }
     try {
       await setDispute.mutateAsync({ invoiceId: invoice.id, orgId, disputeActive: true });
       toast('Invoice flagged as disputed — automation paused', { icon: '🚩' });
@@ -141,7 +141,7 @@ export default function InvoiceDetailPage() {
   };
 
   const handleClearDispute = async () => {
-    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
+    if (!orgId || isDemoRecord) { toast.info('This is demo data — sign up or import real invoices to take actions'); return; }
     try {
       await setDispute.mutateAsync({ invoiceId: invoice.id, orgId, disputeActive: false });
       toast.success('Dispute cleared');
@@ -151,7 +151,7 @@ export default function InvoiceDetailPage() {
   };
 
   const handleCreatePlan = async () => {
-    if (!orgId || !invoice) return;
+    if (!orgId || !invoice || isDemoRecord) { toast.info('This is demo data — sign up or import real invoices to take actions'); return; }
     setCreatingPlan(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();

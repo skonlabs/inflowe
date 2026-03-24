@@ -32,6 +32,7 @@ export default function ClientDetailPage() {
   const isDemo = !!(membership?.organizations as any)?.is_demo;
   // Fall back to demo when no orgId OR when org is demo and DB returned nothing.
   const demoClient = (!orgId || (isDemo && !dbClient)) ? demoClients.find(c => c.id === id) : null;
+  const isDemoRecord = !!demoClient;
 
   const client = dbClient ? {
     id: dbClient.id,
@@ -118,8 +119,8 @@ export default function ClientDetailPage() {
   const sensitivity = sensitivityLabels[client.sensitivityLevel] || sensitivityLabels.standard;
 
   const handleTogglePause = async () => {
-    if (!orgId) {
-      toast.info('Sign up to manage client automation');
+    if (!orgId || isDemoRecord) {
+      toast.info('This is demo data — import real clients to take actions');
       return;
     }
     const nextPaused = !(dbClient?.do_not_automate || actions.isPaused);
@@ -139,8 +140,8 @@ export default function ClientDetailPage() {
   };
 
   const handleSaveEdit = async () => {
-    if (!orgId) {
-      toast.info('Sign up to edit client details');
+    if (!orgId || isDemoRecord) {
+      toast.info('This is demo data — import real clients to take actions');
       return;
     }
     try {
