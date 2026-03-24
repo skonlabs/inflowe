@@ -24,8 +24,9 @@ export default function ReportsPage() {
   const { data: reportsData, isLoading: reportsLoading } = useReportsData(orgId);
   const { data: weeklyBriefs = [], isLoading: briefsLoading } = useWeeklyBriefs(orgId);
 
-  // Fall back to demo data when no org (unauthenticated / demo mode)
-  const effectiveReportsData = reportsData ?? (orgId ? undefined : demoReportsData);
+  const isDemo = !!(membership?.organizations as any)?.is_demo;
+  const hasRealReports = reportsData && (reportsData.totalOutstanding > 0 || reportsData.overdueTotal > 0);
+  const effectiveReportsData = hasRealReports ? reportsData : (!orgId || isDemo) ? demoReportsData : reportsData;
   const effectiveReportsLoading = orgId ? reportsLoading : false;
 
   const agingData = effectiveReportsData?.agingBuckets ?? [

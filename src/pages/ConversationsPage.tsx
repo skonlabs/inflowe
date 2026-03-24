@@ -54,21 +54,20 @@ export default function ConversationsPage() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [search, setSearch] = useState('');
 
-  // When user has an org, show only real data (empty while loading).
-  // Only show demo threads for users without an org.
-  const threads: Thread[] = orgId
-    ? dbThreads.map(t => ({
-        id: t.id,
-        clientName: (t.clients as any)?.display_name ?? 'Unknown Client',
-        invoiceNumber: (t.invoices as any)?.invoice_number ?? '',
-        subject: t.subject ?? '',
-        lastMessage: t.subject ?? 'View messages',
-        classification: (t.thread_classification as Thread['classification']) ?? 'auto_handled',
-        channel: (t.channel as Thread['channel']) ?? 'email',
-        latestAt: formatRelativeTime(t.latest_message_at),
-        unread: !!t.latest_reply_at && t.thread_status === 'active',
-      }))
-    : demoThreads;
+  const isDemo = !!(membership?.organizations as any)?.is_demo;
+  const dbMapped: Thread[] = dbThreads.map(t => ({
+      id: t.id,
+      clientName: (t.clients as any)?.display_name ?? 'Unknown Client',
+      invoiceNumber: (t.invoices as any)?.invoice_number ?? '',
+      subject: t.subject ?? '',
+      lastMessage: t.subject ?? 'View messages',
+      classification: (t.thread_classification as Thread['classification']) ?? 'auto_handled',
+      channel: (t.channel as Thread['channel']) ?? 'email',
+      latestAt: formatRelativeTime(t.latest_message_at),
+      unread: !!t.latest_reply_at && t.thread_status === 'active',
+    }));
+  const threads: Thread[] = (orgId && dbMapped.length > 0) ? dbMapped
+    : (!orgId || isDemo) ? demoThreads : dbMapped;
 
   const filtered = threads.filter(t => {
     if (search && !t.clientName.toLowerCase().includes(search.toLowerCase()) && !t.subject.toLowerCase().includes(search.toLowerCase())) return false;
