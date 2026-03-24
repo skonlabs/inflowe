@@ -80,7 +80,7 @@ export default function ConversationsPage() {
   const needsAttention = threads.filter(t => t.classification === 'needs_user_input' || t.classification === 'dispute_related').length;
 
   return (
-    <div className="px-4 py-6 space-y-4">
+    <div className="px-4 py-6 space-y-4 max-w-screen-lg mx-auto">
       <ScrollReveal>
         <h1 className="text-xl font-bold" style={{ lineHeight: '1.1' }}>Conversations</h1>
         <p className="text-sm text-muted-foreground mt-1">
