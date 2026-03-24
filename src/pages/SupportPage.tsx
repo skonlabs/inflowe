@@ -54,7 +54,7 @@ export default function SupportPage() {
   };
 
   return (
-    <div className="px-4 py-6 space-y-4 flex flex-col" style={{ minHeight: 'calc(100vh - 12rem)' }}>
+    <div className="px-4 py-6 space-y-4 flex flex-col max-w-screen-lg mx-auto" style={{ minHeight: 'calc(100vh - 12rem)' }}>
       <ScrollReveal>
         <h1 className="text-xl font-bold" style={{ lineHeight: '1.1' }}>Support</h1>
         <p className="text-sm text-muted-foreground mt-1">Ask anything about your invoices, messages, or workflows</p>
@@ -128,7 +128,7 @@ export default function SupportPage() {
             type="text" placeholder="Ask a question..."
             value={question} onChange={e => setQuestion(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAsk()}
-            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-shadow"
+            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 transition-shadow"
           />
           <button onClick={() => handleAsk()} className="p-3 rounded-xl bg-accent text-accent-foreground active:scale-95 transition-transform">
             <Send className="w-5 h-5" />
@@ -160,7 +160,7 @@ export default function SupportPage() {
                     onChange={e => setCaseDescription(e.target.value)}
                     placeholder="Describe what happened and what you expected..."
                     rows={3}
-                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 resize-none"
                   />
                   <div className="flex gap-2">
                     <button

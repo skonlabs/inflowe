@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Search, AlertCircle } from 'lucide-react';
+import { Search, AlertCircle, Users } from 'lucide-react';
 import { useState } from 'react';
 import { demoClients, formatCurrency } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
@@ -40,7 +40,7 @@ export default function ClientsPage() {
   });
 
   return (
-    <div className="px-4 py-6 space-y-4">
+    <div className="px-4 py-6 space-y-4 max-w-screen-lg mx-auto">
       <ScrollReveal>
         <h1 className="text-xl font-bold" style={{ lineHeight: '1.1' }}>Clients</h1>
         <p className="text-sm text-muted-foreground mt-1">{clients.length} active clients</p>
@@ -54,7 +54,7 @@ export default function ClientsPage() {
             placeholder="Search clients..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 transition-shadow"
           />
         </div>
       </ScrollReveal>
@@ -97,8 +97,12 @@ export default function ClientsPage() {
       </StaggerContainer>
 
       {filtered.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground text-sm">No clients found</p>
+        <div className="text-center py-16 space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-muted/60 flex items-center justify-center mx-auto">
+            <Users className="w-7 h-7 text-muted-foreground/50" />
+          </div>
+          <p className="font-medium text-sm">No clients found</p>
+          <p className="text-sm text-muted-foreground">Try a different search term</p>
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, FileText } from 'lucide-react';
 import { demoInvoices, formatCurrency, getStateLabel, getStateClass } from '@/lib/demo-data';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ScrollReveal';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -124,8 +124,12 @@ export default function InvoicesPage() {
       </StaggerContainer>
 
       {filtered.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground text-sm">No invoices match your filters</p>
+        <div className="text-center py-16 space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-muted/60 flex items-center justify-center mx-auto">
+            <FileText className="w-7 h-7 text-muted-foreground/50" />
+          </div>
+          <p className="font-medium text-sm">No invoices match your filters</p>
+          <p className="text-sm text-muted-foreground">Try adjusting your search or filter criteria</p>
         </div>
       )}
     </div>

@@ -328,10 +328,7 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="px-4 py-6 space-y-4">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95">
-        <ArrowLeft className="w-4 h-4" /> Back
-      </button>
+    <div className="px-4 py-6 space-y-4 max-w-screen-lg mx-auto">
       <ScrollReveal>
         <h1 className="text-xl font-bold" style={{ lineHeight: '1.1' }}>Settings</h1>
       </ScrollReveal>
@@ -351,7 +348,7 @@ export default function SettingsPage() {
               <input
                 value={editing.value}
                 onChange={e => setEditing(prev => prev ? { ...prev, value: e.target.value } : null)}
-                className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                 autoFocus
                 onKeyDown={e => e.key === 'Enter' && saveEdit()}
               />

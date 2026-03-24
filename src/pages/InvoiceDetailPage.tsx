@@ -213,8 +213,8 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="px-4 py-4 space-y-6 max-w-screen-lg mx-auto">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95">
-        <ArrowLeft className="w-4 h-4" /> Back
+      <button onClick={() => navigate('/invoices')} className="flex items-center gap-1.5 text-sm text-muted-foreground active:scale-95 hover:text-foreground transition-colors">
+        <ArrowLeft className="w-4 h-4" /> Invoices
       </button>
 
       <ScrollReveal>

@@ -164,9 +164,9 @@ export default function ClientDetailPage() {
   };
 
   return (
-    <div className="px-4 py-4 space-y-5">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95">
-        <ArrowLeft className="w-4 h-4" /> Back
+    <div className="px-4 py-4 space-y-5 max-w-screen-lg mx-auto">
+      <button onClick={() => navigate('/clients')} className="flex items-center gap-1.5 text-sm text-muted-foreground active:scale-95 hover:text-foreground transition-colors">
+        <ArrowLeft className="w-4 h-4" /> Clients
       </button>
 
       <ScrollReveal>
@@ -229,12 +229,12 @@ export default function ClientDetailPage() {
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Display name</label>
                 <input value={editForm.displayName} onChange={e => setEditForm(f => ({ ...f, displayName: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-ring/30" />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Sensitivity level</label>
                 <select value={editForm.sensitivityLevel} onChange={e => setEditForm(f => ({ ...f, sensitivityLevel: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-ring/30">
                   <option value="standard">Standard</option>
                   <option value="sensitive">Sensitive</option>
                   <option value="vip">VIP</option>
@@ -244,7 +244,7 @@ export default function ClientDetailPage() {
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Preferred channel</label>
                 <select value={editForm.preferredChannel} onChange={e => setEditForm(f => ({ ...f, preferredChannel: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-ring/30">
                   <option value="email">Email</option>
                   <option value="whatsapp">WhatsApp</option>
                 </select>
@@ -253,7 +253,7 @@ export default function ClientDetailPage() {
                 <label className="text-xs text-muted-foreground block mb-1">Notes</label>
                 <textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
                   placeholder="Add internal notes..."
-                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-ring/30" />
               </div>
               <div className="flex gap-2">
                 <button onClick={handleSaveEdit} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-success text-success-foreground font-medium text-sm active:scale-95 transition-transform">
