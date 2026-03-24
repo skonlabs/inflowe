@@ -110,7 +110,7 @@ export default function ImportPage() {
       }));
       const matched = mapped.find(t => matchesTemplate(result.headers, t)) ?? null;
       setMatchedTemplate(matched);
-      const inferred = inferMapping(result.headers, result.rows.slice(0, 10), matched);
+      const inferred = inferMapping(result.headers, result.rows.slice(0, 10), matched, importType);
       setProposals(inferred);
       if (result.warnings.length > 0) result.warnings.forEach(w => toast.warning(w));
       setView('mapping');
