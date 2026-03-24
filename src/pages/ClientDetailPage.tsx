@@ -234,7 +234,7 @@ export default function ClientDetailPage() {
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Sensitivity level</label>
                 <select value={editForm.sensitivityLevel} onChange={e => setEditForm(f => ({ ...f, sensitivityLevel: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+                  className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-ring/30">
                   <option value="standard">Standard</option>
                   <option value="sensitive">Sensitive</option>
                   <option value="vip">VIP</option>
