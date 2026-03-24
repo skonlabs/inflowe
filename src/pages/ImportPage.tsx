@@ -434,6 +434,14 @@ export default function ImportPage() {
       {/* Upload area (when view=upload) */}
       {view === 'upload' && (
         <div className="space-y-4">
+          {/* Import type toggle */}
+          <div className="flex bg-muted rounded-xl p-1">
+            {(['invoice', 'client'] as const).map(type => (
+              <button key={type} onClick={() => setImportType(type)}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${importType === type ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}
+              >{type === 'invoice' ? '🧾 Invoices' : '👥 Clients'}</button>
+            ))}
+          </div>
           <div
             onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
