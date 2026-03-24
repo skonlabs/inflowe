@@ -57,9 +57,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const { data: membership } = useUserOrganization();
   const orgId = membership?.organization_id;
 
-  // Load emergency stop state from DB settings
+  // Load emergency stop state from DB settings; local state fallback for demo mode
   const { data: orgSettings } = useOrgSettings(orgId);
-  const emergencyStop = (orgSettings?.['automation_paused'] as boolean | undefined) === true;
+  const [localEmergencyStop, setLocalEmergencyStop] = useState(false);
+  const emergencyStop = orgId
+    ? (orgSettings?.['automation_paused'] as boolean | undefined) === true
+    : localEmergencyStop;
 
   // Load notifications from DB
   const { data: dbNotifications } = useNotifications();
@@ -86,7 +89,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     : demoNotifications;
 
   const setEmergencyStop = useCallback((active: boolean) => {
-    if (!orgId) return;
+    if (!orgId) {
+      // Demo mode: update local state only
+      setLocalEmergencyStop(active);
+      return;
+    }
     togglePause.mutate({ orgId, paused: active });
   }, [orgId, togglePause]);
 

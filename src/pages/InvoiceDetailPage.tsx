@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Pause, Play, CheckCircle, AlertTriangle, Clock, FileText, MessageSquare, Flag, CreditCard, DollarSign, Shield } from 'lucide-react';
-import { demoInvoices, formatCurrency, getStateLabel, getStateClass } from '@/lib/demo-data';
+import { demoInvoices, demoInvoiceTimelines, formatCurrency, getStateLabel, getStateClass } from '@/lib/demo-data';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -42,7 +42,10 @@ export default function InvoiceDetailPage() {
   const { data: membership } = useUserOrganization();
   const orgId = membership?.organization_id;
   const { data: dbInvoice, isLoading } = useInvoiceDetail(id, orgId);
-  const { data: timelineEvents = [] } = useInvoiceTimeline(id, orgId);
+  const { data: dbTimelineEvents = [] } = useInvoiceTimeline(id, orgId);
+
+  // Use real timeline for authenticated users; demo timeline for demo mode
+  const timelineEvents = orgId ? dbTimelineEvents : (demoInvoiceTimelines[id || ''] ?? []);
 
   const markPaid = useMarkInvoicePaid();
   const setHold = useSetInvoiceHold();

@@ -6,12 +6,15 @@ import { ScrollReveal } from '@/components/ScrollReveal';
 import { useUserOrganization, useConversationThreads, useThreadMessages } from '@/hooks/use-supabase-data';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { demoThreadMessages } from '@/lib/demo-data';
 
 // Demo fallback data
 const demoThreadData: Record<string, { clientName: string; invoiceNumber: string; subject: string; channel: string }> = {
-  t1: { clientName: 'Volta Brand Agency', invoiceNumber: 'INV-2024-035', subject: 'Re: Invoice INV-2024-035 Payment', channel: 'email' },
-  t2: { clientName: 'Meridian Creative Co.', invoiceNumber: 'INV-2024-042', subject: 'Re: Payment Reminder', channel: 'email' },
-  t3: { clientName: 'Northstar Digital', invoiceNumber: 'INV-2024-051', subject: 'Re: Invoice Follow-up', channel: 'email' },
+  t1: { clientName: 'Volta Brand Agency', invoiceNumber: 'INV-2026-048', subject: 'Re: Invoice INV-2026-048 Payment', channel: 'email' },
+  t2: { clientName: 'Meridian Creative Co.', invoiceNumber: 'INV-2026-042', subject: 'Re: Payment Reminder', channel: 'email' },
+  t3: { clientName: 'Northstar Digital', invoiceNumber: 'INV-2026-051', subject: 'Re: Invoice Follow-up', channel: 'email' },
+  t4: { clientName: 'Fern & Bloom Marketing', invoiceNumber: 'INV-2026-038', subject: 'Payment Reminder', channel: 'email' },
+  t5: { clientName: 'Bright Pixel Studios', invoiceNumber: 'INV-2026-055', subject: 'Upcoming Invoice Due', channel: 'email' },
 };
 
 const classLabels: Record<string, string> = {
@@ -32,18 +35,26 @@ export default function ConversationDetailPage() {
   const [sending, setSending] = useState(false);
 
   const { data: dbThreads = [] } = useConversationThreads(orgId);
-  const { data: messages = [] } = useThreadMessages(id, orgId);
+  const { data: dbMessages = [] } = useThreadMessages(id, orgId);
 
   const dbThread = dbThreads.find(t => t.id === id);
   // Only show demo threads for users without an org (demo / unauthenticated mode).
   const demoThread = orgId ? null : demoThreadData[id || ''];
+
+  // Use real messages for DB threads; demo messages for demo threads
+  const messages = orgId ? dbMessages : (demoThreadMessages[id || ''] ?? []);
 
   const clientName = dbThread ? (dbThread.clients as any)?.display_name ?? 'Unknown' : demoThread?.clientName ?? '';
   const subject = dbThread?.subject ?? demoThread?.subject ?? '';
   const channel = dbThread?.channel ?? demoThread?.channel ?? 'email';
 
   const handleSend = async () => {
-    if (!reply.trim() || !orgId || !id) return;
+    if (!reply.trim() || !id) return;
+    if (!orgId) {
+      toast.info('Sign in to send replies');
+      setReply('');
+      return;
+    }
     setSending(true);
     try {
       const { error } = await supabase.rpc('create_manual_thread_reply', {
@@ -114,8 +125,8 @@ export default function ConversationDetailPage() {
         )}
       </div>
 
-      {/* Reply input — only shown for real DB threads */}
-      {dbThread && (
+      {/* Reply input — shown for both real and demo threads */}
+      {(dbThread || demoThread) && (
         <div className="sticky bottom-20 bg-background border-t border-border px-4 py-3">
           <div className="flex gap-2">
             <input

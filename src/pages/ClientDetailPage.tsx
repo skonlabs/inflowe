@@ -343,26 +343,42 @@ export default function ClientDetailPage() {
       <ScrollReveal delay={0.25}>
         <div className="space-y-3">
           <h2 className="font-semibold text-base">Recent activity</h2>
-          {[
-            { text: `Reminder sent for ${clientInvoices[0]?.invoiceNumber || 'invoice'}`, time: '2 weeks ago', icon: Mail },
-            { text: `Invoice became overdue`, time: '29 days ago', icon: AlertCircle },
-          ].map((event, i) => {
-            const Icon = event.icon;
-            return (
-              <div key={i} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+          {(() => {
+            // Build activity events from invoice data
+            const events: Array<{ text: string; time: string; icon: typeof Mail }> = [];
+            const overdueInv = clientInvoices.find(i => i.state === 'overdue' || i.state === 'disputed' || i.state === 'partially_paid');
+            const paidInv = clientInvoices.find(i => i.state === 'paid');
+            const activeInv = clientInvoices.find(i => i.state !== 'paid');
+            if (overdueInv && overdueInv.daysOverdue > 0) {
+              events.push({ text: `Reminder sent for ${overdueInv.invoiceNumber}`, time: `${Math.max(1, overdueInv.daysOverdue - 15)} days ago`, icon: Mail });
+              events.push({ text: `${overdueInv.invoiceNumber} became overdue`, time: `${overdueInv.daysOverdue} days ago`, icon: AlertCircle });
+            } else if (activeInv) {
+              events.push({ text: `${activeInv.invoiceNumber} issued`, time: '3 weeks ago', icon: Mail });
+            }
+            if (paidInv) {
+              events.push({ text: `${paidInv.invoiceNumber} paid in full`, time: '10 weeks ago', icon: Check });
+            }
+            if (events.length === 0) {
+              events.push({ text: 'Client added to InFlowe', time: '2 months ago', icon: Mail });
+            }
+            return events.map((event, i) => {
+              const Icon = event.icon;
+              return (
+                <div key={i} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                    </div>
+                    {i < events.length - 1 && <div className="w-px h-full bg-border min-h-[16px]" />}
                   </div>
-                  {i < 1 && <div className="w-px h-full bg-border min-h-[16px]" />}
+                  <div className="pb-3">
+                    <p className="text-sm">{event.text}</p>
+                    <p className="text-xs text-muted-foreground">{event.time}</p>
+                  </div>
                 </div>
-                <div className="pb-3">
-                  <p className="text-sm">{event.text}</p>
-                  <p className="text-xs text-muted-foreground">{event.time}</p>
-                </div>
-              </div>
-            );
-          })}
+              );
+            });
+          })()}
         </div>
       </ScrollReveal>
     </div>

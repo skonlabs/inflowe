@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { TrendingUp, Calendar, Download, ChevronRight } from 'lucide-react';
-import { formatCurrency } from '@/lib/demo-data';
+import { formatCurrency, demoReportsData } from '@/lib/demo-data';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { toast } from 'sonner';
 import { useUserOrganization, useReportsData, useWeeklyBriefs } from '@/hooks/use-supabase-data';
@@ -24,7 +24,11 @@ export default function ReportsPage() {
   const { data: reportsData, isLoading: reportsLoading } = useReportsData(orgId);
   const { data: weeklyBriefs = [], isLoading: briefsLoading } = useWeeklyBriefs(orgId);
 
-  const agingData = reportsData?.agingBuckets ?? [
+  // Fall back to demo data when no org (unauthenticated / demo mode)
+  const effectiveReportsData = reportsData ?? (orgId ? undefined : demoReportsData);
+  const effectiveReportsLoading = orgId ? reportsLoading : false;
+
+  const agingData = effectiveReportsData?.agingBuckets ?? [
     { bucket: 'Current', key: 'current', color: 'bg-success', amount: 0, count: 0 },
     { bucket: '1–30 days', key: '1_30', color: 'bg-warning', amount: 0, count: 0 },
     { bucket: '31–60 days', key: '31_60', color: 'bg-destructive/70', amount: 0, count: 0 },
@@ -32,16 +36,16 @@ export default function ReportsPage() {
     { bucket: '90+ days', key: '90_plus', color: 'bg-destructive', amount: 0, count: 0 },
   ];
   const maxAmount = Math.max(...agingData.map(d => d.amount), 1);
-  const totalOutstanding = reportsData?.totalOutstanding ?? 0;
-  const overdueTotal = reportsData?.overdueTotal ?? 0;
-  const dueSoonTotal = reportsData?.dueSoonTotal ?? 0;
-  const recoveredThisMonth = reportsData?.recoveredThisMonth ?? 0;
+  const totalOutstanding = effectiveReportsData?.totalOutstanding ?? 0;
+  const overdueTotal = effectiveReportsData?.overdueTotal ?? 0;
+  const dueSoonTotal = effectiveReportsData?.dueSoonTotal ?? 0;
+  const recoveredThisMonth = effectiveReportsData?.recoveredThisMonth ?? 0;
 
   const latestBrief = weeklyBriefs[0];
 
   const handleDownloadOverdue = () => {
     let csv = 'Invoice,Client,Amount,Days Overdue,Priority\n';
-    (reportsData?.overdueInvoices ?? []).forEach(inv => {
+    (effectiveReportsData?.overdueInvoices ?? []).forEach(inv => {
       csv += `${(inv as any).invoice_number || ''},${(inv as any).client_id || ''},${inv.remaining_balance},${inv.days_overdue ?? 0},${inv.collection_priority ?? ''}\n`;
     });
     downloadCsv('Overdue Summary', csv);
@@ -49,7 +53,7 @@ export default function ReportsPage() {
 
   const handleDownloadDueSoon = () => {
     let csv = 'Invoice,Client,Amount,Due Date\n';
-    (reportsData?.dueSoonInvoices ?? []).forEach(inv => {
+    (effectiveReportsData?.dueSoonInvoices ?? []).forEach(inv => {
       csv += `${(inv as any).invoice_number || ''},${(inv as any).client_id || ''},${inv.remaining_balance},${inv.due_date ?? ''}\n`;
     });
     downloadCsv('Due Soon', csv);
@@ -57,7 +61,7 @@ export default function ReportsPage() {
 
   const handleDownloadPayments = () => {
     let csv = 'Date,Amount,Method,Source\n';
-    (reportsData?.payments ?? []).forEach(p => {
+    (effectiveReportsData?.payments ?? []).forEach(p => {
       csv += `${p.payment_date},${p.amount},${p.payment_method ?? ''},${p.source ?? ''}\n`;
     });
     downloadCsv('Recovered Amount', csv);
@@ -92,19 +96,19 @@ export default function ReportsPage() {
             <div className="glass-card rounded-xl p-5">
               <p className="text-sm text-muted-foreground">Total outstanding receivables</p>
               <p className="text-3xl font-bold text-tabular mt-1">
-                {reportsLoading ? '—' : formatCurrency(totalOutstanding)}
+                {effectiveReportsLoading ? '—' : formatCurrency(totalOutstanding)}
               </p>
               <div className="flex items-center gap-4 mt-3 text-sm">
                 <span className="flex items-center gap-1 text-destructive">
                   <TrendingUp className="w-4 h-4" />
-                  {reportsLoading ? '—' : formatCurrency(overdueTotal)} overdue
+                  {effectiveReportsLoading ? '—' : formatCurrency(overdueTotal)} overdue
                 </span>
                 <span className="flex items-center gap-1 text-warning">
                   <Calendar className="w-4 h-4" />
-                  {reportsLoading ? '—' : formatCurrency(dueSoonTotal)} due soon
+                  {effectiveReportsLoading ? '—' : formatCurrency(dueSoonTotal)} due soon
                 </span>
               </div>
-              {!reportsLoading && recoveredThisMonth > 0 && (
+              {!effectiveReportsLoading && recoveredThisMonth > 0 && (
                 <p className="text-xs text-muted-foreground mt-2">
                   {formatCurrency(recoveredThisMonth)} collected in the last 30 days
                 </p>
@@ -115,7 +119,7 @@ export default function ReportsPage() {
           <ScrollReveal delay={0.15}>
             <div className="glass-card rounded-xl p-5">
               <h2 className="font-semibold text-sm mb-4">Aging breakdown</h2>
-              {reportsLoading ? (
+              {effectiveReportsLoading ? (
                 <div className="py-4 text-center text-sm text-muted-foreground">Loading…</div>
               ) : (
                 <div className="space-y-3">

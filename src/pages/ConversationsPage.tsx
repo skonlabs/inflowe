@@ -17,11 +17,11 @@ interface Thread {
 }
 
 const demoThreads: Thread[] = [
-  { id: 't1', clientName: 'Volta Brand Agency', invoiceNumber: 'INV-2024-035', subject: 'Re: Invoice INV-2024-035 Payment', lastMessage: 'We have some concerns about the charges on this invoice...', classification: 'dispute_related', channel: 'email', latestAt: '2 hours ago', unread: true },
-  { id: 't2', clientName: 'Meridian Creative Co.', invoiceNumber: 'INV-2024-042', subject: 'Re: Payment Reminder', lastMessage: "Hi, I'll be out of office until March 25th. Will process this when I return.", classification: 'needs_user_input', channel: 'email', latestAt: '1 day ago', unread: true },
-  { id: 't3', clientName: 'Northstar Digital', invoiceNumber: 'INV-2024-051', subject: 'Re: Invoice Follow-up', lastMessage: 'Payment has been initiated, should arrive in 2-3 business days.', classification: 'auto_handled', channel: 'email', latestAt: '3 days ago', unread: false },
-  { id: 't4', clientName: 'Fern & Bloom Marketing', invoiceNumber: 'INV-2024-038', subject: 'Payment Reminder', lastMessage: 'Reminder sent via email — no reply yet.', classification: 'auto_handled', channel: 'email', latestAt: '1 week ago', unread: false },
-  { id: 't5', clientName: 'Bright Pixel Studios', invoiceNumber: 'INV-2024-055', subject: 'Upcoming Invoice Due', lastMessage: 'Gentle reminder about upcoming payment.', classification: 'auto_handled', channel: 'email', latestAt: '2 days ago', unread: false },
+  { id: 't1', clientName: 'Volta Brand Agency', invoiceNumber: 'INV-2026-048', subject: 'Re: Invoice INV-2026-048 Payment', lastMessage: 'We have some concerns about the charges on this invoice — the retainer hours don\'t match our contract.', classification: 'dispute_related', channel: 'email', latestAt: '2 hours ago', unread: true },
+  { id: 't2', clientName: 'Meridian Creative Co.', invoiceNumber: 'INV-2026-042', subject: 'Re: Payment Reminder', lastMessage: "Hi, I'll be out of office until next week. Will process this as soon as I'm back. Sorry for the delay!", classification: 'needs_user_input', channel: 'email', latestAt: '1 day ago', unread: true },
+  { id: 't3', clientName: 'Northstar Digital', invoiceNumber: 'INV-2026-051', subject: 'Re: Invoice Follow-up', lastMessage: 'Payment has been initiated from our end — should arrive in 2–3 business days.', classification: 'auto_handled', channel: 'email', latestAt: '3 days ago', unread: false },
+  { id: 't4', clientName: 'Fern & Bloom Marketing', invoiceNumber: 'INV-2026-038', subject: 'Payment Reminder', lastMessage: 'Second reminder sent via email — no reply received yet.', classification: 'auto_handled', channel: 'email', latestAt: '7 days ago', unread: false },
+  { id: 't5', clientName: 'Bright Pixel Studios', invoiceNumber: 'INV-2026-055', subject: 'Upcoming Invoice Due', lastMessage: 'Gentle reminder sent — invoice due in 4 days.', classification: 'auto_handled', channel: 'email', latestAt: '2 days ago', unread: false },
 ];
 
 const classificationBadge: Record<string, { label: string; className: string }> = {
