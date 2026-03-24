@@ -193,4 +193,6 @@ const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppShell({ c
       </nav>
     </div>
   );
-}
+});
+
+export default AppShell;
