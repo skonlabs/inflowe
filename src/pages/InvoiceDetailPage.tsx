@@ -119,7 +119,7 @@ export default function InvoiceDetailPage() {
   };
 
   const handleTogglePause = async () => {
-    if (!orgId) { toast.info('Sign up to manage invoices'); return; }
+    if (!orgId || isDemoRecord) { toast.info('This is demo data — sign up or import real invoices to take actions'); return; }
     try {
       await setHold.mutateAsync({ invoiceId: invoice.id, orgId, onHold: !isPaused });
       toast(isPaused ? 'Automation resumed for this invoice' : 'Automation paused for this invoice', {
