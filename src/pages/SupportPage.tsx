@@ -54,7 +54,7 @@ export default function SupportPage() {
   };
 
   return (
-    <div className="px-4 py-6 space-y-4 flex flex-col" style={{ minHeight: 'calc(100vh - 12rem)' }}>
+    <div className="px-4 py-6 space-y-4 flex flex-col max-w-screen-lg mx-auto" style={{ minHeight: 'calc(100vh - 12rem)' }}>
       <ScrollReveal>
         <h1 className="text-xl font-bold" style={{ lineHeight: '1.1' }}>Support</h1>
         <p className="text-sm text-muted-foreground mt-1">Ask anything about your invoices, messages, or workflows</p>

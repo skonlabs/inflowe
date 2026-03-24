@@ -75,7 +75,7 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="px-4 py-6 space-y-4">
+    <div className="px-4 py-6 space-y-4 max-w-screen-lg mx-auto">
       <ScrollReveal>
         <h1 className="text-xl font-bold" style={{ lineHeight: '1.1' }}>Reports</h1>
         <p className="text-sm text-muted-foreground mt-1">Cash visibility and collection insights</p>

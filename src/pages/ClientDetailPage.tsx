@@ -164,7 +164,7 @@ export default function ClientDetailPage() {
   };
 
   return (
-    <div className="px-4 py-4 space-y-5">
+    <div className="px-4 py-4 space-y-5 max-w-screen-lg mx-auto">
       <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95">
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
