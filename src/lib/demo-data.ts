@@ -510,16 +510,16 @@ export const demoInvoiceTimelines: Record<string, DemoTimelineEvent[]> = {
 
 export const demoReportsData = {
   agingBuckets: [
-    { bucket: 'Current', key: 'current', color: 'bg-success', amount: 55500, count: 5 },
-    { bucket: '1–30 days', key: '1_30', color: 'bg-warning', amount: 24450, count: 4 },
-    { bucket: '31–60 days', key: '31_60', color: 'bg-destructive/70', amount: 26500, count: 4 },
+    { bucket: 'Current', key: 'current', color: 'bg-success', amount: 72500, count: 5 },
+    { bucket: '1–30 days', key: '1_30', color: 'bg-warning', amount: 20450, count: 3 },
+    { bucket: '31–60 days', key: '31_60', color: 'bg-destructive/70', amount: 20300, count: 3 },
     { bucket: '61–90 days', key: '61_90', color: 'bg-destructive', amount: 3200, count: 1 },
     { bucket: '90+ days', key: '90_plus', color: 'bg-destructive', amount: 0, count: 0 },
   ],
-  totalOutstanding: 129850,
+  totalOutstanding: 136450,
   overdueTotal: 36250,
   dueSoonTotal: 46800,
-  recoveredThisMonth: 19200,
+  recoveredThisMonth: 15200,
   overdueInvoices: [
     { invoice_number: 'INV-2026-042', client_id: 'c1', remaining_balance: 8500, days_overdue: 34, collection_priority: 'high', due_date: _d(-34) },
     { invoice_number: 'INV-2026-048', client_id: 'c3', remaining_balance: 8750, days_overdue: 29, collection_priority: 'critical', due_date: _d(-29) },
@@ -534,9 +534,9 @@ export const demoReportsData = {
     { invoice_number: 'INV-2026-063', client_id: 'c11', remaining_balance: 9800, due_date: _d(15) },
   ],
   payments: [
-    { payment_date: _d(-12), amount: 3200, payment_method: 'bank_transfer', source: 'manual' },
-    { payment_date: _d(-25), amount: 5000, payment_method: 'card', source: 'stripe' },
-    { payment_date: _d(-28), amount: 11000, payment_method: 'bank_transfer', source: 'manual' },
+    { payment_date: _d(-3), amount: 3200, payment_method: 'bank_transfer', source: 'manual' },
+    { payment_date: _d(-8), amount: 12000, payment_method: 'bank_transfer', source: 'manual' },
+    { payment_date: _d(-18), amount: 5000, payment_method: 'card', source: 'stripe' },
   ],
 };
 
